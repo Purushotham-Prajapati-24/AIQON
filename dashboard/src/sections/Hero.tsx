@@ -187,8 +187,8 @@ function Readout({ m }: { m: Moment }) {
   const v = m.ops;
   const cause = v.root_cause_group ? GROUP[v.root_cause_group as Group] : "—";
   return (
-    <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-12">
-      <div className="md:col-span-3">
+    <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-12">
+      <div className="lg:col-span-3">
         <p className="eyebrow">Expected delay</p>
         <div className="mt-3 flex items-baseline gap-2 text-late">
           <span className="num text-[clamp(3.5rem,6vw,5.5rem)]">
@@ -197,13 +197,13 @@ function Readout({ m }: { m: Moment }) {
           <span className="font-display text-2xl font-bold uppercase">days</span>
         </div>
       </div>
-      <div className="md:col-span-2">
+      <div className="lg:col-span-2">
         <p className="eyebrow">Chance late</p>
         <div className="num mt-3 text-[clamp(3.5rem,6vw,5.5rem)]">
           <Ticker value={v.p_late * 100} format={(x) => `${Math.min(99, Math.round(x))}%`} duration={0.9} />
         </div>
       </div>
-      <div className="md:col-span-3">
+      <div className="lg:col-span-3">
         <p className="eyebrow">Arrives</p>
         <AnimatePresence mode="wait">
           <motion.div
@@ -219,7 +219,7 @@ function Readout({ m }: { m: Moment }) {
         </AnimatePresence>
         <p className="mt-2 font-mono text-xs text-fg-3">Planned {day(v.planned_delivery)}</p>
       </div>
-      <div className="col-span-2 md:col-span-4">
+      <div className="col-span-2 lg:col-span-4">
         <p className="eyebrow">Why</p>
         <AnimatePresence mode="wait">
           <motion.div
