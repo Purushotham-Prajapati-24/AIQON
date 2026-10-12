@@ -25,6 +25,19 @@ Override the API address with `VITE_API_URL=http://host:port`. Force a source wi
 
 To re-record the snapshot after retraining (with the API running): `npm run snapshot`.
 
+## Entry screen
+
+There's no login. The first screen asks **"What do you need today?"** and offers four choices, each showing one live number from the model:
+
+| Choice | Opens on | "Why" wording |
+|---|---|---|
+| Ops planner | 01 Fleet | planner |
+| Customer support | 02 Shipment | customer |
+| Network analyst | 05 Proof | planner |
+| First look | Hero replay | customer |
+
+Press 1–4 to choose. The choice is remembered in this browser; change it with the role button in the top bar. A deep link like `/#alerts` skips the entry screen. Roles are defined in `src/lib/roles.ts`.
+
 ## What's on the page
 
 | Section | Question it answers |

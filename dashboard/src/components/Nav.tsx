@@ -1,5 +1,5 @@
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Repeat2, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useStore } from "../lib/store";
 
@@ -21,7 +21,7 @@ export function Logo({ className = "" }: { className?: string }) {
 }
 
 export function Nav() {
-  const { mode, theme, toggleTheme } = useStore();
+  const { mode, theme, toggleTheme, role, setRole } = useStore();
   const { scrollY, scrollYProgress } = useScroll();
   const [solid, setSolid] = useState(false);
   const [active, setActive] = useState<string | null>(null);
@@ -72,6 +72,20 @@ export function Nav() {
           </ul>
         </nav>
         <div className="ml-auto flex items-center gap-2 md:ml-4">
+          {role && (
+            <button
+              onClick={() => {
+                scrollTo({ top: 0 });
+                setRole(null);
+              }}
+              className="flex items-center gap-2 rounded-[4px] border border-line px-2.5 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-fg-2 transition-colors hover:border-fg-2 hover:text-fg"
+              title="Change what you need"
+            >
+              <Repeat2 size={13} aria-hidden />
+              <span className="hidden lg:inline">{role.name}</span>
+              <span className="sr-only lg:hidden">Change role, now {role.name}</span>
+            </button>
+          )}
           {mode && (
             <span
               className="hidden items-center gap-2 rounded-[4px] border border-line px-2.5 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-fg-2 sm:inline-flex"

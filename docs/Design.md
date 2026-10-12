@@ -496,6 +496,45 @@ Copy rules: durations ≥ 48 h in days with 1 decimal; times in UTC with local t
 
 ---
 
+### 10.5 React dashboard (`dashboard/`, as built)
+
+A second UI, built in React, sits next to the Streamlit control tower. It talks to the same public API (`/v1/*`) and changes no Python code. It is one scrolling page with an entry screen in front.
+
+**Entry screen: "What do you need today?"** There is no login: auth is a non-goal for v1 (§6 of the PRD), and a fake sign-in would only slow a reviewer down. Instead the first screen asks what the visitor came to do, and each choice shows one live number from the model.
+
+| Choice | Persona (PRD §4) | Opens on | "Why" wording | Live number shown |
+|---|---|---|---|---|
+| Ops planner | Priya | 01 Fleet | planner | late shipments now ("23 late of 48") |
+| Customer support | Marco | 02 Shipment | customer | arrival date of SHP-000174 |
+| Network analyst | Lena | 05 Proof | planner | error reduction vs carry-forward |
+| First look | Aiqon reviewer | Hero | customer | the hero shipment's delay in days |
+
+The choice is remembered in the browser (`localStorage`, key `cascade-role`) and can be changed from the top bar. Keys 1–4 pick a role. A deep link such as `/#alerts` skips the entry screen. Roles live in `dashboard/src/lib/roles.ts`.
+
+**Page order** (same story as the demo script: problem → fleet → one shipment → act → prove):
+
+```
+Entry   What do you need today?         4 roles, each with a live number
+Hero    46 hours late at the hub.       Replay of SHP-000174: the delay "cascades" below the plan line
+        10 days late at the door.       stage by stage; solid = happened, hatched = predicted;
+                                        main-cause band; vessel marker; autoplay + scrub (mouse / ← →)
+01 Fleet       N of M shipments will be late · risk mix · map (lanes on sea corridors, one dot per
+               shipment) · "Worst first" list with likely-range strips · 3-week time replay
+02 Shipment    Expected delay · chance late (gauge) · arrival + promise date · cost split ·
+               journey chart · delay by stage · "why" for customer / planner · ranked actions
+03 Fix         What-if switches (port busyness, hub priority, weekend customs, papers) with
+               fixes for finished stages disabled · "If this happens" disruption presets
+04 Alerts      Alert rules rewritten in plain words, urgent first
+05 Proof       Error vs simple rules · error by milestone · ranges that held · right-cause rate ·
+               delay multipliers · honest limits
+```
+
+**Words.** Plain terms replace model terms on screen: *chance late* (P(late > 24 h)), *expected delay* (P50), *likely range* (P10–P90), *hub transfer* (transshipment), *delay multiplier* (Φ), *ranges that held* (coverage).
+
+**Visual language.** Dark "sea-ink" theme with a light "chart paper" theme. One signal orange means *late* and nothing else; status always carries an icon and a word, and the status colours were checked for colour-blind separation. Big Shoulders Display for headlines and figures, IBM Plex Sans / Mono for text and data. Thin rules on a 12-column grid instead of boxed cards. Motion: masked headline reveals, number tickers, chart morphs between milestones; all of it respects `prefers-reduced-motion`.
+
+**Data source.** Live API when `/ready` answers; otherwise `dashboard/public/snapshot/`, which holds real API responses recorded by `npm run snapshot`, so the dashboard also runs as a static site.
+
 ## 11. Decision Layer Design ("Beyond the Brief", `src/cascade/decision/`)
 
 These components sit **after** the model. They are pure functions over `Prediction` objects plus small configs, so they are cheap, testable and identical online and in replay evaluation.
