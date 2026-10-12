@@ -171,6 +171,17 @@ def waterfall_chart(items: list[dict], height: int = 360) -> go.Figure:
         showlegend=False,
         xaxis_title="hours vs plan   (● realized · ◦ forecast)",
     )
+    # A decreasing bar near the left edge puts its "outside" label on top of the axis labels:
+    # widen the x-range on the left so the label stays inside the plot.
+    cum, lo, hi, dec_left = 0.0, 0.0, 0.0, []
+    for m, h in zip(measure, x, strict=True):
+        start, cum = (0.0, h) if m == "total" else (cum, cum + h)
+        lo, hi = min(lo, start, cum), max(hi, start, cum)
+        if m == "relative" and h < 0:
+            dec_left.append(cum)  # left edge of a decreasing bar, where its label goes
+    span = max(hi - lo, 1.0)
+    if dec_left and min(dec_left) - lo < 0.15 * span:
+        fig.update_xaxes(range=[lo - 0.15 * span, hi + 0.12 * span])
     return fig
 
 
