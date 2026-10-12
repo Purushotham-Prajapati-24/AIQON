@@ -1,0 +1,936 @@
+{
+ "accuracy": {
+  "overall": {
+   "cascade": {
+    "mae": 24.49982208079908,
+    "rmse": 50.96179475487343,
+    "medae": 1.545926461576073,
+    "p90ae": 72.0,
+    "bias": -16.51038107302842,
+    "n": 726
+   },
+   "B0_schedule": {
+    "mae": 56.21316157639058,
+    "rmse": 88.49772406422754,
+    "medae": 48.0,
+    "p90ae": 168.0,
+    "bias": -55.873260123364695,
+    "n": 726
+   },
+   "B1_carry_forward": {
+    "mae": 38.376317707916314,
+    "rmse": 64.34792026549195,
+    "medae": 22.440931224798078,
+    "p90ae": 88.73489459495886,
+    "bias": -31.11096036658578,
+    "n": 726
+   },
+   "B2_propagation_prior": {
+    "mae": 34.84874569732251,
+    "rmse": 58.8295796371742,
+    "medae": 19.757237229473937,
+    "p90ae": 79.6444917574907,
+    "bias": -21.150088645405713,
+    "n": 726
+   },
+   "physics_rulebook": {
+    "mae": 24.447186183704417,
+    "rmse": 50.97967991025045,
+    "medae": 0.5671159982812242,
+    "p90ae": 72.0,
+    "bias": -16.49496266282543,
+    "n": 726
+   }
+  },
+  "by_checkpoint_mae": {
+   "cascade": {
+    "0": 53.256549990597286,
+    "1": 45.28274234823481,
+    "2": 34.35668724183453,
+    "3": 42.668571802430485,
+    "4": 23.341883823889557,
+    "5": 12.30031444868581,
+    "6": 8.441636844967073,
+    "7": 0.9989560435530792,
+    "8": 0.9934412203920472
+   },
+   "B0_schedule": {
+    "0": 64.5123381721317,
+    "1": 55.007207845164885,
+    "2": 46.8134972236445,
+    "3": 66.44149332267209,
+    "4": 61.397129450964435,
+    "5": 58.20875882536656,
+    "6": 49.06491824277354,
+    "7": 50.864496495883564,
+    "8": 53.79468272668508
+   },
+   "B1_carry_forward": {
+    "0": 64.5123381721317,
+    "1": 55.264395494915874,
+    "2": 46.23298105451451,
+    "3": 67.00807105617719,
+    "4": 35.16147282537471,
+    "5": 33.79724193432727,
+    "6": 20.52340049558096,
+    "7": 7.4559735300913506,
+    "8": 6.619938463355423
+   },
+   "B2_propagation_prior": {
+    "0": 55.50061836181084,
+    "1": 48.186988015633595,
+    "2": 41.69256068408601,
+    "3": 64.82886848671998,
+    "4": 29.841520364819246,
+    "5": 30.073065345400003,
+    "6": 21.13236950766956,
+    "7": 7.434121684205985,
+    "8": 6.808996906805199
+   },
+   "physics_rulebook": {
+    "0": 53.256549990597286,
+    "1": 45.28274234823481,
+    "2": 34.35668724183453,
+    "3": 42.668571802430485,
+    "4": 23.341883823889557,
+    "5": 12.30031444868581,
+    "6": 8.528826852263851,
+    "7": 0.600345552487337,
+    "8": 0.5385031126056096
+   }
+  },
+  "bootstrap_vs_B1": {
+   "mae_model": [
+    18.14238305838533,
+    32.2493457924347
+   ],
+   "mae_baseline": [
+    29.489470026407492,
+    48.34101369590979
+   ],
+   "improvement": [
+    0.28635401098079116,
+    0.4406030307867554
+   ]
+  },
+  "bootstrap_vs_B2": {
+   "mae_model": [
+    18.14238305838533,
+    32.2493457924347
+   ],
+   "mae_baseline": [
+    27.078899070582256,
+    43.949097557428104
+   ],
+   "improvement": [
+    0.21171428052765634,
+    0.38334258024221185
+   ]
+  },
+  "improvement_vs_B1": 0.3615900757527545,
+  "improvement_vs_B2": 0.2969668896094172,
+  "coverage_p10_p90": {
+   "overall": 0.8154269972451791,
+   "at_port": 0.8447488584474886,
+   "at_sea": 0.7814814814814814,
+   "post_customs": 0.8888888888888888,
+   "pre_departure": 0.7751937984496124
+  },
+  "interval_width_h": {
+   "overall": 88.73949971592758,
+   "at_port": 54.0651014647844,
+   "at_sea": 114.05602949523082,
+   "post_customs": 13.07909261532531,
+   "pre_departure": 157.96084966517975
+  },
+  "classification": {
+   "tau_24": {
+    "overall": {
+     "brier": 0.18166874583083506,
+     "base_rate": 0.5330578512396694,
+     "n": 726,
+     "pr_auc": 0.8490673919620504,
+     "roc_auc": 0.8116172356756838
+    },
+    "checkpoint_2": {
+     "brier": 0.24498753482996324,
+     "base_rate": 0.49504950495049505,
+     "n": 101,
+     "pr_auc": 0.6058676641841431,
+     "roc_auc": 0.6415686274509804
+    },
+    "checkpoint_5": {
+     "brier": 0.1436484960226798,
+     "base_rate": 0.5,
+     "n": 128,
+     "pr_auc": 0.9033844335600867,
+     "roc_auc": 0.870849609375
+    }
+   },
+   "tau_48": {
+    "overall": {
+     "brier": 0.1478746794939573,
+     "base_rate": 0.371900826446281,
+     "n": 726,
+     "pr_auc": 0.7719235305935396,
+     "roc_auc": 0.8495979532163743
+    },
+    "checkpoint_2": {
+     "brier": 0.19999292837466245,
+     "base_rate": 0.32673267326732675,
+     "n": 101,
+     "pr_auc": 0.49220555836025826,
+     "roc_auc": 0.6927361853832442
+    },
+    "checkpoint_5": {
+     "brier": 0.06347590652031349,
+     "base_rate": 0.3671875,
+     "n": 128,
+     "pr_auc": 0.9308510638297872,
+     "roc_auc": 0.9743892828999213
+    }
+   }
+  },
+  "reliability": {
+   "bin_mean_pred": [
+    0.05697354741948997,
+    0.1859758081910459,
+    0.3186568759641421,
+    0.4387155187269262,
+    0.5607492750647121,
+    0.6842656059983758,
+    0.8181883782474966,
+    0.965787099816418
+   ],
+   "bin_frac_pos": [
+    0.12941176470588237,
+    0.3142857142857143,
+    0.26595744680851063,
+    0.6209677419354839,
+    0.5777777777777777,
+    0.8548387096774194,
+    0.8867924528301887,
+    1.0
+   ],
+   "bin_n": [
+    85,
+    140,
+    94,
+    124,
+    90,
+    62,
+    53,
+    78
+   ],
+   "ece": 0.09653770961510486
+  },
+  "n_test_rows": 726,
+  "n_test_shipments": 62
+ },
+ "attribution_fidelity": {
+  "n": 347,
+  "n_major": 202,
+  "accuracy": {
+   "shap_top1": 0.42363112391930835,
+   "shap_top2": 0.7002881844380403,
+   "stage_forecast_top1": 0.44668587896253603,
+   "lane_prior_top1": 0.2622478386167147,
+   "random_top1": 0.15561959654178675,
+   "shap_top1_major_delays": 0.504950495049505,
+   "lift_vs_lane_prior": 0.16138328530259366
+  },
+  "true_root_distribution": {
+   "PORT": 148,
+   "CUSTOMS": 93,
+   "TRANSSHIPMENT": 51,
+   "ORIGIN": 35,
+   "INLAND": 12,
+   "OCEAN": 8
+  },
+  "confusion_true_vs_shap": {
+   "CUSTOMS": {
+    "CUSTOMS": 17,
+    "INLAND": 2,
+    "OCEAN": 0,
+    "ORIGIN": 4,
+    "PORT": 32,
+    "TRANSSHIPMENT": 2
+   },
+   "INLAND": {
+    "CUSTOMS": 3,
+    "INLAND": 3,
+    "OCEAN": 0,
+    "ORIGIN": 1,
+    "PORT": 17,
+    "TRANSSHIPMENT": 0
+   },
+   "NONE": {
+    "CUSTOMS": 1,
+    "INLAND": 0,
+    "OCEAN": 0,
+    "ORIGIN": 0,
+    "PORT": 5,
+    "TRANSSHIPMENT": 0
+   },
+   "OCEAN": {
+    "CUSTOMS": 0,
+    "INLAND": 0,
+    "OCEAN": 2,
+    "ORIGIN": 2,
+    "PORT": 3,
+    "TRANSSHIPMENT": 0
+   },
+   "ORIGIN": {
+    "CUSTOMS": 3,
+    "INLAND": 0,
+    "OCEAN": 0,
+    "ORIGIN": 4,
+    "PORT": 0,
+    "TRANSSHIPMENT": 0
+   },
+   "PORT": {
+    "CUSTOMS": 46,
+    "INLAND": 3,
+    "OCEAN": 0,
+    "ORIGIN": 9,
+    "PORT": 74,
+    "TRANSSHIPMENT": 2
+   },
+   "TRANSSHIPMENT": {
+    "CUSTOMS": 23,
+    "INLAND": 4,
+    "OCEAN": 6,
+    "ORIGIN": 15,
+    "PORT": 17,
+    "TRANSSHIPMENT": 47
+   }
+  }
+ },
+ "propagation_fidelity": {
+  "delta_h": 12.0,
+  "n": 190,
+  "spearman": 0.46071699184846027,
+  "mae": 1.5702047839810793,
+  "by_event": {
+   "ARRIVE_DEST_PORT": {
+    "phi_hat": 1.266,
+    "phi_true": 1.585
+   },
+   "ARRIVE_TS": {
+    "phi_hat": 2.0,
+    "phi_true": 2.386
+   },
+   "DEPART_ORIGIN": {
+    "phi_hat": 1.708,
+    "phi_true": 1.897
+   },
+   "DISCHARGED": {
+    "phi_hat": 0.778,
+    "phi_true": 0.76
+   }
+  },
+  "matrix": [
+   {
+    "lane_id": "CNSHA-MYTPP-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": -0.985,
+    "phi_true": -1.943
+   },
+   {
+    "lane_id": "CNSHA-MYTPP-NLRTM",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 0.0
+   },
+   {
+    "lane_id": "CNSHA-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.667,
+    "phi_true": 1.333
+   },
+   {
+    "lane_id": "CNSHA-NLRTM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.667,
+    "phi_true": 1.333
+   },
+   {
+    "lane_id": "CNSHA-NLRTM",
+    "event": "DISCHARGED",
+    "phi_hat": 0.667,
+    "phi_true": 1.333
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 6.0,
+    "phi_true": 4.825
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 0.0
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.0,
+    "phi_true": 0.0
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "DISCHARGED",
+    "phi_hat": 1.0,
+    "phi_true": 0.825
+   },
+   {
+    "lane_id": "CNSHA-USLAX",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.333,
+    "phi_true": 1.0
+   },
+   {
+    "lane_id": "CNSHA-USLAX",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 2.0,
+    "phi_true": 0.8
+   },
+   {
+    "lane_id": "CNSHA-USLAX",
+    "event": "DISCHARGED",
+    "phi_hat": 0.8,
+    "phi_true": 0.4
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.5,
+    "phi_true": 1.5
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 1.0
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.0,
+    "phi_true": 1.0
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "DISCHARGED",
+    "phi_hat": 0.4,
+    "phi_true": 0.4
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.0,
+    "phi_true": 0.169
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 5.354
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.667,
+    "phi_true": 4.923
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "DISCHARGED",
+    "phi_hat": 0.0,
+    "phi_true": 0.0
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.0,
+    "phi_true": 0.907
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "ARRIVE_TS",
+    "phi_hat": 12.667,
+    "phi_true": 4.667
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 4.0,
+    "phi_true": 4.667
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "DISCHARGED",
+    "phi_hat": 0.0,
+    "phi_true": 0.36
+   },
+   {
+    "lane_id": "INNSA-DEHAM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 1.622,
+    "phi_true": 0.911
+   },
+   {
+    "lane_id": "INNSA-DEHAM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 2.0,
+    "phi_true": 0.0
+   },
+   {
+    "lane_id": "INNSA-DEHAM",
+    "event": "DISCHARGED",
+    "phi_hat": 1.0,
+    "phi_true": 0.0
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 2.8,
+    "phi_true": 4.4
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "ARRIVE_TS",
+    "phi_hat": -0.8,
+    "phi_true": 0.0
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.333,
+    "phi_true": 0.0
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "DISCHARGED",
+    "phi_hat": 0.0,
+    "phi_true": 1.084
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 2.0,
+    "phi_true": 1.883
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "ARRIVE_TS",
+    "phi_hat": 1.538,
+    "phi_true": 1.562
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.333,
+    "phi_true": 1.692
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "DISCHARGED",
+    "phi_hat": 1.5,
+    "phi_true": 1.015
+   },
+   {
+    "lane_id": "KRPUS-USLAX",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 2.0,
+    "phi_true": 3.0
+   },
+   {
+    "lane_id": "KRPUS-USLAX",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 2.0,
+    "phi_true": 0.667
+   },
+   {
+    "lane_id": "KRPUS-USLAX",
+    "event": "DISCHARGED",
+    "phi_hat": 2.0,
+    "phi_true": 0.643
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.571,
+    "phi_true": 1.143
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "ARRIVE_TS",
+    "phi_hat": 4.0,
+    "phi_true": 4.667
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 4.4,
+    "phi_true": 5.6
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "DISCHARGED",
+    "phi_hat": 0.301,
+    "phi_true": 1.135
+   }
+  ]
+ },
+ "advisor_fidelity": {
+  "n": 130,
+  "spearman": 0.4275881493498343,
+  "sign_agreement": 0.7153846153846154,
+  "by_action": {
+   "hub_priority": {
+    "model_hours_saved": 18.86,
+    "true_hours_saved": 34.29
+   },
+   "prefile_docs": {
+    "model_hours_saved": 3.0,
+    "true_hours_saved": 18.44
+   },
+   "priority_berth": {
+    "model_hours_saved": 10.84,
+    "true_hours_saved": 21.32
+   },
+   "rail_to_truck": {
+    "model_hours_saved": 29.12,
+    "true_hours_saved": 27.16
+   },
+   "weekend_customs": {
+    "model_hours_saved": 30.0,
+    "true_hours_saved": 6.0
+   }
+  }
+ },
+ "decision": {
+  "promise_changes_per_shipment": 1.5806451612903225,
+  "raw_eta_day_changes_per_shipment": 1.903225806451613,
+  "promise_flip_ratio": 0.8305084745762712,
+  "promise_hit_rate": 0.8726318484383,
+  "raw_eta_reversals_per_shipment": 0.7903225806451613,
+  "promise_reversals_per_shipment": 0.6129032258064516,
+  "late_alert_recall": 1.0,
+  "late_alert_precision": 0.7948717948717948,
+  "alert_lead_ge_48h_share": 0.967741935483871,
+  "median_alert_lead_h": 814.4387451823286,
+  "alerts_per_shipment": 3.370967741935484
+ },
+ "group_importance": {
+  "ORIGIN": 0.3782041533627211,
+  "OCEAN": 3.4221314821680595,
+  "TRANSSHIPMENT": 8.781523993096991,
+  "PORT": 9.749603084643303,
+  "CUSTOMS": 12.28876697180517,
+  "INLAND": 6.363970628139147,
+  "CONTEXT": 0.0,
+  "DATA_QUALITY": 0.0
+ },
+ "model_selection": {
+  "shrink": 0.0,
+  "late_blend": 0.5,
+  "shrink_mae": {
+   "0.0": 24.636872304683916,
+   "0.25": 24.91433043808873,
+   "0.5": 25.24738429924082,
+   "0.75": 25.61132444150311,
+   "1.0": 26.004861483483793
+  },
+  "late_blend_brier": {
+   "0.0": 0.2143525000993379,
+   "0.5": 0.14345687833229392,
+   "1.0": 0.1631290432898509
+  },
+  "temporal_offsets": {
+   "__global__": 16.979498971931775,
+   "at_port": 3.474308520263097,
+   "at_sea": 28.65858708437329,
+   "post_customs": 0.0,
+   "pre_departure": 48.69308416280995
+  },
+  "oof_offsets": {
+   "__global__": 8.45478947212141,
+   "at_port": 9.323116117813926,
+   "at_sea": 12.16968267836671,
+   "post_customs": 0.9251066349579412,
+   "pre_departure": 17.160965130802424
+  }
+ },
+ "robustness": {
+  "0.0": {
+   "mae": 24.168552066225473,
+   "mae_B1": 38.38071589576993,
+   "coverage": 0.8168044077134986
+  },
+  "0.1": {
+   "mae": 24.363612683652708,
+   "mae_B1": 38.10926976285791,
+   "coverage": 0.8270348837209303
+  },
+  "0.3": {
+   "mae": 28.576655853301222,
+   "mae_B1": 39.783242714693536,
+   "coverage": 0.8317460317460318
+  },
+  "0.5": {
+   "mae": 32.39728653024936,
+   "mae_B1": 42.078630800284934,
+   "coverage": 0.8297491039426523
+  }
+ },
+ "ablations": {
+  "no_propagation_features": {
+   "mae": 35.05036147099689,
+   "coverage": 0.6955922865013774
+  },
+  "no_priors": {
+   "mae": 24.50729213448944,
+   "coverage": 0.8250688705234159
+  },
+  "no_data_quality": {
+   "mae": 24.485030689344413,
+   "coverage": 0.8140495867768595
+  }
+ },
+ "checks": {
+  "waterfall_checked": 261,
+  "waterfall_additivity_violations": 0,
+  "latency_p50_ms": 7.228099973872304,
+  "latency_p95_ms": 8.467359977657907
+ },
+ "headline": {
+  "mae_cascade_h": 24.49982208079908,
+  "mae_B1_h": 38.376317707916314,
+  "mae_B2_h": 34.84874569732251,
+  "mae_improvement_vs_B1": 0.3615900757527545,
+  "mae_improvement_vs_B1_ci95": [
+   0.28635401098079116,
+   0.4406030307867554
+  ],
+  "mae_improvement_vs_B2": 0.2969668896094172,
+  "coverage_p10_p90_overall": 0.8154269972451791,
+  "brier_tau24": 0.18166874583083506,
+  "pr_auc_tau24": 0.8490673919620504,
+  "pr_auc_tau24_at_arrival": 0.9033844335600867,
+  "attribution_top1": 0.42363112391930835,
+  "attribution_top2": 0.7002881844380403,
+  "attribution_top1_major": 0.504950495049505,
+  "attribution_lift_vs_lane_prior": 0.16138328530259366,
+  "propagation_spearman": 0.46071699184846027,
+  "advisor_spearman": 0.4275881493498343,
+  "alert_lead_ge_48h_share": 0.967741935483871,
+  "promise_flip_ratio": 0.8305084745762712,
+  "promise_hit_rate": 0.8726318484383,
+  "promise_reversals_per_shipment": 0.6129032258064516,
+  "raw_eta_reversals_per_shipment": 0.7903225806451613,
+  "latency_p95_ms": 8.467359977657907,
+  "waterfall_additivity_violations": 0
+ },
+ "gates": {
+  "mae_improvement_vs_B1": {
+   "value": 0.3615900757527545,
+   "rule": ">= 0.15",
+   "pass": true
+  },
+  "coverage_p10_p90_overall": {
+   "value": 0.8154269972451791,
+   "rule": "between (0.7, 0.9)",
+   "pass": true
+  },
+  "brier_tau24": {
+   "value": 0.18166874583083506,
+   "rule": "<= 0.2",
+   "pass": true
+  },
+  "attribution_lift_vs_lane_prior": {
+   "value": 0.16138328530259366,
+   "rule": ">= 0.1",
+   "pass": true
+  },
+  "waterfall_additivity_violations": {
+   "value": 0,
+   "rule": "<= 0",
+   "pass": true
+  },
+  "latency_p95_ms": {
+   "value": 8.467359977657907,
+   "rule": "< 50.0",
+   "pass": true
+  }
+ },
+ "meta": {
+  "seed": 42,
+  "n_shipments": 300,
+  "version": "1.0.0",
+  "late_rate": 0.38333333333333336,
+  "n_rows": 3397,
+  "train_config": {
+   "target_mode": "residual",
+   "n_estimators": 300,
+   "learning_rate": 0.04,
+   "num_leaves": 15,
+   "max_depth": 5,
+   "min_data_in_leaf": 20,
+   "feature_fraction": 0.8,
+   "bagging_fraction": 0.8,
+   "lambda_l2": 1.0,
+   "monotone": true,
+   "stage_models": true,
+   "late_threshold_h": 24,
+   "alpha": 0.2,
+   "seed": 0,
+   "exclude_features": []
+  },
+  "runtime_s": 57.7,
+  "world_now_h": 7471.541501720844
+ },
+ "example": {
+  "shipment_id": "SHP-000174",
+  "lane_id": "CNSHA-MYTPP-NLRTM",
+  "model_version": "1.0.0",
+  "as_of": "2025-10-10T07:21:27.291172Z",
+  "checkpoint": "AFTER_ARRIVE_TS",
+  "planned_delivery": "2025-11-05T07:00:00Z",
+  "eta": {
+   "p10": "2025-11-08T02:56:33.230513Z",
+   "p50": "2025-11-12T07:00:00Z",
+   "p90": "2025-11-14T05:40:54.063450Z"
+  },
+  "delay_hours": {
+   "observed": 45.9,
+   "p10": 67.94,
+   "p50": 168.0,
+   "p90": 214.68
+  },
+  "p_late": 0.8265,
+  "risk_tier": "LATE",
+  "stage_forecast_hours": {
+   "ORIGIN": 0.0,
+   "OCEAN": -9.0,
+   "TRANSSHIPMENT": 86.85,
+   "PORT": 9.67,
+   "CUSTOMS": 27.49,
+   "INLAND": 7.08
+  },
+  "cost_usd": {
+   "p10": 521.0,
+   "p50": 779.0,
+   "p50_demurrage": 0.0,
+   "p50_detention": 13.0,
+   "p50_missed_appointment": 350,
+   "p50_inventory_carry": 416.0,
+   "p90": 900.0
+  },
+  "promise": null,
+  "flags": {
+   "degraded": false,
+   "reason": null,
+   "cold_start": false,
+   "missing_events": [
+    "GATE_IN_ORIGIN",
+    "DEPART_ORIGIN"
+   ],
+   "out_of_distribution": false
+  },
+  "timing_ms": {
+   "explain": 2.979,
+   "features": 0.38,
+   "inference": 3.861,
+   "total": 7.35
+  },
+  "narrative": "SHP-000174 is expected 7.0 days late (likely 2.8 days\u20138.9 days late); 83% chance of more than 24 h late. Already 46 h behind plan. Main driver: Transshipment \u2014 projected to reach Tanjung Pelepas after the connection cut-off (buffer short by 36 h) (+126 h). Also contributing: Customs \u2014 customs release projected to fall outside office hours / on a non-working day at Rotterdam (+12 h). Suggested action: Check the next sailing from the hub and consider re-booking or priority loading. Confidence is reduced: 2 milestone(s) missing from the feed.",
+  "drivers": [
+   {
+    "group": "TRANSSHIPMENT",
+    "label": "Transshipment",
+    "contribution_h": 125.65471912381972,
+    "top_feature": "proj_inc_hub_h",
+    "value": 125.65471912381972,
+    "phrase": "projected to reach Tanjung Pelepas after the connection cut-off (buffer short by 36 h)"
+   },
+   {
+    "group": "OCEAN",
+    "label": "Ocean transit",
+    "contribution_h": -24.672430864051535,
+    "top_feature": "proj_inc_ocean_h",
+    "value": -24.672430864051535,
+    "phrase": "weather along the remaining sea route (severity 0.14)"
+   },
+   {
+    "group": "CUSTOMS",
+    "label": "Customs",
+    "contribution_h": 12.133492382431456,
+    "top_feature": "proj_inc_customs_h",
+    "value": 12.133492382431456,
+    "phrase": "customs release projected to fall outside office hours / on a non-working day at Rotterdam"
+   },
+   {
+    "group": "PORT",
+    "label": "Destination port",
+    "contribution_h": 5.8911885488624876,
+    "top_feature": "proj_inc_port_h",
+    "value": 5.8911885488624876,
+    "phrase": "Rotterdam berth utilisation forecast at 75%; arriving 147 h late risks losing the berth window"
+   },
+   {
+    "group": "INLAND",
+    "label": "Inland & delivery",
+    "contribution_h": 3.092116594547406,
+    "top_feature": "proj_inc_inland_h",
+    "value": 3.092116594547406,
+    "phrase": "inland leg and consignee receiving window"
+   }
+  ],
+  "root_cause_group": "TRANSSHIPMENT",
+  "waterfall": [
+   {
+    "label": "Pre-carriage to origin terminal \u2192 Ocean leg to hub (milestones missing)",
+    "hours": 45.90091421439047,
+    "kind": "realized"
+   },
+   {
+    "label": "Typical remaining delay",
+    "hours": 0.0,
+    "kind": "baseline"
+   },
+   {
+    "label": "Transshipment",
+    "hours": 125.65471912381972,
+    "kind": "forecast"
+   },
+   {
+    "label": "Ocean transit",
+    "hours": -24.672430864051535,
+    "kind": "forecast"
+   },
+   {
+    "label": "Customs",
+    "hours": 12.133492382431456,
+    "kind": "forecast"
+   },
+   {
+    "label": "Destination port",
+    "hours": 5.8911885488624876,
+    "kind": "forecast"
+   },
+   {
+    "label": "Inland & delivery",
+    "hours": 3.092116594547406,
+    "kind": "forecast"
+   },
+   {
+    "label": "Expected total delay (P50)",
+    "hours": 168.0,
+    "kind": "total"
+   }
+  ]
+ }
+}

@@ -1,0 +1,30 @@
+# CASCADE control tower (Streamlit). Talks to the API over HTTP only.
+# Build from the repo root:  docker build -f docker/Dockerfile.ui -t cascade-ui .
+
+FROM python:3.12-slim AS builder
+ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+WORKDIR /app
+COPY pyproject.toml README.md ./
+COPY src/ src/
+RUN pip install ".[ui]"
+
+FROM python:3.12-slim AS runtime
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libgomp1 \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --create-home --uid 10001 cascade
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    CASCADE_API_URL=http://api:8000
+WORKDIR /app
+COPY --from=builder /opt/venv /opt/venv
+COPY --chown=cascade:cascade app/ app/
+COPY --chown=cascade:cascade .streamlit/ .streamlit/
+USER cascade
+EXPOSE 8501
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
+  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=4).status == 200 else 1)"
+CMD ["streamlit", "run", "app/Home.py", "--server.port=8501", "--server.address=0.0.0.0"]

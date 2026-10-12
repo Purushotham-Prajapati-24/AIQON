@@ -1,0 +1,36 @@
+# Run from the repo root:  docker compose -f docker/compose.yaml up --build
+# API:  http://localhost:8000/docs     UI:  http://localhost:8501
+# Different host ports:  CASCADE_API_PORT=8200 CASCADE_UI_PORT=8701 docker compose ... up
+name: cascade
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    image: cascade-api:1.0.0
+    ports:
+      - "${CASCADE_API_PORT:-8000}:8000"
+    environment:
+      CASCADE_MODEL_VERSION: latest
+    volumes:
+      # Published model bundles, mounted read-only (also baked into the image as a fallback).
+      - ../artifacts:/app/artifacts:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ui
+    image: cascade-ui:1.0.0
+    ports:
+      - "${CASCADE_UI_PORT:-8501}:8501"
+    environment:
+      CASCADE_API_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

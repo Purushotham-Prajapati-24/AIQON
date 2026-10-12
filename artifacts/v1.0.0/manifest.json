@@ -1,0 +1,88 @@
+{
+ "schema_version": 1,
+ "version": "1.0.0",
+ "created_at": "2026-10-12T18:34:02+00:00",
+ "git_sha": "uncommitted",
+ "feature_hash": "c29c39bf7296cd76",
+ "files": {
+  "external.npz": "856b8b645aad36995bde82c1c27e6a54cf00adabde1c04f76739db30f811c023",
+  "insights.json": "37d32a4dbacc25557a02202422a1a25e6d323a285f18dda79e4b2d5b685be6bc",
+  "model.json": "549605d772849ebef4ad233bd00712a8c49b3eadf71ec42573cf0edf5c9f100f",
+  "models/clf.txt": "0c536d76ac23376f80f1b32a54a65e0203251479c8409cf4e1a694ef9e39fa0e",
+  "models/q10.txt": "ae31191455393dec8f8d446c947c5b0be0fa601d9d08f38c706104d555efe35d",
+  "models/q50.txt": "7f29dcf7c1e79e6bab694d69036fda89b6ff435b1368755c065a540f219ea473",
+  "models/q90.txt": "9a7a8868ab7a4a5242537958a7ff21f7326c2749e6944a17e1d89eede65bcac8",
+  "models/stage_CUSTOMS.txt": "0e9b97a5915e70f3bff919c05515bd0868bacdc6ec2f726182ef49969181c65f",
+  "models/stage_INLAND.txt": "a7f5d362c2d121a04a154f9fd4e012743115c658d202e72068f02e60bbb493f1",
+  "models/stage_OCEAN.txt": "e74001e051f8d8416c31fa22a8be09d1abaee367ceeefc39edfd3a5d56df39dd",
+  "models/stage_ORIGIN.txt": "50e907c6f3ead4155868ab2de17521d1fe89c7973f9137a23a9b0687834cff46",
+  "models/stage_PORT.txt": "63f31b917addbab7dd4c507ddea0fd23308deeb2180b8d200d911dc63d680f92",
+  "models/stage_TRANSSHIPMENT.txt": "a6a325f48c6d1ed0556e434b6e58a1c202566364ea8d093b2f0d9161521556a2",
+  "world_events.csv": "19d62e30fd5ac92d1c00edfa394a4d63c8d6c6a613beaa77f46e58327e672bab",
+  "world_now.txt": "81955a0110db422d66d64fdd93342643c6028bcd2278274c34795a41438baf1d",
+  "world_shipments.csv": "bbde06583691dda827b7fbc9e607c2608304387b949a08b955fa135d9281ac88"
+ },
+ "metrics": {
+  "mae_cascade_h": 24.49982208079908,
+  "mae_B1_h": 38.376317707916314,
+  "mae_B2_h": 34.84874569732251,
+  "mae_improvement_vs_B1": 0.3615900757527545,
+  "mae_improvement_vs_B1_ci95": [
+   0.28635401098079116,
+   0.4406030307867554
+  ],
+  "mae_improvement_vs_B2": 0.2969668896094172,
+  "coverage_p10_p90_overall": 0.8154269972451791,
+  "brier_tau24": 0.18166874583083506,
+  "pr_auc_tau24": 0.8490673919620504,
+  "pr_auc_tau24_at_arrival": 0.9033844335600867,
+  "attribution_top1": 0.42363112391930835,
+  "attribution_top2": 0.7002881844380403,
+  "attribution_top1_major": 0.504950495049505,
+  "attribution_lift_vs_lane_prior": 0.16138328530259366,
+  "propagation_spearman": 0.46071699184846027,
+  "advisor_spearman": 0.4275881493498343,
+  "alert_lead_ge_48h_share": 0.967741935483871,
+  "promise_flip_ratio": 0.8305084745762712,
+  "promise_hit_rate": 0.8726318484383,
+  "promise_reversals_per_shipment": 0.6129032258064516,
+  "raw_eta_reversals_per_shipment": 0.7903225806451613,
+  "latency_p95_ms": 8.467359977657907,
+  "waterfall_additivity_violations": 0
+ },
+ "gates": {
+  "mae_improvement_vs_B1": {
+   "value": 0.3615900757527545,
+   "rule": ">= 0.15",
+   "pass": true
+  },
+  "coverage_p10_p90_overall": {
+   "value": 0.8154269972451791,
+   "rule": "between (0.7, 0.9)",
+   "pass": true
+  },
+  "brier_tau24": {
+   "value": 0.18166874583083506,
+   "rule": "<= 0.2",
+   "pass": true
+  },
+  "attribution_lift_vs_lane_prior": {
+   "value": 0.16138328530259366,
+   "rule": ">= 0.1",
+   "pass": true
+  },
+  "waterfall_additivity_violations": {
+   "value": 0,
+   "rule": "<= 0",
+   "pass": true
+  },
+  "latency_p95_ms": {
+   "value": 8.467359977657907,
+   "rule": "< 50.0",
+   "pass": true
+  }
+ },
+ "gates_passed": true,
+ "data_seed": 42,
+ "n_shipments": 300
+}

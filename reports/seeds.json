@@ -1,0 +1,231 @@
+{
+ "seeds": "42,7,11,23,99",
+ "summary": {
+  "mae_cascade_h": {
+   "mean": 25.805028549050597,
+   "sd": 3.9313697508559926
+  },
+  "mae_B1_h": {
+   "mean": 35.88624814639793,
+   "sd": 4.8361445420261635
+  },
+  "mae_B2_h": {
+   "mean": 33.29791137208573,
+   "sd": 4.2411470060441685
+  },
+  "mae_improvement_vs_B1": {
+   "mean": 0.28020672526845125,
+   "sd": 0.05469884445330082
+  },
+  "mae_improvement_vs_B2": {
+   "mean": 0.22481816608512378,
+   "sd": 0.06210451447023853
+  },
+  "coverage_p10_p90_overall": {
+   "mean": 0.803880373025643,
+   "sd": 0.034358541511333746
+  },
+  "brier_tau24": {
+   "mean": 0.16275802996952468,
+   "sd": 0.018509466000858524
+  },
+  "pr_auc_tau24": {
+   "mean": 0.8658157738517238,
+   "sd": 0.018203316756392363
+  },
+  "pr_auc_tau24_at_arrival": {
+   "mean": 0.9148520897839878,
+   "sd": 0.03837513267367349
+  },
+  "attribution_top1": {
+   "mean": 0.4734378788771381,
+   "sd": 0.03843939382109915
+  },
+  "attribution_top2": {
+   "mean": 0.6832248521696032,
+   "sd": 0.03066218367932521
+  },
+  "attribution_top1_major": {
+   "mean": 0.5334987709670154,
+   "sd": 0.05811265198749348
+  },
+  "attribution_lift_vs_lane_prior": {
+   "mean": 0.0904763191154628,
+   "sd": 0.06734702647917429
+  },
+  "propagation_spearman": {
+   "mean": 0.3495156567715617,
+   "sd": 0.05923725315876735
+  },
+  "advisor_spearman": {
+   "mean": 0.44296189532223257,
+   "sd": 0.15942343156758365
+  },
+  "alert_lead_ge_48h_share": {
+   "mean": 0.868363201911589,
+   "sd": 0.10590536696435437
+  },
+  "promise_flip_ratio": {
+   "mean": 0.8644472116587576,
+   "sd": 0.02939530089785443
+  },
+  "promise_hit_rate": {
+   "mean": 0.8650950411698064,
+   "sd": 0.019217672239234564
+  },
+  "promise_reversals_per_shipment": {
+   "mean": 0.5101986855027574,
+   "sd": 0.09428603619899273
+  },
+  "raw_eta_reversals_per_shipment": {
+   "mean": 0.6232655939160434,
+   "sd": 0.11467826997762527
+  },
+  "latency_p95_ms": {
+   "mean": 6.066627016989514,
+   "sd": 2.6555370558482925
+  }
+ },
+ "runs": [
+  {
+   "mae_cascade_h": 24.49982208079908,
+   "mae_B1_h": 38.376317707916314,
+   "mae_B2_h": 34.84874569732251,
+   "mae_improvement_vs_B1": 0.3615900757527545,
+   "mae_improvement_vs_B1_ci95": [
+    0.28635401098079116,
+    0.4406030307867554
+   ],
+   "mae_improvement_vs_B2": 0.2969668896094172,
+   "coverage_p10_p90_overall": 0.8154269972451791,
+   "brier_tau24": 0.18166874583083506,
+   "pr_auc_tau24": 0.8490673919620504,
+   "pr_auc_tau24_at_arrival": 0.9033844335600867,
+   "attribution_top1": 0.42363112391930835,
+   "attribution_top2": 0.7002881844380403,
+   "attribution_top1_major": 0.504950495049505,
+   "attribution_lift_vs_lane_prior": 0.16138328530259366,
+   "propagation_spearman": 0.46071699184846027,
+   "advisor_spearman": 0.4275881493498343,
+   "alert_lead_ge_48h_share": 0.967741935483871,
+   "promise_flip_ratio": 0.8305084745762712,
+   "promise_hit_rate": 0.8726318484383,
+   "promise_reversals_per_shipment": 0.6129032258064516,
+   "raw_eta_reversals_per_shipment": 0.7903225806451613,
+   "latency_p95_ms": 8.470500001567416,
+   "waterfall_additivity_violations": 0
+  },
+  {
+   "mae_cascade_h": 21.465059819538617,
+   "mae_B1_h": 31.3657582897079,
+   "mae_B2_h": 30.455666714705384,
+   "mae_improvement_vs_B1": 0.31565308827295335,
+   "mae_improvement_vs_B1_ci95": [
+    0.1738749248651487,
+    0.4351548051298327
+   ],
+   "mae_improvement_vs_B2": 0.2952030891126639,
+   "coverage_p10_p90_overall": 0.8659942363112392,
+   "brier_tau24": 0.13039256295890372,
+   "pr_auc_tau24": 0.8861132418254819,
+   "pr_auc_tau24_at_arrival": 0.9718429182165076,
+   "attribution_top1": 0.5263157894736842,
+   "attribution_top2": 0.7236842105263158,
+   "attribution_top1_major": 0.5695364238410596,
+   "attribution_lift_vs_lane_prior": 0.09539473684210525,
+   "propagation_spearman": 0.32578149979415294,
+   "advisor_spearman": 0.6374189911171991,
+   "alert_lead_ge_48h_share": 0.9166666666666666,
+   "promise_flip_ratio": 0.8378378378378378,
+   "promise_hit_rate": 0.8878328213005632,
+   "promise_reversals_per_shipment": 0.5483870967741935,
+   "raw_eta_reversals_per_shipment": 0.6451612903225806,
+   "latency_p95_ms": 2.8275150398258115,
+   "waterfall_additivity_violations": 0
+  },
+  {
+   "mae_cascade_h": 25.194218922963625,
+   "mae_B1_h": 34.76925223389805,
+   "mae_B2_h": 31.781394686155235,
+   "mae_improvement_vs_B1": 0.2753879561896161,
+   "mae_improvement_vs_B1_ci95": [
+    0.15567133328408717,
+    0.37590317919083344
+   ],
+   "mae_improvement_vs_B2": 0.2072651571222942,
+   "coverage_p10_p90_overall": 0.7870239774330042,
+   "brier_tau24": 0.15499644308475402,
+   "pr_auc_tau24": 0.8594715006927885,
+   "pr_auc_tau24_at_arrival": 0.854113078793423,
+   "attribution_top1": 0.49169435215946844,
+   "attribution_top2": 0.6910299003322259,
+   "attribution_top1_major": 0.5058139534883721,
+   "attribution_lift_vs_lane_prior": 0.1661129568106312,
+   "propagation_spearman": 0.3205838492726573,
+   "advisor_spearman": 0.2887549565073662,
+   "alert_lead_ge_48h_share": 0.9629629629629629,
+   "promise_flip_ratio": 0.88,
+   "promise_hit_rate": 0.8803827444956477,
+   "promise_reversals_per_shipment": 0.3709677419354839,
+   "raw_eta_reversals_per_shipment": 0.5161290322580645,
+   "latency_p95_ms": 2.8089150233427063,
+   "waterfall_additivity_violations": 1
+  },
+  {
+   "mae_cascade_h": 33.22240825022682,
+   "mae_B1_h": 43.94476160315336,
+   "mae_B2_h": 40.75212892163736,
+   "mae_improvement_vs_B1": 0.243996166135923,
+   "mae_improvement_vs_B1_ci95": [
+    0.1034987006873006,
+    0.34643541338918327
+   ],
+   "mae_improvement_vs_B2": 0.1847687684216328,
+   "coverage_p10_p90_overall": 0.7780859916782247,
+   "brier_tau24": 0.17672434566470735,
+   "pr_auc_tau24": 0.8457639866837203,
+   "pr_auc_tau24_at_arrival": 0.913004744956424,
+   "attribution_top1": 0.4906166219839142,
+   "attribution_top2": 0.6675603217158177,
+   "attribution_top1_major": 0.6266666666666667,
+   "attribution_lift_vs_lane_prior": 0.029490616621983934,
+   "propagation_spearman": 0.3523880507169622,
+   "advisor_spearman": 0.25032929395280606,
+   "alert_lead_ge_48h_share": 0.8,
+   "promise_flip_ratio": 0.8623853211009175,
+   "promise_hit_rate": 0.8430587049634669,
+   "promise_reversals_per_shipment": 0.42857142857142855,
+   "raw_eta_reversals_per_shipment": 0.47619047619047616,
+   "latency_p95_ms": 8.120920020155609,
+   "waterfall_additivity_violations": 0
+  },
+  {
+   "mae_cascade_h": 24.643633671724828,
+   "mae_B1_h": 30.97515089731401,
+   "mae_B2_h": 28.651620840608146,
+   "mae_improvement_vs_B1": 0.2044063399910092,
+   "mae_improvement_vs_B1_ci95": [
+    0.1012943027179564,
+    0.2973683370035487
+   ],
+   "mae_improvement_vs_B2": 0.13988692615961085,
+   "coverage_p10_p90_overall": 0.7728706624605678,
+   "brier_tau24": 0.1700080523084233,
+   "pr_auc_tau24": 0.8886627480945771,
+   "pr_auc_tau24_at_arrival": 0.9319152733934979,
+   "attribution_top1": 0.4349315068493151,
+   "attribution_top2": 0.6335616438356164,
+   "attribution_top1_major": 0.4605263157894737,
+   "attribution_lift_vs_lane_prior": 0.0,
+   "propagation_spearman": 0.28810789222557553,
+   "advisor_spearman": 0.6107180856839572,
+   "alert_lead_ge_48h_share": 0.6944444444444444,
+   "promise_flip_ratio": 0.911504424778761,
+   "promise_hit_rate": 0.8415690866510539,
+   "promise_reversals_per_shipment": 0.5901639344262295,
+   "raw_eta_reversals_per_shipment": 0.6885245901639344,
+   "latency_p95_ms": 8.105285000056028,
+   "waterfall_additivity_violations": 0
+  }
+ ]
+}

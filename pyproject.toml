@@ -1,0 +1,89 @@
+[project]
+name = "cascade-eta"
+version = "1.0.0"
+description = "CASCADE: stage-aware shipment ETA, delay-propagation and decision engine"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pyarrow>=16",
+    "scipy>=1.13",
+    "scikit-learn>=1.5",
+    "lightgbm>=4.3",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "pyyaml>=6.0",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "orjson>=3.10",
+    "typer>=0.12",
+    "structlog>=24.1",
+    "httpx>=0.27",
+    "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+ui = ["streamlit>=1.36", "plotly>=5.22"]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "hypothesis>=6.100",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "import-linter>=2.0",
+]
+
+[project.scripts]
+cascade = "cascade.cli:app"
+
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cascade"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "app"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "T20", "SIM", "RUF"]
+ignore = ["E501", "RUF001", "RUF002", "RUF003", "B008", "RUF007", "RUF046", "RUF059"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["T20"]
+"app/**" = ["T20"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+files = ["src/cascade/domain", "src/cascade/decision"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "slow: end-to-end tests that train models",
+    "perf: latency assertions",
+]
+
+[tool.importlinter]
+root_package = "cascade"
+
+[[tool.importlinter.contracts]]
+name = "Layered architecture"
+type = "layers"
+layers = [
+    "cascade.cli",
+    "cascade.serving | cascade.eval",
+    "cascade.decision",
+    "cascade.explain",
+    "cascade.models",
+    "cascade.features",
+    "cascade.sim | cascade.data",
+    "cascade.domain",
+]

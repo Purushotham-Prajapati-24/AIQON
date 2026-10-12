@@ -1,0 +1,13 @@
+# Cost-of-delay tariffs (ILLUSTRATIVE — replace with contracted rates).
+# Units: USD, days, hours. Demurrage bands apply per 4-day block after free time.
+default:
+  demurrage_free_days: 4
+  demurrage_usd_per_day: [75, 150, 300]
+  detention_usd_per_day: 90
+  missed_appointment_usd: 350
+  appointment_window_h: 24
+  inventory_carry_pct_per_year: 0.20
+ports:
+  NLRTM: {demurrage_free_days: 5}
+  USLAX: {demurrage_usd_per_day: [125, 250, 400]}
+  GBFXT: {demurrage_usd_per_day: [90, 180, 320]}

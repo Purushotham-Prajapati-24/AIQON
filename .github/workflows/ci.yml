@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUTF8: "1"
+  MPLBACKEND: Agg
+
+jobs:
+  test:
+    name: lint + tests + pipeline smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv + Python 3.12
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          activate-environment: true
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+
+      - name: Install
+        run: uv pip install -e ".[ui,dev]"
+
+      - name: Lint
+        run: ruff check src tests app
+
+      - name: Unit, property and API tests
+        run: pytest -q -m "not perf"
+
+      - name: Pipeline smoke (generate -> train -> evaluate -> publish, small run)
+        # CI runners are disposable, so writing data/, reports/ and artifacts/v0.0.1 is fine here.
+        run: python -m cascade.cli all --n 120 --fast --version 0.0.1 --force
+
+      - name: API boots on the fresh bundle
+        env:
+          CASCADE_MODEL_VERSION: "0.0.1"
+        run: |
+          python - <<'PY'
+          from fastapi.testclient import TestClient
+          from cascade.serving.app import app
+
+          with TestClient(app) as client:
+              ready = client.get("/ready").json()
+              print(ready)
+              assert ready.get("ready") is True, ready
+              sid = client.get("/v1/shipments").json()[0]["shipment_id"]
+              body = client.get(f"/v1/shipments/{sid}/payload").json()
+              r = client.post("/v1/predict", json=body)
+              assert r.status_code == 200, r.text
+              print(sid, r.json()["delay_hours"])
+          PY
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ matrix.os }}
+          path: reports/
+          if-no-files-found: warn
+
+  perf:
+    name: latency budget (perf)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          activate-environment: true
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+      - run: uv pip install -e ".[dev]"
+      - run: pytest -q -m perf

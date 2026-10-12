@@ -1,0 +1,13 @@
+# Simulator configuration (see docs/Design.md §2). All times in hours.
+seed: 42
+n_shipments: 300              # brief: 100-300 shipment records
+first_week: 1                 # first sailing week of 2025
+last_week: 44
+late_threshold_h: 24          # "late" = delivered more than 24 h after plan
+mcar_rate: 0.06               # random milestone reporting gaps
+edi_tier2_rate: 0.08          # extra gaps for medium-quality carrier feeds
+edi_tier3_rate: 0.25          # extra gaps for poor carrier feeds (MNAR)
+discharge_congestion_rate: 0.15   # DISCHARGED goes missing more often when the terminal is congested
+jitter_h: 0.75                # reporting timestamp noise
+mean_shipments_per_voyage: 2.0
+max_connection_slack_h: 54    # designed hub connection slack is U(0, this) on top of 6 h minimum
