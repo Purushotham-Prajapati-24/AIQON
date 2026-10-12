@@ -158,3 +158,12 @@ def test_reported_at_before_event_is_rejected(client, body):
     e, t = next(iter(obs.items()))
     b["shipment"]["reported_at"] = {e: "2000-01-01T00:00:00Z"}
     assert client.post("/v1/predict", json=b).status_code == 422
+
+
+def test_advise_is_valid_json_at_every_checkpoint(client):
+    """Regression: a passed action deadline must not serialise as -inf (invalid JSON -> 500)."""
+    ships = [s["shipment_id"] for s in client.get("/v1/shipments").json()][:12]
+    for sid in ships:
+        for cp in client.get(f"/v1/shipments/{sid}/checkpoints").json():
+            r = client.get(f"/v1/shipments/{sid}/advise", params={"as_of": cp["as_of"]})
+            assert r.status_code == 200, (sid, cp["label"], r.text[:200])

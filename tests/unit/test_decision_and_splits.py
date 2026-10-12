@@ -96,7 +96,8 @@ def test_advisor_states_validity_deadline_and_ranges(engine, world):
                     "economically_justified",
                 }
                 assert r.validity["economically_justified"] == (r.net_value_usd > 0)
-                assert r.validity["operationally_feasible"] == (r.hours_to_deadline >= 0)
+                h = r.hours_to_deadline
+                assert r.validity["operationally_feasible"] == (h is not None and h >= 0)
                 assert r.feasible_reason and r.assumptions and r.deadline_event
                 assert (
                     {"p10", "p50", "p90", "p_late"}
