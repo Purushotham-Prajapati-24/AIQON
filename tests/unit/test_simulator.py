@@ -97,3 +97,15 @@ def test_resimulate_without_intervention_reproduces_truth(sim):
     truth = sim.shipments.set_index("shipment_id").loc[sid, "total_delay_h"]
     planned = sim.shipments.set_index("shipment_id").loc[sid, "planned_DELIVERED"]
     assert out.actual[E.DELIVERED] - planned == pytest.approx(truth)
+
+
+def test_sensitivity_patch_is_restored():
+    from cascade.domain.network import LANES
+    from cascade.eval.sensitivity import VARIANTS, patched
+    from cascade.sim import mechanics
+
+    before = (mechanics.BERTH_LAMBDA, {k: v.headway_h for k, v in LANES.items()})
+    with patched(VARIANTS["connection_headway_x2"] | VARIANTS["berth_window_penalty_x2"]):
+        assert mechanics.BERTH_LAMBDA == 1.6
+        assert all(LANES[k].headway_h == 2 * h for k, h in before[1].items())
+    assert (mechanics.BERTH_LAMBDA, {k: v.headway_h for k, v in LANES.items()}) == before

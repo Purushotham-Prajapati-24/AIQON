@@ -63,6 +63,7 @@ def save_bundle(model: CascadeModel, out_dir: Path, extra_manifest: dict | None 
         "stage_weights": model.stage_weights,
         "shrink": model.shrink,
         "late_blend": model.late_blend,
+        "eta_floor_frac": model.eta_floor_frac,
         "version": model.version,
         "feature_names": list(FEATURE_NAMES),
     }
@@ -111,6 +112,7 @@ def load_bundle(path: Path, verify: bool = True) -> Bundle:
         stage_weights=state["stage_weights"],
         shrink=state["shrink"],
         late_blend=state["late_blend"],
+        eta_floor_frac=state.get("eta_floor_frac", 0.5),
         version=state["version"],
     )
     return Bundle(model=model, manifest=manifest, path=path)

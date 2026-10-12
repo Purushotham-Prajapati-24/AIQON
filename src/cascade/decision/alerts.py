@@ -21,16 +21,38 @@ class PredState:
     hours_since_last_event: float
     expected_gap_h: float  # planned duration of the stage currently in progress
     narrative: str = ""
+    data_quality_flags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class AlertEvent:
+    """An alert explains what changed, on which evidence, and what to do next."""
+
     alert_id: str
     shipment_id: str
     rule: str
     severity: str  # info | warn | critical
     created_at: float
     message: str
+    reason_code: str = ""
+    evidence_ts: float = 0.0  # as-of of the prediction that triggered the alert
+    previous_risk: str | None = None
+    new_risk: str = ""
+    previous_p_late: float | None = None
+    new_p_late: float = 0.0
+    recommended_next_step: str = ""
+    data_quality_flags: tuple[str, ...] = ()
+
+
+NEXT_STEP = {
+    "TIER_ESCALATION_LATE": "Open the shipment, confirm the revised date with the carrier and "
+    "review the recommended actions; inform the consignee.",
+    "TIER_ESCALATION_AT_RISK": "Watch the next milestone; no customer communication yet.",
+    "PROMISE_MOVED": "Send the customer the new promise date.",
+    "P_LATE_JUMP": "Check what changed in the narrative and the recommended actions.",
+    "SILENT_SHIPMENT": "Ask the carrier for a status update: the ETA may rest on stale data.",
+    "MISSED_CONNECTION_LIKELY": "Check the next sailing from the hub; consider priority loading.",
+}
 
 
 def _aid(sid: str, rule: str, t: float) -> str:
@@ -54,6 +76,14 @@ def evaluate_alerts(
                 sev,
                 cur.as_of,
                 f"{msg} {cur.narrative}".strip(),
+                reason_code=rule,
+                evidence_ts=cur.as_of,
+                previous_risk=prev.tier if prev else None,
+                new_risk=cur.tier,
+                previous_p_late=prev.p_late if prev else None,
+                new_p_late=cur.p_late,
+                recommended_next_step=NEXT_STEP.get(rule, ""),
+                data_quality_flags=cur.data_quality_flags,
             )
         )
 

@@ -25,6 +25,9 @@ class ShipmentIn(BaseModel):
     carrier_edi_tier: int = Field(default=2, ge=1, le=3)
     planned: dict[EventType, AwareDatetime]
     observed: dict[EventType, AwareDatetime] = Field(default_factory=dict, max_length=50)
+    # Optional: when each observed milestone's message reached you. A milestone only counts once
+    # it has arrived by `as_of`; omitted = known from its event time.
+    reported_at: dict[EventType, AwareDatetime] = Field(default_factory=dict, max_length=50)
 
     @field_validator("lane_id")
     @classmethod
@@ -55,6 +58,11 @@ class ShipmentIn(BaseModel):
                 raise ValueError(
                     f"observed {e2.value} ({t2.isoformat()}) is earlier than {e1.value}"
                 )
+        for e, ra in self.reported_at.items():
+            if e not in self.observed:
+                raise ValueError(f"reported_at given for {e.value}, which is not observed")
+            if ra < self.observed[e]:
+                raise ValueError(f"reported_at for {e.value} is before the event itself")
         return self
 
     def to_view(self) -> ShipmentView:
@@ -69,6 +77,7 @@ class ShipmentIn(BaseModel):
             planned={e: to_hours(t) for e, t in self.planned.items()},
             reported={e: to_hours(t) for e, t in self.observed.items()},
             carrier_edi_tier=self.carrier_edi_tier,
+            available={e: to_hours(t) for e, t in self.reported_at.items()},
         )
 
 

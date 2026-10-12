@@ -119,8 +119,18 @@ class ShipmentView:
     inland_mode: str
     cargo_value_usd: float
     planned: dict[EventType, float]
-    reported: dict[EventType, float]
+    reported: dict[EventType, float]  # event time as stated in the milestone message
     carrier_edi_tier: int = 2
+    # When CASCADE could first know each report (>= the event itself). Missing entry = the
+    # report was available as soon as its stated event time (live API payloads).
+    available: dict[EventType, float] = field(default_factory=dict)
+
+    def known_at(self, e: EventType) -> float:
+        return self.available.get(e, self.reported[e])
+
+    def known_by(self, t: float) -> dict[EventType, float]:
+        """Reported milestones whose message had arrived by time t (the information cut-off)."""
+        return {e: ts for e, ts in self.reported.items() if self.known_at(e) <= t}
 
 
 @dataclass(frozen=True)
@@ -177,7 +187,9 @@ def build_snapshot(
     docs = view.docs_complete if wi.docs_complete is None else wi.docs_complete
     mode = wi.inland_mode or view.inland_mode
 
-    obs = {e: t for e, t in view.reported.items() if e in p and t <= as_of}
+    # information cut-off: a milestone counts only once its report has *arrived* (not merely
+    # happened) by as_of; its delay still uses the stated event time
+    obs = {e: t for e, t in view.known_by(as_of).items() if e in p}
     last = max(obs, key=lambda e: EVENT_INDEX[e]) if obs else None
     if last is not None and wi.delay_shift_h:
         obs[last] += wi.delay_shift_h
@@ -389,11 +401,15 @@ def build_snapshot(
     ):
         f[name] = pr.get(name, math.nan)
 
-    # physically plausible floor: the remaining stages take at least half their planned time
+    # inputs of the heuristic ETA floor (the model applies its configured fraction):
+    # planned time left after the last reported milestone, and time elapsed since it
     t_last = obs[last] if last is not None else min(as_of, p[E.GATE_IN_ORIGIN])
     p_last = p[last] if last is not None else p[E.GATE_IN_ORIGIN]
-    min_remaining = max(0.0, 0.5 * (p[E.DELIVERED] - p_last) - max(as_of - t_last, 0.0))
-    ctx.update(min_remaining_h=min_remaining)
+    ctx.update(
+        floor_plan_remaining_h=max(0.0, p[E.DELIVERED] - p_last),
+        floor_elapsed_h=max(as_of - t_last, 0.0),
+        reporting_gap=float(reporting_gap),  # silence treated as a missing report, not a hold-up
+    )
     ctx.update(
         hub=lane.hub or "",
         dest=lane.dest,

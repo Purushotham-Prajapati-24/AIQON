@@ -1,0 +1,1322 @@
+{
+ "headline": {
+  "mae_cascade_h": 24.511007691488906,
+  "mae_B1_h": 38.52814033087847,
+  "mae_B2_h": 34.92036965275976,
+  "mae_improvement_vs_B1": 0.3638154481117144,
+  "mae_improvement_vs_B1_ci95": [
+   0.2908484983364751,
+   0.4409398913389528
+  ],
+  "mae_improvement_vs_B2": 0.2980885387176364,
+  "mae_improvement_vs_B1_ci95_voyage": [
+   0.24333982109140895,
+   0.4761965787454404
+  ],
+  "mae_rulebook_h": 24.514009888785388,
+  "mae_improvement_vs_rulebook": 0.0001224686336548375,
+  "mae_improvement_vs_rulebook_ci95_voyage": [
+   -0.0034044798366399064,
+   0.0031464783082329846
+  ],
+  "mae_ratio_cascade_vs_rulebook": 0.9998775313663452,
+  "shrink": 0.0,
+  "n_test_voyages": 20,
+  "eta_floor_binding_share": 0.006896551724137931,
+  "coverage_p10_p90_overall": 0.8027586206896552,
+  "brier_tau24": 0.18072112837036472,
+  "pr_auc_tau24": 0.8556633449023431,
+  "pr_auc_tau24_at_arrival": 0.9105282471988928,
+  "attribution_top1": 0.4188034188034188,
+  "attribution_top2": 0.6866096866096866,
+  "attribution_top1_major": 0.5,
+  "attribution_lift_vs_lane_prior": 0.1566951566951567,
+  "propagation_spearman": 0.4613635372827144,
+  "advisor_spearman": 0.43602409093813566,
+  "alert_lead_ge_48h_share": 0.967741935483871,
+  "promise_flip_ratio": 0.8333333333333334,
+  "late_alert_false_positive_rate": 0.25806451612903225,
+  "alerts_per_100_shipment_days": 8.634985605852977,
+  "attribution_ambiguous_share": 0.25071225071225073,
+  "promise_hit_rate": 0.8891129032258064,
+  "promise_reversals_per_shipment": 0.6290322580645161,
+  "raw_eta_reversals_per_shipment": 0.7903225806451613,
+  "latency_p95_ms": 1.6747699701227232,
+  "identity_violations": 0
+ },
+ "accuracy": {
+  "overall": {
+   "cascade": {
+    "mae": 24.511007691488906,
+    "rmse": 50.80178016055869,
+    "medae": 1.6334225183200033,
+    "p90ae": 72.0,
+    "bias": -16.659163934974178,
+    "n": 725
+   },
+   "B0_schedule": {
+    "mae": 56.2575935233925,
+    "rmse": 88.55425020631539,
+    "medae": 48.0,
+    "p90ae": 168.0,
+    "bias": -55.91722324077623,
+    "n": 725
+   },
+   "B1_carry_forward": {
+    "mae": 38.52814033087847,
+    "rmse": 64.48805710138714,
+    "medae": 22.479128016106188,
+    "p90ae": 88.73489459495886,
+    "bias": -31.343068570070344,
+    "n": 725
+   },
+   "B2_propagation_prior": {
+    "mae": 34.92036965275976,
+    "rmse": 59.025836856549084,
+    "medae": 20.195128025106552,
+    "p90ae": 81.74996987399858,
+    "bias": -21.34887330689572,
+    "n": 725
+   },
+   "physics_rulebook": {
+    "mae": 24.514009888785388,
+    "rmse": 50.82447421877007,
+    "medae": 1.458430404832141,
+    "p90ae": 72.0,
+    "bias": -16.68323157684312,
+    "n": 725
+   }
+  },
+  "by_checkpoint_mae": {
+   "cascade": {
+    "0": 52.47336543191203,
+    "1": 45.005411973622245,
+    "2": 34.71773598729434,
+    "3": 41.385895496132136,
+    "4": 23.102474568762723,
+    "5": 12.561953362381507,
+    "6": 8.40882058456291,
+    "7": 0.5899361131323182,
+    "8": 0.6731585257604186
+   },
+   "B0_schedule": {
+    "0": 64.26950966960035,
+    "1": 55.17598792377325,
+    "2": 45.17006743987087,
+    "3": 66.97872741536415,
+    "4": 61.742875229737336,
+    "5": 58.48733767024812,
+    "6": 49.311364954587596,
+    "7": 51.996366285636576,
+    "8": 53.69120624942285
+   },
+   "B1_carry_forward": {
+    "0": 64.26950966960035,
+    "1": 55.445379477502485,
+    "2": 44.70201251756764,
+    "3": 67.75365286496478,
+    "4": 34.26721257523436,
+    "5": 34.95503365484232,
+    "6": 20.555623854540276,
+    "7": 7.251986030897097,
+    "8": 6.927042040964271
+   },
+   "B2_propagation_prior": {
+    "0": 54.765665290663755,
+    "1": 49.01350392268655,
+    "2": 40.31933709843902,
+    "3": 65.70705821223262,
+    "4": 29.677698359964978,
+    "5": 30.250428162196467,
+    "6": 21.011042963872047,
+    "7": 7.3104862280550496,
+    "8": 7.245528929426698
+   },
+   "physics_rulebook": {
+    "0": 52.47336543191203,
+    "1": 45.005411973622245,
+    "2": 34.71773598729434,
+    "3": 41.385895496132136,
+    "4": 23.102474568762723,
+    "5": 12.561953362381507,
+    "6": 8.497969917866357,
+    "7": 0.6363662856365773,
+    "8": 0.5288869855947951
+   }
+  },
+  "bootstrap_vs_B1": {
+   "mae_model": [
+    18.109857235054605,
+    32.24931524849272
+   ],
+   "mae_baseline": [
+    29.720227243251106,
+    48.64172993428995
+   ],
+   "improvement": [
+    0.2908484983364751,
+    0.4409398913389528
+   ],
+   "n_clusters": 62
+  },
+  "bootstrap_vs_B2": {
+   "mae_model": [
+    18.109857235054605,
+    32.24931524849272
+   ],
+   "mae_baseline": [
+    27.11877419427927,
+    44.11272868106181
+   ],
+   "improvement": [
+    0.2115645080563041,
+    0.38250558835881854
+   ],
+   "n_clusters": 62
+  },
+  "bootstrap_voyage": {
+   "vs_B1": {
+    "mae_model": [
+     16.185147067823507,
+     34.06340708136557
+    ],
+    "mae_baseline": [
+     26.7692366696603,
+     51.51224715739916
+    ],
+    "improvement": [
+     0.24333982109140895,
+     0.4761965787454404
+    ],
+    "n_clusters": 20
+   },
+   "vs_B2": {
+    "mae_model": [
+     16.185147067823507,
+     34.06340708136557
+    ],
+    "mae_baseline": [
+     24.638399221320032,
+     46.8901513693794
+    ],
+    "improvement": [
+     0.1841324214055676,
+     0.4330379700661972
+    ],
+    "n_clusters": 20
+   },
+   "vs_rulebook": {
+    "mae_model": [
+     16.185147067823507,
+     34.06340708136557
+    ],
+    "mae_baseline": [
+     16.17508965151368,
+     34.13025248214264
+    ],
+    "improvement": [
+     -0.0034044798366399064,
+     0.0031464783082329846
+    ],
+    "n_clusters": 20
+   }
+  },
+  "improvement_vs_B1": 0.3638154481117144,
+  "improvement_vs_B2": 0.2980885387176364,
+  "improvement_vs_rulebook": 0.0001224686336548375,
+  "coverage_p10_p90": {
+   "overall": 0.8027586206896552,
+   "at_port": 0.8084112149532711,
+   "at_sea": 0.7838827838827839,
+   "post_customs": 0.8867924528301887,
+   "pre_departure": 0.7651515151515151
+  },
+  "coverage_detail": {
+   "overall": {
+    "coverage": 0.8027586206896552,
+    "width_h": 84.9221122975224,
+    "n_snapshots": 725,
+    "n_shipments": 62,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.7334251227932209,
+     0.8694951685307768
+    ]
+   },
+   "at_port": {
+    "coverage": 0.8084112149532711,
+    "width_h": 52.62224811878434,
+    "n_snapshots": 214,
+    "n_shipments": 60,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.7,
+     0.90356062085123
+    ]
+   },
+   "at_sea": {
+    "coverage": 0.7838827838827839,
+    "width_h": 104.34171240710718,
+    "n_snapshots": 273,
+    "n_shipments": 57,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.7142730943967693,
+     0.8657793024928092
+    ]
+   },
+   "post_customs": {
+    "coverage": 0.8867924528301887,
+    "width_h": 10.616477991724581,
+    "n_snapshots": 106,
+    "n_shipments": 60,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.8196348733233979,
+     0.9520207547169811
+    ]
+   },
+   "pre_departure": {
+    "coverage": 0.7651515151515151,
+    "width_h": 156.79345578803662,
+    "n_snapshots": 132,
+    "n_shipments": 62,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.5999590163934426,
+     0.9140832779255319
+    ]
+   }
+  },
+  "interval_width_h": {
+   "overall": 84.9221122975224,
+   "at_port": 52.62224811878434,
+   "at_sea": 104.34171240710718,
+   "post_customs": 10.616477991724581,
+   "pre_departure": 156.79345578803662
+  },
+  "eta_floor": {
+   "frac": 0.5,
+   "binding_share": 0.006896551724137931,
+   "mean_adjust_h": 0.05010519798053228,
+   "mae_without_floor": 24.49097958006056,
+   "coverage_without_floor": 0.8082758620689655
+  },
+  "classification": {
+   "tau_24": {
+    "overall": {
+     "brier": 0.18072112837036472,
+     "base_rate": 0.5337931034482759,
+     "n": 725,
+     "pr_auc": 0.8556633449023431,
+     "roc_auc": 0.8186818647462655
+    },
+    "checkpoint_2": {
+     "brier": 0.23973874416581295,
+     "base_rate": 0.47058823529411764,
+     "n": 102,
+     "pr_auc": 0.594009450689201,
+     "roc_auc": 0.6471836419753085
+    },
+    "checkpoint_5": {
+     "brier": 0.1440171399448555,
+     "base_rate": 0.512,
+     "n": 125,
+     "pr_auc": 0.9105282471988928,
+     "roc_auc": 0.8773053278688524
+    }
+   },
+   "tau_48": {
+    "overall": {
+     "brier": 0.14270491674168814,
+     "base_rate": 0.3724137931034483,
+     "n": 725,
+     "pr_auc": 0.782799132046951,
+     "roc_auc": 0.8627472527472527
+    },
+    "checkpoint_2": {
+     "brier": 0.19152448819283863,
+     "base_rate": 0.3137254901960784,
+     "n": 102,
+     "pr_auc": 0.5008641183250495,
+     "roc_auc": 0.7022321428571429
+    },
+    "checkpoint_5": {
+     "brier": 0.06478391414519503,
+     "base_rate": 0.376,
+     "n": 125,
+     "pr_auc": 0.9308510638297872,
+     "roc_auc": 0.973404255319149
+    }
+   }
+  },
+  "reliability": {
+   "bin_mean_pred": [
+    0.060091731959964395,
+    0.18845122311840187,
+    0.3137243225270857,
+    0.4422166341905629,
+    0.558402600212753,
+    0.6788933177903044,
+    0.811316857634676,
+    0.9573125994855898
+   ],
+   "bin_frac_pos": [
+    0.12745098039215685,
+    0.33587786259541985,
+    0.26262626262626265,
+    0.6864406779661016,
+    0.5681818181818182,
+    0.8,
+    0.9545454545454546,
+    1.0
+   ],
+   "bin_n": [
+    102,
+    131,
+    99,
+    118,
+    88,
+    60,
+    44,
+    83
+   ],
+   "ece": 0.10763139700399697
+  },
+  "n_test_rows": 725,
+  "n_test_shipments": 62,
+  "n_test_voyages": 20
+ },
+ "propagation": {
+  "delta_h": 12.0,
+  "n": 190,
+  "spearman": 0.4613635372827144,
+  "mae": 1.6650228733174166,
+  "by_event": {
+   "ARRIVE_DEST_PORT": {
+    "phi_hat": 1.265,
+    "phi_true": 1.585
+   },
+   "ARRIVE_TS": {
+    "phi_hat": 1.692,
+    "phi_true": 2.386
+   },
+   "DEPART_ORIGIN": {
+    "phi_hat": 1.667,
+    "phi_true": 1.897
+   },
+   "DISCHARGED": {
+    "phi_hat": 0.778,
+    "phi_true": 0.76
+   }
+  },
+  "by_delta": {
+   "1.0": {
+    "n": 190,
+    "spearman": 0.06169930928954763,
+    "mae": 2.4350744563649833,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "6.0": {
+    "n": 190,
+    "spearman": 0.3081606475148018,
+    "mae": 2.1352723249979255,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "12.0": {
+    "n": 190,
+    "spearman": 0.4613635372827144,
+    "mae": 1.6650228733174166,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     2.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "24.0": {
+    "n": 190,
+    "spearman": 0.5810151713321077,
+    "mae": 0.916557632252199,
+    "phi_true_median": 1.0,
+    "phi_true_iqr": [
+     0.0,
+     2.0
+    ],
+    "phi_hat_median": 1.0
+   }
+  },
+  "by_condition": {
+   "comfortable_buffer": {
+    "n": 49,
+    "spearman": 0.37393103179178255,
+    "mae": 1.836734693877551,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "near_cutoff": {
+    "n": 25,
+    "spearman": 0.07136364424508376,
+    "mae": 5.125576978925292,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     12.0
+    ],
+    "phi_hat_median": 4.0
+   },
+   "no_pending_connection": {
+    "n": 116,
+    "spearman": 0.49767510003672144,
+    "mae": 0.8466803573894556,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     2.0
+    ],
+    "phi_hat_median": 0.0
+   }
+  },
+  "by_condition_delta": {
+   "comfortable_buffer|1.0": {
+    "n": 49,
+    "spearman": null,
+    "mae": 0.9795918367346941,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "comfortable_buffer|6.0": {
+    "n": 49,
+    "spearman": -0.013887084892142904,
+    "mae": 0.9795918367346939,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "comfortable_buffer|12.0": {
+    "n": 49,
+    "spearman": 0.37393103179178255,
+    "mae": 1.836734693877551,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "comfortable_buffer|24.0": {
+    "n": 49,
+    "spearman": 0.6892305260222076,
+    "mae": 1.1797374522563746,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     1.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "near_cutoff|1.0": {
+    "n": 25,
+    "spearman": -0.1298758253423877,
+    "mae": 10.706565868373874,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "near_cutoff|6.0": {
+    "n": 25,
+    "spearman": 0.4330359777651575,
+    "mae": 7.407990708162966,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     12.305345559112235
+    ],
+    "phi_hat_median": 4.0
+   },
+   "near_cutoff|12.0": {
+    "n": 25,
+    "spearman": 0.07136364424508376,
+    "mae": 5.125576978925292,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     12.0
+    ],
+    "phi_hat_median": 4.0
+   },
+   "near_cutoff|24.0": {
+    "n": 25,
+    "spearman": 0.13733739514073193,
+    "mae": 2.6946260586759183,
+    "phi_true_median": 2.1479696151659105,
+    "phi_true_iqr": [
+     0.0,
+     7.0
+    ],
+    "phi_hat_median": 2.0
+   },
+   "no_pending_connection|1.0": {
+    "n": 116,
+    "spearman": 0.2220545193501462,
+    "mae": 1.2672413793103448,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "no_pending_connection|6.0": {
+    "n": 116,
+    "spearman": 0.24913714514025945,
+    "mae": 1.487085983151135,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "no_pending_connection|12.0": {
+    "n": 116,
+    "spearman": 0.49767510003672144,
+    "mae": 0.8466803573894556,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     2.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "no_pending_connection|24.0": {
+    "n": 116,
+    "spearman": 0.684990478830794,
+    "mae": 0.4221824439694611,
+    "phi_true_median": 1.0,
+    "phi_true_iqr": [
+     1.0,
+     2.0
+    ],
+    "phi_hat_median": 1.0
+   }
+  },
+  "matrix": [
+   {
+    "lane_id": "CNSHA-MYTPP-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": -0.993,
+    "phi_true": -1.943,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-MYTPP-NLRTM",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 0.0,
+    "n": 1
+   },
+   {
+    "lane_id": "CNSHA-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.667,
+    "phi_true": 1.333,
+    "n": 3
+   },
+   {
+    "lane_id": "CNSHA-NLRTM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.667,
+    "phi_true": 1.333,
+    "n": 3
+   },
+   {
+    "lane_id": "CNSHA-NLRTM",
+    "event": "DISCHARGED",
+    "phi_hat": 0.667,
+    "phi_true": 1.333,
+    "n": 3
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 6.0,
+    "phi_true": 4.825,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 0.0,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.0,
+    "phi_true": 0.0,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "DISCHARGED",
+    "phi_hat": 1.0,
+    "phi_true": 0.825,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-USLAX",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.333,
+    "phi_true": 1.0,
+    "n": 6
+   },
+   {
+    "lane_id": "CNSHA-USLAX",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 2.0,
+    "phi_true": 0.8,
+    "n": 5
+   },
+   {
+    "lane_id": "CNSHA-USLAX",
+    "event": "DISCHARGED",
+    "phi_hat": 0.8,
+    "phi_true": 0.4,
+    "n": 5
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.5,
+    "phi_true": 1.5,
+    "n": 4
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 1.0,
+    "n": 4
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.0,
+    "phi_true": 1.0,
+    "n": 4
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "DISCHARGED",
+    "phi_hat": 0.4,
+    "phi_true": 0.4,
+    "n": 5
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.0,
+    "phi_true": 0.169,
+    "n": 5
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "ARRIVE_TS",
+    "phi_hat": -2.4,
+    "phi_true": 5.354,
+    "n": 5
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.667,
+    "phi_true": 4.923,
+    "n": 3
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "DISCHARGED",
+    "phi_hat": 0.0,
+    "phi_true": 0.0,
+    "n": 3
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.0,
+    "phi_true": 0.907,
+    "n": 3
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "ARRIVE_TS",
+    "phi_hat": 12.667,
+    "phi_true": 4.667,
+    "n": 3
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 4.667,
+    "phi_true": 4.667,
+    "n": 3
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "DISCHARGED",
+    "phi_hat": 0.0,
+    "phi_true": 0.36,
+    "n": 2
+   },
+   {
+    "lane_id": "INNSA-DEHAM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 1.622,
+    "phi_true": 0.911,
+    "n": 5
+   },
+   {
+    "lane_id": "INNSA-DEHAM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.0,
+    "phi_true": 0.0,
+    "n": 2
+   },
+   {
+    "lane_id": "INNSA-DEHAM",
+    "event": "DISCHARGED",
+    "phi_hat": 1.0,
+    "phi_true": 0.0,
+    "n": 2
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 2.8,
+    "phi_true": 4.4,
+    "n": 5
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "ARRIVE_TS",
+    "phi_hat": -0.8,
+    "phi_true": 0.0,
+    "n": 5
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.333,
+    "phi_true": 0.0,
+    "n": 6
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "DISCHARGED",
+    "phi_hat": 0.0,
+    "phi_true": 1.084,
+    "n": 4
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 2.0,
+    "phi_true": 1.883,
+    "n": 13
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "ARRIVE_TS",
+    "phi_hat": 1.538,
+    "phi_true": 1.562,
+    "n": 13
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.333,
+    "phi_true": 1.692,
+    "n": 12
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "DISCHARGED",
+    "phi_hat": 1.5,
+    "phi_true": 1.015,
+    "n": 12
+   },
+   {
+    "lane_id": "KRPUS-USLAX",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 2.0,
+    "phi_true": 3.0,
+    "n": 2
+   },
+   {
+    "lane_id": "KRPUS-USLAX",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.333,
+    "phi_true": 0.667,
+    "n": 3
+   },
+   {
+    "lane_id": "KRPUS-USLAX",
+    "event": "DISCHARGED",
+    "phi_hat": 2.0,
+    "phi_true": 0.643,
+    "n": 2
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.571,
+    "phi_true": 1.143,
+    "n": 7
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "ARRIVE_TS",
+    "phi_hat": 4.0,
+    "phi_true": 4.667,
+    "n": 6
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 4.4,
+    "phi_true": 5.6,
+    "n": 5
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "DISCHARGED",
+    "phi_hat": 0.301,
+    "phi_true": 1.135,
+    "n": 6
+   }
+  ]
+ },
+ "attribution": {
+  "n": 351,
+  "n_major": 202,
+  "n_shipments": 58,
+  "explainer_source": "rulebook",
+  "accuracy": {
+   "shap_top1": 0.4188034188034188,
+   "shap_top2": 0.6866096866096866,
+   "stage_forecast_top1": 0.42735042735042733,
+   "lane_prior_top1": 0.2621082621082621,
+   "random_top1": 0.18233618233618235,
+   "shap_top1_major_delays": 0.5,
+   "lift_vs_lane_prior": 0.1566951566951567,
+   "shap_top1_unambiguous": 0.49049429657794674
+  },
+  "ambiguity": {
+   "share_margin_lt_6h": 0.25071225071225073,
+   "share_margin_lt_12h": 0.49572649572649574,
+   "n_unambiguous": 263
+  },
+  "by_checkpoint": {
+   "0": {
+    "n": 61,
+    "top1": 0.3770491803278688,
+    "top2": 0.5081967213114754,
+    "lane_prior_top1": 0.18032786885245902
+   },
+   "1": {
+    "n": 62,
+    "top1": 0.3709677419354839,
+    "top2": 0.5161290322580645,
+    "lane_prior_top1": 0.22580645161290322
+   },
+   "2": {
+    "n": 82,
+    "top1": 0.3780487804878049,
+    "top2": 0.7560975609756098,
+    "lane_prior_top1": 0.3170731707317073
+   },
+   "3": {
+    "n": 69,
+    "top1": 0.4782608695652174,
+    "top2": 0.8260869565217391,
+    "lane_prior_top1": 0.2753623188405797
+   },
+   "4": {
+    "n": 77,
+    "top1": 0.4805194805194805,
+    "top2": 0.7662337662337663,
+    "lane_prior_top1": 0.2857142857142857
+   }
+  },
+  "true_root_distribution": {
+   "PORT": 149,
+   "CUSTOMS": 95,
+   "TRANSSHIPMENT": 51,
+   "ORIGIN": 36,
+   "INLAND": 12,
+   "OCEAN": 8
+  },
+  "confusion_true_rows": {
+   "CUSTOMS": {
+    "CUSTOMS": 17,
+    "INLAND": 3,
+    "NONE": 1,
+    "OCEAN": 2,
+    "ORIGIN": 3,
+    "PORT": 47,
+    "TRANSSHIPMENT": 22
+   },
+   "INLAND": {
+    "CUSTOMS": 2,
+    "INLAND": 3,
+    "NONE": 0,
+    "OCEAN": 0,
+    "ORIGIN": 0,
+    "PORT": 3,
+    "TRANSSHIPMENT": 4
+   },
+   "OCEAN": {
+    "CUSTOMS": 0,
+    "INLAND": 0,
+    "NONE": 0,
+    "OCEAN": 2,
+    "ORIGIN": 0,
+    "PORT": 0,
+    "TRANSSHIPMENT": 6
+   },
+   "ORIGIN": {
+    "CUSTOMS": 4,
+    "INLAND": 1,
+    "NONE": 0,
+    "OCEAN": 2,
+    "ORIGIN": 4,
+    "PORT": 9,
+    "TRANSSHIPMENT": 16
+   },
+   "PORT": {
+    "CUSTOMS": 31,
+    "INLAND": 17,
+    "NONE": 6,
+    "OCEAN": 3,
+    "ORIGIN": 0,
+    "PORT": 74,
+    "TRANSSHIPMENT": 18
+   },
+   "TRANSSHIPMENT": {
+    "CUSTOMS": 2,
+    "INLAND": 0,
+    "NONE": 0,
+    "OCEAN": 0,
+    "ORIGIN": 0,
+    "PORT": 2,
+    "TRANSSHIPMENT": 47
+   }
+  }
+ },
+ "advisor": {
+  "n": 131,
+  "spearman": 0.43602409093813566,
+  "sign_agreement": 0.7175572519083969,
+  "by_action": {
+   "hub_priority": {
+    "model_hours_saved": 18.86,
+    "true_hours_saved": 34.29
+   },
+   "prefile_docs": {
+    "model_hours_saved": 3.0,
+    "true_hours_saved": 18.44
+   },
+   "priority_berth": {
+    "model_hours_saved": 10.45,
+    "true_hours_saved": 21.32
+   },
+   "rail_to_truck": {
+    "model_hours_saved": 28.42,
+    "true_hours_saved": 27.16
+   },
+   "weekend_customs": {
+    "model_hours_saved": 27.69,
+    "true_hours_saved": 5.54
+   }
+  }
+ },
+ "decision": {
+  "promise_changes_per_shipment": 1.6129032258064515,
+  "raw_eta_day_changes_per_shipment": 1.935483870967742,
+  "promise_flip_ratio": 0.8333333333333334,
+  "promise_hit_rate": 0.8891129032258064,
+  "raw_eta_reversals_per_shipment": 0.7903225806451613,
+  "promise_reversals_per_shipment": 0.6290322580645161,
+  "late_alert_recall": 1.0,
+  "late_alert_precision": 0.7948717948717948,
+  "alert_lead_ge_48h_share": 0.967741935483871,
+  "median_alert_lead_h": 813.6552067867542,
+  "alerts_per_shipment": 3.4193548387096775,
+  "late_alert_false_positive_rate": 0.25806451612903225,
+  "alerts_per_100_shipment_days": 8.634985605852977,
+  "late_alerts_per_100_shipment_days": 1.5885115029635195,
+  "lead_to_actual_h_p10_p50_p90": [
+   553.2139528851849,
+   887.1871858971899,
+   1147.0851173415258
+  ],
+  "lead_to_planned_h_p10_p50_p90": [
+   385.2139528851849,
+   813.6552067867542,
+   1067.5937645340728
+  ],
+  "n_late": 31,
+  "n_on_time": 31,
+  "note": "LATE alert = first TIER_ESCALATION_LATE in a replay from booking; thresholds are fixed rules (not tuned on validation)."
+ },
+ "group_importance": {
+  "ORIGIN": 0.38677355996226404,
+  "OCEAN": 3.4624966646327073,
+  "TRANSSHIPMENT": 8.684375168451767,
+  "PORT": 9.970737626020734,
+  "CUSTOMS": 12.225167616584066,
+  "INLAND": 6.378964030676397,
+  "CONTEXT": 0.0,
+  "DATA_QUALITY": 0.0
+ },
+ "robustness": {
+  "0.0": {
+   "mae": 24.14795868373353,
+   "mae_B1": 38.43952521785402,
+   "coverage": 0.7958620689655173
+  },
+  "0.1": {
+   "mae": 24.309550854711723,
+   "mae_B1": 38.17420069754845,
+   "coverage": 0.8165938864628821
+  },
+  "0.3": {
+   "mae": 28.531969017027365,
+   "mae_B1": 39.85682224582905,
+   "coverage": 0.8108108108108109
+  },
+  "0.5": {
+   "mae": 32.25525455596255,
+   "mae_B1": 42.08826351224766,
+   "coverage": 0.8279569892473119
+  }
+ },
+ "ablations": {
+  "no_propagation_features": {
+   "mae": 34.63681486148292,
+   "coverage": 0.6813793103448276
+  },
+  "no_priors": {
+   "mae": 24.529508986321304,
+   "coverage": 0.8275862068965517
+  },
+  "no_data_quality": {
+   "mae": 24.55724939202734,
+   "coverage": 0.7875862068965517
+  }
+ },
+ "embargo": {
+  "cutoff_h": 6034.5,
+  "n_train_shipments_dropped": 28,
+  "n_train_shipments_kept": 210,
+  "mae": 24.512326260429564,
+  "coverage": 0.7682758620689655,
+  "shrink": 0.0
+ },
+ "gates": {
+  "mae_improvement_vs_B1": {
+   "value": 0.3638154481117144,
+   "rule": ">= 0.15",
+   "pass": true
+  },
+  "coverage_p10_p90_overall": {
+   "value": 0.8027586206896552,
+   "rule": "between (0.7, 0.9)",
+   "pass": true
+  },
+  "brier_tau24": {
+   "value": 0.18072112837036472,
+   "rule": "<= 0.2",
+   "pass": true
+  },
+  "attribution_lift_vs_lane_prior": {
+   "value": 0.1566951566951567,
+   "rule": ">= 0.1",
+   "pass": true
+  },
+  "identity_violations": {
+   "value": 0,
+   "rule": "<= 0",
+   "pass": true
+  },
+  "latency_p95_ms": {
+   "value": 1.6747699701227232,
+   "rule": "< 50.0",
+   "pass": true
+  }
+ },
+ "info_gates": {
+  "mae_ratio_cascade_vs_rulebook": {
+   "value": 0.9998775313663452,
+   "rule": "<= 1.01",
+   "pass": true
+  }
+ },
+ "targets": [
+  {
+   "id": "G1",
+   "metric": "MAE improvement vs carry-forward",
+   "original_target": ">= 25% (stretch 40%)",
+   "revised_gate": ">= 15%",
+   "value": 0.3638154481117144,
+   "status": "met"
+  },
+  {
+   "id": "G2",
+   "metric": "PR-AUC P(late) at destination arrival",
+   "original_target": ">= 0.75 (stretch 0.85)",
+   "revised_gate": "-",
+   "value": 0.9105282471988928,
+   "status": "met"
+  },
+  {
+   "id": "G2b",
+   "metric": "Brier P(late > 24 h)",
+   "original_target": "<= 0.15",
+   "revised_gate": "<= 0.20",
+   "value": 0.18072112837036472,
+   "status": "unmet"
+  },
+  {
+   "id": "G3",
+   "metric": "P10-P90 coverage in every checkpoint group",
+   "original_target": "80% +/- 5 pp each",
+   "revised_gate": "70-90% overall",
+   "value": {
+    "at_port": 0.8084112149532711,
+    "at_sea": 0.7838827838827839,
+    "post_customs": 0.8867924528301887,
+    "pre_departure": 0.7651515151515151
+   },
+   "status": "partly"
+  },
+  {
+   "id": "G4",
+   "metric": "Future-delay driver top-1 vs cause ledger",
+   "original_target": ">= 70% (stretch 80%)",
+   "revised_gate": "lift >= 10 pp vs lane history",
+   "value": 0.4188034188034188,
+   "status": "unmet"
+  },
+  {
+   "id": "G5",
+   "metric": "Latency p95 predict + explain (in-process)",
+   "original_target": "< 50 ms",
+   "revised_gate": "< 50 ms",
+   "value": 1.6747699701227232,
+   "status": "met"
+  },
+  {
+   "id": "G6a",
+   "metric": "Late shipments alerted >= 48 h before planned delivery",
+   "original_target": ">= 70%",
+   "revised_gate": "-",
+   "value": 0.967741935483871,
+   "status": "met"
+  },
+  {
+   "id": "G6b",
+   "metric": "Promise changes / raw P50 day changes",
+   "original_target": "<= 0.40",
+   "revised_gate": "hit rate + reversals (reported)",
+   "value": 0.8333333333333334,
+   "status": "unmet"
+  },
+  {
+   "id": "G7",
+   "metric": "One-command run time",
+   "original_target": "< 180 s",
+   "revised_gate": "-",
+   "value": 112.6,
+   "status": "met"
+  }
+ ],
+ "splits": {
+  "train": {
+   "voyages": 83,
+   "shipments": 238,
+   "snapshots": 2665
+  },
+  "selection_slice": {
+   "voyages": 18,
+   "shipments": 50,
+   "snapshots": 585
+  },
+  "test": {
+   "voyages": 20,
+   "shipments": 62,
+   "snapshots": 725
+  }
+ },
+ "meta": {
+  "seed": 42,
+  "n_shipments": 300,
+  "version": "1.1.0",
+  "late_rate": 0.38333333333333336,
+  "n_rows": 3390,
+  "train_config": {
+   "target_mode": "residual",
+   "n_estimators": 300,
+   "learning_rate": 0.04,
+   "num_leaves": 15,
+   "max_depth": 5,
+   "min_data_in_leaf": 20,
+   "feature_fraction": 0.8,
+   "bagging_fraction": 0.8,
+   "lambda_l2": 1.0,
+   "monotone": true,
+   "stage_models": true,
+   "late_threshold_h": 24,
+   "alpha": 0.2,
+   "eta_floor_min_remaining_frac": 0.5,
+   "seed": 0,
+   "exclude_features": []
+  },
+  "runtime_s": 112.6,
+  "world_now_h": 7471.541501720844,
+  "environment": {
+   "platform": "Windows-11-10.0.26300-SP0",
+   "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+   "cpu_count": 28,
+   "python": "3.12.10",
+   "lightgbm": "4.7.0",
+   "latency_method": "in-process Engine.predict(explain=True), sequential, single thread, 200 repeats of one request after the evaluation warm-up; no HTTP"
+  }
+ }
+}

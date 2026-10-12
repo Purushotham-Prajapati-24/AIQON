@@ -62,6 +62,48 @@ class Result:
     explanation: Explanation | None = None
     snapshot: Snapshot | None = None
     timing_ms: dict[str, float] = field(default_factory=dict)
+    # where the P50 came from, in delay hours (model path only):
+    # raw (observed + rulebook + λ·learned) + ordering + floor + delivered == delay_p50
+    p50_parts: dict[str, float] | None = None
+
+    @property
+    def data_quality(self) -> dict:
+        """What the prediction rests on: evidence freshness, gaps and the serving mode."""
+        snap, f = self.snapshot, self.flags
+        if snap is None:
+            return {"mode": "unknown"}
+        age = snap.features.get("hours_since_last_event", math.nan)
+        reason = (f.get("reason") or "") if f.get("degraded") else ""
+        mode = (
+            "carry_forward"
+            if "carry_forward" in reason
+            else ("propagation_prior" if f.get("degraded") else "model")
+        )
+        missing = [str(e) for e in f.get("missing_events", [])]
+        critical = {"ARRIVE_TS", "DEPART_TS", "ARRIVE_DEST_PORT", "DISCHARGED"}
+        gap = bool(snap.context.get("reporting_gap", False))
+        overdue = float(snap.features.get("overdue_h", 0.0))
+        if mode != "model":
+            confidence_reason = "fallback"
+        elif missing:
+            confidence_reason = "missing_data"
+        elif gap or (age == age and age > 72):
+            confidence_reason = "stale_data"
+        else:
+            confidence_reason = "horizon"
+        return {
+            "last_milestone": snap.last_event.value if snap.last_event else None,
+            "last_milestone_age_h": None if age != age else round(float(age), 1),
+            "next_expected": snap.next_event.value if snap.next_event else None,
+            "next_overdue_h": round(overdue, 1),
+            "missing_events": missing,
+            "missing_critical": any(e in critical for e in missing),
+            "reporting_gap_inferred": gap,
+            "source_tier": int(snap.features.get("carrier_edi_tier", 0)),
+            "forecast_basis": "as-of forecasts of congestion and weather issued at the as-of time",
+            "mode": mode,
+            "confidence_reason": confidence_reason,  # horizon | missing_data | stale_data | fallback
+        }
 
     @property
     def eta_p50(self) -> float:
@@ -91,6 +133,7 @@ class Result:
             },
             "p_late": round(self.p_late, 4),
             "risk_tier": self.risk_tier,
+            "data_quality": self.data_quality,
             "stage_forecast_hours": {k: round(v, 2) for k, v in self.stage_forecast.items()},
             "cost_usd": {k: round(v, 0) for k, v in self.cost_usd.items()},
             "promise": self.promise,
@@ -103,6 +146,14 @@ class Result:
                 out["narrative"] = ex.narratives.get("customer", "")
             else:
                 out["narrative"] = ex.narratives.get(audience, ex.narratives.get("ops", ""))
+                out["explanation"] = {
+                    "mode": ex.mode,  # rulebook | rulebook+learned | learned
+                    "shrink": ex.shrink,  # λ: weight of the learned median correction
+                    "note": "Stage bars are the operator rulebook's projection; the learned "
+                    "median correction is switched off (λ = 0)."
+                    if ex.mode == "rulebook"
+                    else "Stage bars = rulebook projection + λ x learned correction.",
+                }
                 out["drivers"] = [asdict(d) for d in ex.drivers[:top_k]]
                 out["root_cause_group"] = ex.root_cause_group
                 if include_waterfall:
@@ -115,6 +166,12 @@ class Result:
                         k: round(v, 3) for k, v in ex.feature_contrib.items()
                     }
                     out["base_h"] = round(ex.base_h, 3)
+                    out["rulebook_contributions_h"] = {
+                        k: round(v, 3) for k, v in ex.rulebook_contrib.items()
+                    }
+                    out["learned_contributions_h"] = {
+                        k: round(v, 3) for k, v in ex.learned_contrib.items()
+                    }
         return out
 
 
@@ -153,7 +210,10 @@ class Engine:
             X,
             np.array([s.as_of for s in snaps]),
             np.array([s.planned_delivered for s in snaps]),
-            np.array([float(s.context.get("min_remaining_h", 0.0)) for s in snaps]),
+            (
+                np.array([float(s.context["floor_plan_remaining_h"]) for s in snaps]),
+                np.array([float(s.context["floor_elapsed_h"]) for s in snaps]),
+            ),
         )
         return X, pr
 
@@ -185,10 +245,13 @@ class Engine:
                 res = self._fallback(view, snap, degraded or "model_error")
             if explain and X is not None and pr is not None:
                 te = time.perf_counter()
-                contrib = self.model.contributions(X[i : i + 1])[0]
+                xi = X[i : i + 1]
+                adjust = {k: v for k, v in (res.p50_parts or {}).items() if k != "raw"}
                 res.explanation = build_explanation(
                     snap,
-                    contrib,
+                    self.model.rulebook_contributions(xi)[0],
+                    self.model.learned_contributions(xi)[0],
+                    adjust,
                     res.delay_p10,
                     res.delay_p50,
                     res.delay_p90,
@@ -198,6 +261,8 @@ class Engine:
                     view.shipment_id,
                     self.model.late_threshold_h,
                     flags=res.flags,
+                    mode=self.model.explanation_mode,
+                    shrink=self.model.shrink,
                 )
                 res.timing_ms["explain"] = (time.perf_counter() - te) * 1000
             if with_cost:
@@ -238,7 +303,6 @@ class Engine:
         flags = {
             "degraded": False,
             "reason": None,
-            "cold_start": False,
             "missing_events": [e.value for e in snap.missing_events],
             "out_of_distribution": bool(abs(p50) > 30 * 24),
         }
@@ -258,6 +322,7 @@ class Engine:
             stage,
             flags,
             snapshot=snap,
+            p50_parts=_p50_parts(pr, i),
         )
 
     def _fallback(self, view: ShipmentView, snap: Snapshot, reason: str) -> Result:
@@ -269,10 +334,22 @@ class Engine:
             rem, source = 0.0, "carry_forward"
         p50 = snap.current_delay + rem
         width = max(24.0, abs(rem))
+        lo, hi = p50 - width, p50 + width
+        if snap.checkpoint < 9:  # same heuristic ETA floor as the model path
+            floor = (
+                snap.as_of
+                - snap.planned_delivered
+                + float(
+                    self.model.min_remaining_h(
+                        np.array([snap.context["floor_plan_remaining_h"]]),
+                        np.array([snap.context["floor_elapsed_h"]]),
+                    )[0]
+                )
+            )
+            lo, p50, hi = max(lo, floor), max(p50, floor), max(hi, floor)
         flags = {
             "degraded": True,
             "reason": f"{reason}; served {source}",
-            "cold_start": False,
             "missing_events": [e.value for e in snap.missing_events],
             "out_of_distribution": False,
         }
@@ -285,9 +362,9 @@ class Engine:
             Checkpoint(snap.checkpoint).name,
             snap.planned_delivered,
             snap.current_delay,
-            p50 - width,
+            lo,
             p50,
-            p50 + width,
+            hi,
             p_late,
             risk_tier(p50, self.model.late_threshold_h),
             {},
@@ -326,9 +403,9 @@ class Engine:
         seq = event_sequence(NETWORK.lanes[view.lane_id].has_transshipment)
         times = [view.planned[E.GATE_IN_ORIGIN] - 72.0]
         times += [
-            view.reported[e] + 1 / 60
+            view.known_at(e) + 1 / 60
             for e in seq[:-1]
-            if e in view.reported and view.reported[e] < as_of
+            if e in view.reported and view.known_at(e) < as_of
         ]
         times = [t for t in times if t <= as_of]
         if not times or times[-1] < as_of:
@@ -372,6 +449,8 @@ class Engine:
                 snap.features.get("hours_since_last_event", math.nan) if snap else math.nan,
                 gap,
                 narrative="",
+                data_quality_flags=tuple(f"missing:{e}" for e in r.flags.get("missing_events", []))
+                + (("degraded",) if r.flags.get("degraded") else ()),
             )
             new = evaluate_alerts(prev, cur, open_rules)
             alerts.extend(new)
@@ -397,11 +476,28 @@ class Engine:
         assert snap is not None
         actions = candidate_actions(snap, view.docs_complete, view.inland_mode, view.lane_id)
 
+        cache: dict[WhatIf | None, Result] = {None: base}
+
+        def run(wi: WhatIf | None) -> Result:
+            if wi not in cache:
+                cache[wi] = self.predict_many([(view, as_of)], whatif=wi)[0]
+            return cache[wi]
+
         def evaluate(wi: WhatIf | None) -> tuple[float, float, float]:
-            r = base if wi is None else self.predict_many([(view, as_of)], whatif=wi)[0]
+            r = run(wi)
             return r.delay_p50, r.p_late, r.cost_usd.get("p50", 0.0)
 
-        return base, rank_actions(actions, evaluate, top_k)
+        def detail(wi: WhatIf | None) -> dict[str, float]:
+            r = run(wi)
+            return {
+                "p10": r.delay_p10,
+                "p50": r.delay_p50,
+                "p90": r.delay_p90,
+                "p_late": r.p_late,
+                "eta_ok": float(r.planned_delivered + r.delay_p10 >= r.as_of - 1e-6),
+            }
+
+        return base, rank_actions(actions, evaluate, top_k, snap, view.planned, detail)
 
     def scenario_impact(self, scenario: Scenario, items: list[tuple[ShipmentView, float]]) -> dict:
         ext2 = scenario.apply(self.ext)
@@ -484,13 +580,13 @@ class World:
         v = self.views[sid]
         if t >= self.actual_delivered[sid]:
             return "DELIVERED"
-        first = min(v.reported.values()) if v.reported else math.inf
+        first = min(v.known_at(e) for e in v.reported) if v.reported else math.inf
         return "IN_TRANSIT" if t >= first else "BOOKED"
 
     def view_as_of(self, sid: str, t: float) -> ShipmentView:
-        """The view an operator would have at time t (only milestones reported by then)."""
+        """The view an operator would have at time t (only milestone reports received by then)."""
         v = self.views[sid]
-        rep = {e: ts for e, ts in v.reported.items() if ts <= t}
+        rep = v.known_by(t)
         return ShipmentView(
             v.shipment_id,
             v.lane_id,
@@ -502,6 +598,7 @@ class World:
             v.planned,
             rep,
             v.carrier_edi_tier,
+            {e: v.known_at(e) for e in rep},
         )
 
     def checkpoints(self, sid: str) -> list[dict]:
@@ -512,7 +609,7 @@ class World:
             if e in v.reported:
                 label = e.value.replace("_", " ").title()
                 out.append(
-                    {"label": f"After {label}", "as_of": v.reported[e] + 1 / 60, "event": e.value}
+                    {"label": f"After {label}", "as_of": v.known_at(e) + 1 / 60, "event": e.value}
                 )
         return sorted(
             out,
@@ -527,3 +624,38 @@ def group_label(g: str) -> str:
     from cascade.domain.stages import GROUP_LABEL
 
     return GROUP_LABEL[StageGroup(g)]
+
+
+def _p50_parts(pr: PredictionArrays, i: int) -> dict[str, float] | None:
+    parts = (pr.raw_p50, pr.ordering_adjust, pr.floor_adjust, pr.delivered_adjust)
+    if any(a is None for a in parts):
+        return None
+    raw, order, floor, delivered = (float(a[i]) for a in parts if a is not None)
+    return {"raw": raw, "ordering": order, "floor": floor, "delivered": delivered}
+
+
+def identity_errors(res: Result) -> dict[str, float]:
+    """The three P50 identities, each computed from independently derived parts (hours).
+
+    a: realised waterfall rows == observed delay, and observed + rulebook + λ·learned == raw P50
+    b: raw P50 + ordering + floor + delivered adjustments == final P50
+    c: the ETA serialised by the API == planned delivery + final P50 delay
+    """
+    from datetime import datetime
+
+    from cascade.domain.delay import to_hours
+
+    ex, parts = res.explanation, res.p50_parts
+    if ex is None or parts is None:
+        raise ValueError("identities need a model-path prediction with explain=True")
+    realized = sum(w.hours for w in ex.waterfall if w.kind == "realized")
+    model_parts = sum(ex.rulebook_contrib.values()) + sum(ex.learned_contrib.values()) + ex.base_h
+    a = max(
+        abs(realized - res.delay_observed),
+        abs(res.delay_observed + model_parts - parts["raw"]),
+    )
+    b = abs(parts["raw"] + parts["ordering"] + parts["floor"] + parts["delivered"] - res.delay_p50)
+    iso = res.to_json(include_waterfall=False)["eta"]["p50"]
+    eta_api = to_hours(datetime.fromisoformat(iso.replace("Z", "+00:00")))
+    c = abs(eta_api - (res.planned_delivered + res.delay_p50))
+    return {"a": a, "b": b, "c": c}

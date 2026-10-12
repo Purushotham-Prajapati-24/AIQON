@@ -1,7 +1,9 @@
 """Prediction ledger: append-only SQLite store written off the hot path.
 
-Writes go through a bounded queue drained by a background thread; if the queue is full the
-record is dropped and counted — a prediction is never delayed by persistence.
+Best-effort telemetry, not an audit log. Writes go through a bounded queue drained by a
+background thread; if the queue is full the record is dropped and counted, so a prediction is
+never delayed by persistence. The default store is ``:memory:`` (lost on restart): point
+``CASCADE_LEDGER`` at a file for durability. ``close()`` waits briefly; queued rows can be lost.
 """
 
 from __future__ import annotations

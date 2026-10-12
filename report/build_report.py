@@ -182,7 +182,7 @@ def load_inputs() -> tuple[dict, dict | None, dict]:
 # ---- README results table ----------------------------------------------------------------------
 def results_markdown(m: dict, seeds: dict | None) -> str:
     h, a = m["headline"], m["accuracy"]
-    ci = h["mae_improvement_vs_B1_ci95"]
+    ci = h.get("mae_improvement_vs_B1_ci95_voyage", h["mae_improvement_vs_B1_ci95"])
     seed_col = seeds is not None
     rows = [
         (
@@ -192,7 +192,7 @@ def results_markdown(m: dict, seeds: dict | None) -> str:
         ),
         (
             "MAE improvement vs carry-forward (B1)",
-            f"**{pct(h['mae_improvement_vs_B1'])}** (95% CI {pct(ci[0])}–{pct(ci[1])})",
+            f"**{pct(h['mae_improvement_vs_B1'])}** (95% CI {pct(ci[0])}–{pct(ci[1])}, by voyage)",
             mean_sd(seeds, "mae_improvement_vs_B1", pct) if seed_col else "",
         ),
         (
@@ -204,7 +204,12 @@ def results_markdown(m: dict, seeds: dict | None) -> str:
             # λ = 0 makes the P50 the rulebook; show it so the gain is attributed honestly.
             "MAE of the operator rulebook alone (no ML) · learned weight λ",
             f"{hrs(a['overall']['physics_rulebook']['mae'])} · λ = {m['model_selection']['shrink']}",
-            "not recorded per seed yet",
+            (
+                f"{mean_sd(seeds, 'mae_rulebook_h', hrs)} · λ = "
+                + "/".join(f"{r.get('shrink', '?')}" for r in seeds["runs"])
+            )
+            if seed_col and "mae_rulebook_h" in seeds["summary"]
+            else "",
         ),
         (
             "P10–P90 interval coverage (target 80%)",
@@ -236,8 +241,8 @@ def results_markdown(m: dict, seeds: dict | None) -> str:
             mean_sd(seeds, "propagation_spearman", num) if seed_col else "",
         ),
         (
-            "Waterfall bookkeeping check (rows sum to P50)",
-            f"{h['waterfall_additivity_violations']} / {m['checks']['waterfall_checked']}",
+            "P50 identity violations (observed + rulebook + learned + adjustments = P50)",
+            f"{h['identity_violations']} / {m['checks']['identity_checked']}",
             "",
         ),
         (
@@ -247,7 +252,8 @@ def results_markdown(m: dict, seeds: dict | None) -> str:
         ),
     ]
     head = (
-        f"| Metric (out-of-time test, {a['n_test_shipments']} shipments / {a['n_test_rows']} "
+        f"| Metric (out-of-time test, {a.get('n_test_voyages', '?')} voyages / "
+        f"{a['n_test_shipments']} shipments / {a['n_test_rows']} "
         f"snapshots) | Seed {m['meta']['seed']} | "
         + (f"{len(seeds['runs'])}-seed mean ± sd |" if seed_col else "|")
     )
@@ -338,8 +344,35 @@ def build_html(m: dict, seeds: dict | None, sim: dict, author: str) -> str:
     ex = m["example"]
     chk = m["checks"]
     tc = meta["train_config"]
-    ci_b1 = a["bootstrap_vs_B1"]["improvement"]
-    ci_b2 = a["bootstrap_vs_B2"]["improvement"]
+    bv = a.get("bootstrap_voyage", {})
+    ci_b1 = bv.get("vs_B1", a["bootstrap_vs_B1"])["improvement"]
+    ci_b2 = bv.get("vs_B2", a["bootstrap_vs_B2"])["improvement"]
+    ci_rule = bv.get("vs_rulebook", {}).get("improvement", [float("nan")] * 2)
+    env = m["meta"].get("environment", {})
+    missed = [tg for tg in m.get("targets", []) if tg["status"] != "met"]
+    sens_txt = ""
+    sens_path = REPORTS / "sensitivity.json"
+    if sens_path.exists():  # worlds whose mechanics differ from the rulebook's assumptions
+        res = json.loads(sens_path.read_text(encoding="utf-8"))["results"]
+        alt = {k: v for k, v in res.items() if k != "baseline"}
+        if alt:
+            imp = [v["mae_improvement_vs_B1"] for v in alt.values()]
+            ratio = [v["mae_ratio_cascade_vs_rulebook"] for v in alt.values()]
+            cov = [v["coverage_p10_p90_overall"] for v in alt.values()]
+            sens_txt = (
+                f" <b>Wrong-assumption sensitivity</b> ({len(alt)} worlds with changed simulator "
+                f"mechanics): gain vs carry-forward {pct(min(imp))}–{pct(max(imp))}, CASCADE/rulebook "
+                f"MAE ratio "
+                f"{num(min(ratio))}–{num(max(ratio))}, coverage {pct(min(cov))}–{pct(max(cov))}."
+            )
+            best = min(alt.items(), key=lambda kv: kv[1]["mae_ratio_cascade_vs_rulebook"])
+            if best[1]["mae_ratio_cascade_vs_rulebook"] < 0.95:
+                b = best[1]
+                sens_txt += (
+                    f" Where the rulebook is wrong (<i>{best[0].replace('_', ' ')}</i>) "
+                    f"validation picks λ = {b['shrink']}: {hrs(b['mae_cascade_h'])} vs "
+                    f"{hrs(b['mae_rulebook_h'])}."
+                )
     late_h = sim.get("late_threshold_h", tc.get("late_threshold_h"))
     nominal = 1 - tc["alpha"]
     fig = (REPORTS / "figures").as_uri()
@@ -505,13 +538,13 @@ The true root cause is the stage with the largest positive Δ<sub>k</sub>. Late 
 weather with storm episodes and the monsoon. For future dates the model only sees noisy <i>as-of forecasts</i> whose error grows with the horizon.
 <b>Missingness is typed:</b> <i>structural</i> (no hub on direct lanes → sentinel, never NaN); <i>MCAR</i> reporting gaps
 (rate {pct(sim.get("mcar_rate", 0))}); <i>MNAR</i> gaps from poor carrier EDI feeds (up to {pct(sim.get("edi_tier3_rate", 0))}) and congested terminals that
-fail to report discharge. Timestamps carry reporting jitter, and delivery is always observed.
+fail to report discharge. A report reaches the system after a carrier-dependent latency (median 0.5–6 h by feed quality), and delivery is always observed.
 <b>Split:</b> out-of-time. The last voyages by departure, which fall in the Q4 peak, form the test set ({a["n_test_shipments"]} shipments, {a["n_test_rows"]} as-of snapshots), so the test season is shifted relative to training.
 <b>Assumptions:</b> fixed schedules and headways per lane; costs from a configurable tariff; no strikes or blank sailings; one container per shipment.</p>
 
 <h2>3 · Approach</h2>
 <ul>
-<li><b>As-of checkpoints.</b> Each shipment expands into one row per milestone. Features are computed only from events with timestamps ≤ as-of, and leakage is property-tested.</li>
+<li><b>As-of checkpoints.</b> Each shipment expands into one row per milestone. Features use only milestone reports that had <i>arrived</i> by the as-of time (an event that happened but was reported later is invisible), and leakage is property-tested.</li>
 <li><b>Operator rulebook vs truth.</b> A physics-style projection of every <i>remaining</i> stage (cut-offs, headways, Kingman queue, customs calendars, rail timetables) from forecast congestion and weather, with coefficients <b>deliberately different from the simulator's</b>, so the model cannot "know the simulator".</li>
 <li><b>Propagation features.</b> These include projected hub buffer versus cut-off, congestion × current lateness, days to the next business slot, rail cut-off slack, and missingness flags that carry signal (EDI tier, gaps so far).</li>
 <li><b>Residual quantile GBM with temporal shrinkage.</b> LightGBM models P10/P50/P90 of the residual on top of the rulebook ({tc["n_estimators"]} trees, {tc["num_leaves"]} leaves). The learned median correction is blended in with weight λ ∈ {{{shrink_grid}}}, chosen on the latest training voyages. <b>λ = {sel["shrink"]} was selected</b>, so the median comes from the rulebook, and ML contributes uncertainty, P(late) and stage forecasts.</li>
@@ -523,10 +556,10 @@ fail to report discharge. Timestamps carry reporting jitter, and delivery is alw
 <h2>4 · Results</h2>
 <table><caption>Table 2 · Final-delay error on the out-of-time test, all {a["n_test_rows"]} snapshots (hours; bias = mean of prediction − actual)</caption>
 <tr><th>Model</th><th class=n>MAE</th><th class=n>RMSE</th><th class=n>MedAE</th><th class=n>P90 AE</th><th class=n>Bias</th></tr>{t1}</table>
-<p>MAE improvement, bootstrapped over shipments: <b>{pct(h["mae_improvement_vs_B1"])}</b> vs carry-forward (95% CI {pct(ci_b1[0])}–{pct(ci_b1[1])}) and
-<b>{pct(h["mae_improvement_vs_B2"])}</b> vs the propagation prior (CI {pct(ci_b2[0])}–{pct(ci_b2[1])}). The negative bias of every model reflects
-the Q4 shift (the test season is more congested than training). The rulebook and CASCADE are almost identical in MAE, which is expected with λ = {sel["shrink"]}.
-The value added by the learned models is in the next tables.</p>
+<p>MAE improvement, bootstrapped over the {a.get("n_test_voyages", "?")} test <i>voyages</i> (the independent unit): <b>{pct(h["mae_improvement_vs_B1"])}</b> vs carry-forward (95% CI {pct(ci_b1[0])}–{pct(ci_b1[1])}) and
+<b>{pct(h["mae_improvement_vs_B2"])}</b> vs the propagation prior (CI {pct(ci_b2[0])}–{pct(ci_b2[1])}). Against the <b>rulebook alone</b> CASCADE is {pct(h.get("mae_improvement_vs_rulebook", float("nan")), 1)}
+(CI {pct(ci_rule[0], 1)} to {pct(ci_rule[1], 1)}): with λ = {sel["shrink"]} the gain over the baselines is the rulebook's. The negative bias reflects the Q4 shift.
+{("<b>Original targets not (fully) met:</b> " + "; ".join(f"{tg['id']} {tg['metric'].lower()} ({tg['status']})" for tg in missed) + " — full table in the model card.") if missed else ""}</p>
 
 <figure><img src="{fig}/convergence.png" style="width:60%">
 <figcaption>Figure 1 · ETA convergence. The error of the final-delay forecast falls as milestones arrive (MAE {hrs(by_cp["cascade"][cp_first])} at booking →
@@ -546,7 +579,7 @@ The value added by the learned models is in the next tables.</p>
 <div>
 <table><caption>Table 4 · Explanation fidelity vs simulator ground truth</caption>
 <tr><th>Root-cause stage ({att["n"]} pre-arrival snapshots)</th><th class=n>Accuracy</th></tr>
-<tr class=hl><td>CASCADE stage SHAP, top-1 · top-2</td><td class=n>{pct(att["accuracy"]["shap_top1"])} · {pct(att["accuracy"]["shap_top2"])}</td></tr>
+<tr class=hl><td>CASCADE stage ranking (rulebook at λ = 0), top-1 · top-2</td><td class=n>{pct(att["accuracy"]["shap_top1"])} · {pct(att["accuracy"]["shap_top2"])}</td></tr>
 <tr><td>… top-1 on major delays only</td><td class=n>{pct(att["accuracy"]["shap_top1_major_delays"])}</td></tr>
 <tr><td>Reconciled stage forecast, top-1</td><td class=n>{pct(att["accuracy"]["stage_forecast_top1"])}</td></tr>
 <tr><td>Lane-history explainer, top-1</td><td class=n>{pct(att["accuracy"]["lane_prior_top1"])}</td></tr>
@@ -563,7 +596,7 @@ Spearman over {prop["n"]} shipment × stage pairs: {num(prop["spearman"])}. True
 <table><caption>Table 5 · Ablations and robustness to missing milestones</caption>
 <tr><th>Variant</th><th class=n>MAE</th><th class=n>Coverage</th></tr>{t_abl}</table>
 <table><tr><th>Extra milestones dropped</th><th class=n>MAE</th><th class=n>MAE B1</th><th class=n>Coverage</th></tr>{t_rob}</table>
-<p class=small>Only removing the propagation features hurts, and a lot. Under heavy missingness CASCADE degrades gracefully and stays ahead of carry-forward.</p>
+<p class=small>Only removing propagation features hurts; under heavy missingness CASCADE stays ahead of carry-forward.{sens_txt}</p>
 </div>
 <div>{seed_html}</div>
 </div>
@@ -576,10 +609,10 @@ Spearman over {prop["n"]} shipment × stage pairs: {num(prop["spearman"])}. True
 <div>
 <p class=small style="margin-top:1mm">Advisor ranking vs truth: Spearman {num(adv["spearman"])}, direction agreement {pct(adv["sign_agreement"])} (n = {adv["n"]}).
 Largest miss: {ACTION_LABEL.get(worst_action, worst_action)} ({hrs(adv["by_action"][worst_action]["model_hours_saved"], 0)} predicted vs {hrs(adv["by_action"][worst_action]["true_hours_saved"], 0)} true).
-<b>Decision replay:</b> late-alert recall {pct(dec["late_alert_recall"])} at precision {pct(dec["late_alert_precision"])}; {pct(dec["alert_lead_ge_48h_share"])} of
-late shipments are alerted ≥ 48 h ahead. The promise date holds in {pct(dec["promise_hit_rate"])} of cases, with {num(dec["promise_reversals_per_shipment"])}
+<b>Decision replay:</b> late-alert recall {pct(dec["late_alert_recall"])}, precision {pct(dec["late_alert_precision"])}, false-positive rate {pct(dec.get("late_alert_false_positive_rate", float("nan")))};
+{num(dec.get("alerts_per_100_shipment_days", float("nan")), 1)} alerts per 100 shipment-days; median lead {hrs(dec.get("lead_to_actual_h_p10_p50_p90", [0, float("nan"), 0])[1] / 24, 1).replace(" h", " d")} before <i>actual</i> delivery. The promise date holds in {pct(dec["promise_hit_rate"])} of cases, with {num(dec["promise_reversals_per_shipment"])}
 reversals per shipment vs {num(dec["raw_eta_reversals_per_shipment"])} for the raw ETA.
-<b>Latency:</b> predict + explain p50 {ms(chk["latency_p50_ms"])}, p95 {ms(chk["latency_p95_ms"])} on a laptop CPU.</p>
+<b>Latency:</b> predict + explain p50 {ms(chk["latency_p50_ms"])}, p95 {ms(chk["latency_p95_ms"])} (in-process, sequential, {env.get("cpu_count", "?")}-thread laptop CPU, LightGBM {env.get("lightgbm", "?")}).</p>
 </div>
 </div>
 
@@ -595,12 +628,7 @@ The cause ledger agrees: the true root cause is <b>{esc(ex["root_cause_group"].t
 </div>
 
 <h2>5 · Limitations and next steps</h2>
-<ul>
-<li><b>Synthetic-to-real gap.</b> Plausible mechanisms, not fitted to real data; reports are never late and schedules never revised.</li>
-<li><b>Counterfactuals are associational.</b> The advisor re-runs the predictive model; fidelity vs true interventions is measured (Spearman {num(adv["spearman"])}), not guaranteed.</li>
-<li><b>Small n and the Q4 shift.</b> {a["n_test_shipments"]} test shipments: wide CIs, resampled by shipment, not voyage{" (seed spread: Table 6)" if seeds else ""}; the learned median was switched off (λ = {sel["shrink"]}).</li>
-<li><b>Roadmap.</b> Reporting latency and schedule revisions, an AIS/EDI adapter, survival models, drift monitoring (<code>docs/ImprovementPlan.md</code>).</li>
-</ul>
+<p><b>Synthetic</b> mechanisms, not fitted to real data (schedules never revised, messages never corrected); <b>associational</b> counterfactuals (advisor Spearman {num(adv["spearman"])} vs true interventions); <b>small n</b>: {a["n_test_shipments"]} test shipments in {a.get("n_test_voyages", "?")} voyages, so CIs are wide and resampled by voyage. <b>Next:</b> schedule revisions, a calibrated P80 promise, validation-tuned alert thresholds, an AIS/EDI adapter (<code>docs/ImprovementPlan.md</code>).</p>
 </body></html>
 """
 

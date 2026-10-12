@@ -37,9 +37,16 @@ class SimConfig:
     edi_tier2_rate: float = 0.08
     edi_tier3_rate: float = 0.25
     discharge_congestion_rate: float = 0.15
-    jitter_h: float = 0.75
+    jitter_h: float = 0.75  # error in the event time *stated* in a milestone message
     mean_shipments_per_voyage: float = 2.0
     max_connection_slack_h: float = 54.0
+    # reporting latency: a milestone message reaches CASCADE some time after the event happened.
+    # Lognormal, median by carrier EDI tier (1 = good feed); DELIVERED (proof of delivery) is
+    # treated as known on arrival. Drawn from a separate RNG stream so the physics is unchanged.
+    latency_median_tier1_h: float = 0.5
+    latency_median_tier2_h: float = 2.0
+    latency_median_tier3_h: float = 6.0
+    latency_sigma: float = 0.8
 
 
 @dataclass
@@ -173,14 +180,36 @@ def generate(cfg: SimConfig, net: Network = NETWORK) -> SimOutput:
 
     shipments = pd.DataFrame(ship_rows)
     shipments = shipments.sort_values("planned_DEPART_ORIGIN", kind="stable").reset_index(drop=True)
+    events = add_reporting_latency(pd.DataFrame(event_rows), shipments, cfg)
     return SimOutput(
         shipments=shipments,
-        events=pd.DataFrame(event_rows),
+        events=events,
         ledger=pd.DataFrame(ledger_rows),
         draws=pd.DataFrame(draw_rows),
         external=ext,
         config=cfg,
     )
+
+
+def add_reporting_latency(
+    events: pd.DataFrame, shipments: pd.DataFrame, cfg: SimConfig
+) -> pd.DataFrame:
+    """available_h = when the milestone message reached CASCADE (never before the event)."""
+    lat_rng = np.random.default_rng([cfg.seed, 0x1A7E])  # independent of the physics stream
+    tier = events.shipment_id.map(shipments.set_index("shipment_id").carrier_edi_tier)
+    median = tier.map(
+        {
+            1: cfg.latency_median_tier1_h,
+            2: cfg.latency_median_tier2_h,
+            3: cfg.latency_median_tier3_h,
+        }
+    ).to_numpy(float)
+    latency = median * np.exp(cfg.latency_sigma * lat_rng.standard_normal(len(events)))
+    latency[(events.event == E.DELIVERED.value).to_numpy()] = 0.0
+    sent = np.maximum(events.actual_h.to_numpy(float), events.reported_h.to_numpy(float))
+    out = events.copy()
+    out["available_h"] = np.where(out.reported.to_numpy(bool), sent + latency, np.nan)
+    return out
 
 
 def _collect(

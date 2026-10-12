@@ -1,9 +1,12 @@
 """Turn a prediction into stage-level explanations a planner can act on.
 
-Three lenses tell one consistent story:
-* realized  — delay already accumulated per completed stage (facts from milestones),
-* forecast  — exact additive contributions to the P50 remaining delay, summed by stage group,
-* narrative — deterministic templates filled only with numbers from the two lenses above.
+Every number is labelled by its source, so nothing is presented as more than it is:
+* realized  — delay already accumulated per completed stage (observed facts from milestones),
+* rulebook  — the operator-rulebook projection of each remaining stage group (mechanistic),
+* learned   — λ x exact TreeSHAP of the learned median correction (absent when λ = 0),
+* ordering / floor / delivered — explicit post-processing adjustments (never a remainder),
+* narrative — deterministic templates filled only with numbers from the parts above.
+Identity: realized + rulebook + learned = raw P50; raw P50 + adjustments = final P50.
 """
 
 from __future__ import annotations
@@ -38,13 +41,14 @@ class Driver:
     top_feature: str
     value: float
     phrase: str
+    source: str = "rulebook"  # rulebook | learned | rulebook+learned
 
 
 @dataclass
 class WaterfallItem:
     label: str
     hours: float
-    kind: str  # planned | realized | baseline | forecast | guardrail | total
+    kind: str  # realized | rulebook | learned | ordering | floor | delivered | total
 
 
 @dataclass
@@ -56,6 +60,10 @@ class Explanation:
     root_cause_group: str
     narratives: dict[str, str] = field(default_factory=dict)
     feature_contrib: dict[str, float] = field(default_factory=dict)
+    mode: str = "rulebook"  # what the forecast bars are: rulebook | rulebook+learned | learned
+    shrink: float = 0.0  # λ, the weight of the learned median correction
+    rulebook_contrib: dict[str, float] = field(default_factory=dict)
+    learned_contrib: dict[str, float] = field(default_factory=dict)
 
 
 def group_sums(contrib_row: np.ndarray) -> dict[StageGroup, float]:
@@ -193,9 +201,18 @@ def phrase_for(feature: str, value: float, snap: Snapshot) -> str:
     return feature.replace("_", " ")
 
 
+POSTPROCESS_LABELS = {
+    "ordering": "Quantile ordering adjustment",
+    "floor": "ETA floor (heuristic minimum remaining time)",
+    "delivered": "Delivered: realised delay",
+}
+
+
 def build_explanation(
     snap: Snapshot,
-    contrib_row: np.ndarray,
+    rulebook_row: np.ndarray,
+    learned_row: np.ndarray,
+    adjust: dict[str, float],
     delay_p10: float,
     delay_p50: float,
     delay_p90: float,
@@ -206,10 +223,16 @@ def build_explanation(
     late_threshold_h: float = 24.0,
     top_k: int = 5,
     flags: dict | None = None,
+    mode: str = "rulebook",
+    shrink: float = 0.0,
 ) -> Explanation:
+    """rulebook_row / learned_row: per-feature contributions [n_features + 1 (bias)] to the raw
+    P50 remaining delay; adjust: explicit ordering / floor / delivered adjustments (hours)."""
     flags = flags or {}
+    contrib_row = rulebook_row + learned_row
     sums = group_sums(contrib_row)
-    base = float(contrib_row[-1])
+    rule_sums, learn_sums = group_sums(rulebook_row), group_sums(learned_row)
+    base = float(learned_row[-1])  # learned bias (the rulebook has none); 0 when λ = 0
     fc = {n: float(v) for n, v in zip(FEATURE_NAMES, contrib_row[:-1], strict=True)}
 
     drivers: list[Driver] = []
@@ -222,6 +245,8 @@ def build_explanation(
             idx, key=lambda i: contrib_row[i] * sign
         )  # feature pushing hardest in the group's direction
         name = FEATURE_NAMES[top]
+        r, lrn = abs(rule_sums[g]) >= 0.05, abs(learn_sums[g]) >= 0.05
+        source = "rulebook+learned" if r and lrn else ("learned" if lrn else "rulebook")
         drivers.append(
             Driver(
                 g.value,
@@ -230,19 +255,25 @@ def build_explanation(
                 name,
                 float(snap.features[name]),
                 phrase_for(name, float(snap.features[name]), snap),
+                source,
             )
         )
     drivers = drivers[:top_k]
 
-    # waterfall: realized stages, typical remaining (bias), forecast groups, guardrail -> total
+    # waterfall: observed facts -> rulebook projection -> learned correction -> explicit
+    # post-processing -> total. Every row is computed; none is a balancing remainder.
     wf = realized_items(snap, lane_id, planned)
-    wf.append(WaterfallItem("Typical remaining delay", base, "baseline"))
-    for g in sorted(ALL_GROUPS, key=lambda g: -abs(sums[g])):
-        if abs(sums[g]) >= 0.05:
-            wf.append(WaterfallItem(GROUP_LABEL[g], sums[g], "forecast"))
-    raw = snap.current_delay + base + sum(sums.values())
-    if abs(delay_p50 - raw) > 0.05:
-        wf.append(WaterfallItem("Consistency guardrail", delay_p50 - raw, "guardrail"))
+    for g in sorted(ALL_GROUPS, key=lambda g: -abs(rule_sums[g])):
+        if abs(rule_sums[g]) >= 0.05:
+            wf.append(WaterfallItem(f"{GROUP_LABEL[g]} (rulebook)", rule_sums[g], "rulebook"))
+    if abs(base) >= 0.05:
+        wf.append(WaterfallItem("Learned correction: baseline", base, "learned"))
+    for g in sorted(ALL_GROUPS, key=lambda g: -abs(learn_sums[g])):
+        if abs(learn_sums[g]) >= 0.05:
+            wf.append(WaterfallItem(f"{GROUP_LABEL[g]} (learned)", learn_sums[g], "learned"))
+    for kind in ("ordering", "floor", "delivered"):
+        if abs(adjust.get(kind, 0.0)) >= 0.05:
+            wf.append(WaterfallItem(POSTPROCESS_LABELS[kind], adjust[kind], kind))
     wf.append(WaterfallItem("Expected total delay (P50)", delay_p50, "total"))
 
     has_ts = bool(snap.features["has_transshipment"])
@@ -250,7 +281,16 @@ def build_explanation(
         contrib_row, snap.checkpoint, has_ts, delay_p50 - snap.current_delay
     )
     exp = Explanation(
-        drivers, {g.value: v for g, v in sums.items()}, base, wf, root, feature_contrib=fc
+        drivers,
+        {g.value: v for g, v in sums.items()},
+        base,
+        wf,
+        root,
+        feature_contrib=fc,
+        mode=mode,
+        shrink=shrink,
+        rulebook_contrib={g.value: v for g, v in rule_sums.items()},
+        learned_contrib={g.value: v for g, v in learn_sums.items()},
     )
     exp.narratives = render_narratives(
         exp, snap, shipment_id, delay_p10, delay_p50, delay_p90, p_late, late_threshold_h, flags
@@ -355,14 +395,25 @@ def render_narratives(
     else:
         cust = "Your shipment is on track for the planned delivery window."
     top_feats = sorted(exp.feature_contrib.items(), key=lambda kv: -abs(kv[1]))[:5]
+    rule = sum(exp.rulebook_contrib.values())
+    learned = sum(exp.learned_contrib.values()) + exp.base_h
+    adj = sum(w.hours for w in exp.waterfall if w.kind in POSTPROCESS_LABELS)
+    source = f"Mode: {exp.mode} (learned weight λ = {exp.shrink:g}" + (
+        "; the learned median correction is switched off, so the forecast is the operator "
+        "rulebook's projection)."
+        if exp.mode == "rulebook"
+        else ")."
+    )
     analyst = (
-        f"P50 total delay {p50:.1f} h = current {snap.current_delay:.1f} h + base {exp.base_h:.1f} h + "
+        f"{source} P50 total delay {p50:.1f} h = observed {snap.current_delay:.1f} h "
+        f"+ rulebook {rule:+.1f} h + learned {learned:+.1f} h + post-processing {adj:+.1f} h. "
+        "By stage: "
         + ", ".join(
             f"{k} {v:+.1f}"
             for k, v in sorted(exp.group_contrib.items(), key=lambda kv: -abs(kv[1]))
             if abs(v) >= 0.5
         )
-        + ". Top features: "
+        + ". Top inputs: "
         + ", ".join(f"{k}={snap.features[k]:.2f} ({v:+.1f} h)" for k, v in top_feats)
         + "."
     )
