@@ -106,6 +106,15 @@ def dur(h: float) -> str:
     return ("+" if h > 0.5 else "−" if h < -0.5 else "") + s
 
 
+def usd(x: float, signed: bool = False) -> str:
+    """Money with a proper minus sign: −$194, +$952 (signed) and never "$-0"."""
+    v = round(x)
+    if v == 0:
+        return "$0"
+    s = f"${abs(v):,.0f}"
+    return "−" + s if v < 0 else ("+" if signed else "") + s
+
+
 def ts(iso: str, fmt: str = "%a %d %b %H:%M") -> str:
     return datetime.fromisoformat(iso.replace("Z", "+00:00")).strftime(fmt)
 
@@ -139,6 +148,7 @@ def waterfall_chart(items: list[dict], height: int = 360) -> go.Figure:
             x=x,
             text=text,
             textposition="outside",
+            cliponaxis=False,
             connector={"line": {"color": "rgba(128,128,128,.4)"}},
             increasing={"marker": {"color": OK["vermillion"]}},
             decreasing={"marker": {"color": OK["green"]}},
@@ -157,7 +167,7 @@ def waterfall_chart(items: list[dict], height: int = 360) -> go.Figure:
     )
     fig.update_layout(
         height=height,
-        margin=dict(l=10, r=40, t=10, b=10),
+        margin=dict(l=10, r=70, t=10, b=10),
         showlegend=False,
         xaxis_title="hours vs plan   (● realized · ◦ forecast)",
     )

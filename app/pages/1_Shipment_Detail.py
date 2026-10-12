@@ -23,6 +23,7 @@ from ui import (
     tier_chip,
     timeline_chart,
     ts,
+    usd,
     waterfall_chart,
 )
 
@@ -134,9 +135,10 @@ with right:
                     marker_color=[OK["vermillion"] if v > 0 else OK["green"] for v in sf.values()],
                     text=[dur(v) for v in sf.values()],
                     textposition="outside",
+                    cliponaxis=False,
                 )
             )
-            fig.update_layout(height=220, margin=dict(l=10, r=30, t=5, b=5), xaxis_title="hours")
+            fig.update_layout(height=220, margin=dict(l=10, r=60, t=5, b=5), xaxis_title="hours")
             st.plotly_chart(fig, use_container_width=True)
 
 # ---- recommended actions ----------------------------------------------------------------------
@@ -146,12 +148,20 @@ recs = adv["recommendations"]
 if not recs:
     st.caption("No feasible interventions at this point of the journey.")
 for rec in recs:
-    good = rec["net_value_usd"] > 0 or rec["hours_saved"] > 6
+    # ✅ pays for itself · ⏱️ saves real time but costs more than it avoids · ▫️ marginal
+    if rec["net_value_usd"] > 0:
+        icon, verdict = "✅", ""
+    elif rec["hours_saved"] > 6:
+        icon, verdict = "⏱️", " · saves time, but costs more than the delay it avoids"
+    else:
+        icon, verdict = "▫️", ""
     st.markdown(
-        f"{'✅' if good else '▫️'} **{rec['label']}** — saves **{dur(rec['hours_saved'])}**, "
-        f"USD {rec['usd_saved']:,.0f} avoided for USD {rec['action_cost_usd']:,.0f} "
-        f"(net USD {rec['net_value_usd']:,.0f}); P(late) after: {rec['p_late_after']:.0%}  \n"
-        f"<span style='opacity:.7'>{rec['description']} · feasible because {rec['feasible_reason']}</span>",
+        f"{icon} **{rec['label']}** — saves **{dur(rec['hours_saved']).lstrip('+')}**, "
+        f"{usd(rec['usd_saved'])} avoided for {usd(rec['action_cost_usd'])} "
+        f"(net {usd(rec['net_value_usd'], signed=True)}); "
+        f"P(late) after: {rec['p_late_after']:.0%}  \n"
+        f"<span style='opacity:.7'>{rec['description']} · feasible because "
+        f"{rec['feasible_reason']}{verdict}</span>",
         unsafe_allow_html=True,
     )
 st.caption(adv["disclaimer"])

@@ -163,8 +163,25 @@ with t3:
         "lane_prior_top1": "Lane-history explainer",
         "random_top1": "Random future stage",
     }
-    s = pd.Series({names[k]: at[k] for k in names})
-    st.bar_chart(s, horizontal=True, color=OK["blue"])
+    s = pd.Series({names[k]: at[k] for k in names})[::-1]  # plotly draws bottom-up
+    fig = go.Figure(
+        go.Bar(
+            x=s.values,
+            y=s.index,
+            orientation="h",
+            marker_color=OK["blue"],
+            text=[f"{v:.0%}" for v in s.values],
+            textposition="outside",
+            cliponaxis=False,
+        )
+    )
+    fig.update_layout(
+        height=260,
+        margin=dict(l=10, r=50, t=10, b=10),
+        xaxis=dict(tickformat=".0%", range=[0, 1]),
+        yaxis=dict(automargin=True),
+    )
+    st.plotly_chart(fig, use_container_width=True)
     st.caption(
         f"n = {ins['attribution']['n']}; major delays (>24 h) top-1: {at['shap_top1_major_delays']:.0%}"
     )
@@ -199,7 +216,8 @@ with t4:
                 colorscale=[[0, OK["green"]], [0.33, "#f7f7f7"], [1, OK["vermillion"]]],
                 zmin=0,
                 zmax=3,
-                text=piv.round(2).values,
+                # blank (not "NaN") where a lane has no shipments for that stage
+                text=piv.round(2).astype(object).where(piv.notna(), "").values,
                 texttemplate="%{text}",
                 colorbar=dict(title="Φ"),
             )

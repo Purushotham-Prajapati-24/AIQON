@@ -275,7 +275,7 @@ def advise(req: PredictRequest):
 
 # ---- demo world (fleet, shipments, alerts, scenarios, monitoring) ----------------------------------
 def _as_of(as_of: str | None) -> float:
-    if as_of is None:
+    if as_of is None or not as_of.strip():
         return world().now_h
     from datetime import datetime
 
@@ -404,9 +404,11 @@ def checkpoints(sid: str):
     w = world()
     if sid not in w.views:
         raise HTTPException(404, f"unknown shipment {sid}")
+    # Only milestones already reported by the world's "now": time-travel replays the past.
     return [
         {"label": c["label"], "as_of": _iso(c["as_of"]), "as_of_h": c["as_of"]}
         for c in w.checkpoints(sid)
+        if c["as_of"] <= w.now_h
     ]
 
 

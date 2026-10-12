@@ -53,21 +53,7 @@ jobs:
       - name: API boots on the fresh bundle
         env:
           CASCADE_MODEL_VERSION: "0.0.1"
-        run: |
-          python - <<'PY'
-          from fastapi.testclient import TestClient
-          from cascade.serving.app import app
-
-          with TestClient(app) as client:
-              ready = client.get("/ready").json()
-              print(ready)
-              assert ready.get("ready") is True, ready
-              sid = client.get("/v1/shipments").json()[0]["shipment_id"]
-              body = client.get(f"/v1/shipments/{sid}/payload").json()
-              r = client.post("/v1/predict", json=body)
-              assert r.status_code == 200, r.text
-              print(sid, r.json()["delay_hours"])
-          PY
+        run: python tests/smoke_boot.py
 
       - name: Upload reports
         if: always()

@@ -109,6 +109,15 @@ def test_world_endpoints(client):
     assert client.get("/v1/shipments/NOPE").status_code == 404
 
 
+def test_time_travel_never_goes_past_now(client):
+    now_h = client.get("/v1/world").json()["now_h"]
+    for s in client.get("/v1/shipments").json():
+        cps = client.get(f"/v1/shipments/{s['shipment_id']}/checkpoints").json()
+        assert all(c["as_of_h"] <= now_h for c in cps), s["shipment_id"]
+    sid = client.get("/v1/shipments").json()[0]["shipment_id"]
+    assert client.get(f"/v1/shipments/{sid}", params={"as_of": ""}).status_code == 200
+
+
 def test_tampered_bundle_is_refused(bundle_dir, tmp_path):
     import shutil
 

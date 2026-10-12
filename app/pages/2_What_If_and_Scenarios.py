@@ -11,7 +11,7 @@ import pandas as pd
 import streamlit as st
 
 import api_client as api
-from ui import TIER, dur, guard, kpi, setup
+from ui import TIER, dur, guard, kpi, setup, usd
 
 setup("What-if")
 st.markdown("## 🧪 What-If Lab & Disruption Radar")
@@ -61,7 +61,7 @@ with tab1:
     kpi(k[0], "Baseline delay P50", dur(b["delay_hours"]["p50"]), f"P(late) {b['p_late']:.0%}")
     kpi(k[1], "Scenario delay P50", dur(s["delay_hours"]["p50"]), f"P(late) {s['p_late']:.0%}")
     kpi(k[2], "Δ ETA", dur(res["delta_p50_h"]), "negative = earlier")
-    kpi(k[3], "Δ expected cost", f"${res['delta_cost_usd']:,.0f}", "illustrative tariffs")
+    kpi(k[3], "Δ expected cost", usd(res["delta_cost_usd"], signed=True), "illustrative tariffs")
     st.markdown(
         f"<div class='narr' style='margin-top:12px'>{s['narrative']}</div>", unsafe_allow_html=True
     )
@@ -109,7 +109,7 @@ with tab2:
             f"{imp['delta_late_count']:+d}",
             f"Σ ΔP(late) {imp['delta_expected_late']:+.1f}",
         )
-        kpi(k[3], "Δ expected cost", f"${imp['delta_cost_usd']:,.0f}")
+        kpi(k[3], "Δ expected cost", usd(imp["delta_cost_usd"], signed=True))
         if imp["affected"]:
             df = pd.DataFrame(imp["affected"])
             df["tier"] = (

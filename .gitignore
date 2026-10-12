@@ -9,10 +9,11 @@ __pycache__/
 *.egg-info/
 
 # generated data (reproducible with `cascade all`)
-data/
+/data/
 reports/seed*/
 *.sqlite
 *.db
+.import_linter_cache/
 
 # published model bundle IS committed so reviewers can run the API without training
 !artifacts/
