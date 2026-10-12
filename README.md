@@ -37,6 +37,8 @@ cascade serve                                            # 2. API on http://127.
 streamlit run app/Home.py                                # 3. control tower on http://localhost:8501 (second terminal)
 ```
 
+If your machine blocks the `cascade` launcher, `python -m cascade.cli serve` does the same thing.
+
 To rebuild everything from scratch (simulate → train → evaluate → gate → publish, about 1 minute), run `cascade all --force`. This overwrites `data/`, `reports/` and `artifacts/v1.0.0`. `cascade seeds` reruns the 5-seed stability study.
 
 **Docker alternative** (API + UI, healthchecked, API runs as a non-root user):

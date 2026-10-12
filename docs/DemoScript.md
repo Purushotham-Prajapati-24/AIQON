@@ -45,10 +45,8 @@
    - Expected delay jumps to **+7.0 d**, P(late) **83%**.
    - Scroll to **Delay waterfall**: the hatched **Transshipment** bar is about **+126 h**. The narrative says "projected to reach Tanjung Pelepas after the connection cut-off (buffer short by 36 h)".
 4. Move one more notch to **After Depart Ts · 17 Oct**: the hub departure confirms the missed connection (actual departure a week after plan). Expected delay **+8.0 d**, P(late) **96%**.
-5. Drag the slider to the far right, **Now · 08 Nov**: expected **+10.0 d**, range +6.9 … +12.5 d. Main driver is now **Destination port: Rotterdam berth utilisation 93%**, and the promise date is **2025-11-16**.
+5. Drag the slider to the far right, **Now · 08 Nov** (the slider only offers milestones reported by "now"): expected **+10.0 d**, range +6.9 … +12.5 d. Main driver is now **Destination port: Rotterdam berth utilisation 93%**, and the promise date is **2025-11-16**.
 6. Click the **Customer** radio button for one second to show the plain-language version, then go back to **Ops planner**.
-
-> ⚠️ Don't stop on the checkpoints between **After Depart Ts** and **Now** (After Arrive Dest Port · 08 Nov 23:39, After Customs Cleared · 15 Nov, …). They are *later* than the world's "now". Drag straight from 17 Oct to the far-right "Now".
 
 **Say:**
 > "Here's the cascade. At booking, CASCADE expects two days late, and it already flags the transshipment as the risk. The vessel then reaches Tanjung Pelepas 46 hours late. The model projects that it will miss the connection cut-off by 36 hours, which means waiting for the next sailing. The forecast jumps from two days to seven, and the waterfall puts the blame exactly there. Later, as the ship heads for Rotterdam, the main risk moves to the destination port, where berths are 93% utilised. Each bar is an exact, additive contribution, and the bars add up to the forecast. The same explanation can be written for the planner, for the customer, or for an analyst."
@@ -57,7 +55,7 @@
 
 **Clicks:**
 1. In the **Shipment** box, pick **SHP-000245**.
-2. Scroll to **Recommended actions**. The top action is **Book overtime / weekend customs clearance: saves +2.0 d, USD 490 avoided for USD 250 (net USD 240); P(late) after: 14%** (39% before; see the card at the top).
+2. Scroll to **Recommended actions**. The top action is ✅ **Book overtime / weekend customs clearance: saves 2.0 d, $490 avoided for $250 (net +$240); P(late) after: 14%** (39% before; see the card at the top).
 3. Scroll back up to point at **Promise date** and **Expected delay cost** on the card. *(optional)*
 
 **Say:**
