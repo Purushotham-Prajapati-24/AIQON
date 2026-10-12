@@ -1,6 +1,8 @@
 # Tech Stack — CASCADE
 
 > **As-built note:** implementation details that changed during the build are recorded in [`AsBuilt.md`](AsBuilt.md); where this page and the code disagree, AsBuilt.md is authoritative.
+>
+> **Review reconciliation (2026-10-13):** an external review was verified claim by claim against the code in [`ReviewVerification.md`](ReviewVerification.md); statements that described the *plan* rather than the build were corrected in place (marked *as built*). Follow-up work is in [`ImprovementPlan.md`](ImprovementPlan.md).
 
 > Every choice is justified against the drivers: **small data, explainability, low latency, reliability, 3-day delivery, many contributors.**
 > Exact versions are pinned in `uv.lock` at project init; the minimums below are the versions the design was validated against.
@@ -16,11 +18,11 @@
 | Dataframes | **pandas** | 2.2 | Team familiarity; CSV/JSON/NPZ IO (parquet DLLs are policy-blocked on the build machine). *Polars* reserved for scale |
 | Numerics | **NumPy**, **SciPy** | 1.26 / 1.13 | Simulator distributions, vectorised features |
 | Data validation | **In-house validator** (`data/validation.py`) | — | Schema + invariants at every IO boundary (Pandera dropped: see AsBuilt.md) |
-| Gradient boosting | **LightGBM** | 4.3 | Native quantile objective, categorical support, monotone constraints, fast exact TreeSHAP, sub-ms inference |
-| ML utilities | **scikit-learn** | 1.5 | GroupKFold, isotonic calibration, metrics |
-| Explainability | **shap** (TreeExplainer) | 0.45 | Exact, additive (needed for stage grouping). LightGBM's `pred_contrib=True` is the zero-dependency fast path used on `/predict` |
+| Gradient boosting | **LightGBM** | 4.3 (4.7.0 installed) | Native quantile objective, categorical support, fast exact TreeSHAP (`pred_contrib`), sub-ms inference. Monotone constraints on the **late classifier only**: 4.7 rejects them for leaf-renewing objectives (quantile, L1) |
+| ML utilities | **scikit-learn** | 1.5 | Isotonic calibration, metrics (voyage-grouped folds are built in `data/splits.py`, not with `GroupKFold`) |
+| Explainability | **LightGBM `pred_contrib`** (exact TreeSHAP in C++) | — | *As built:* `shap` is **not** a dependency. Contributions are summed by stage group and added to the rulebook's per-stage projection. At λ = 0 the forecast bars are the rulebook alone (AsBuilt §6) |
 | Conformal | **In-house CQR** (~60 LOC) | — | Transparent and dependency-free; MAPIE considered but unnecessary |
-| Tuning (P1) | **Optuna** | 3.6 | TPE with grouped CV, 30 trials, deterministic sampler seed |
+| Tuning | **None in v1.0** | — | *As built:* library defaults + temporal-validation selection of λ and the P(late) blend. Optuna was dropped to avoid overfitting a 238-shipment training set |
 | API | **FastAPI** + **uvicorn[standard]** | 0.111 / 0.30 | Async, OpenAPI docs for free, Pydantic v2 integration |
 | Schemas/config | **Pydantic v2** + **pydantic-settings** | 2.7 / 2.3 | Rust-core validation speed; one schema language for API + config |
 | Serialisation | **orjson** | 3.10 | Fastest JSON for responses; native datetime/NumPy support |
@@ -47,7 +49,7 @@
 ## 2. Key Decisions in Detail
 
 ### 2.1 LightGBM over XGBoost / CatBoost / Deep Learning
-- **Quantile objective + monotone constraints + native categoricals** in one library.
+- **Quantile objective + native categoricals + monotone constraints** in one library. *As built:* the constraints apply to the late classifier only (quantile/L1 objectives renew leaf outputs and 4.7 rejects them). With `feature_fraction < 1`, LightGBM silently downgrades the `advanced` method to `basic`.
 - `pred_contrib=True` returns exact TreeSHAP values **inside the booster** (C++), with no Python SHAP overhead on the hot path. This is the single biggest latency lever.
 - CatBoost has excellent categorical handling but slower inference and a heavier dependency. XGBoost is a fine alternative and is kept for the P2 `survival:aft` model.
 - Deep models (TabNet, Transformers, GNN) are data-starved at around 3k rows and harder to explain (ADR-002).

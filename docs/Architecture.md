@@ -1,6 +1,8 @@
 # Architecture — CASCADE
 
 > **As-built note:** implementation details that changed during the build are recorded in [`AsBuilt.md`](AsBuilt.md); where this page and the code disagree, AsBuilt.md is authoritative.
+>
+> **Review reconciliation (2026-10-13):** an external review was verified claim by claim against the code in [`ReviewVerification.md`](ReviewVerification.md); statements that described the *plan* rather than the build were corrected in place (marked *as built*). Follow-up work is in [`ImprovementPlan.md`](ImprovementPlan.md).
 
 > How the system is structured, how data flows, why it is fast and reliable, and the key decisions (ADRs).
 > Detailed algorithms and schemas live in [`Design.md`](Design.md). Tooling lives in [`TechStack.md`](TechStack.md).
@@ -53,7 +55,7 @@ flowchart TB
     subgraph ONLINE["Online (stateless, in-process, < 50 ms)"]
         REQ[serving/routes<br/>Pydantic v2 validation] --> SVC[serving/service<br/>InferencePipeline]
         SVC --> F2[features/snapshot<br/>SAME code as offline]
-        F2 --> M2[models: predict quantiles + P(late)]
+        F2 --> M2["models: predict quantiles + P(late)"]
         M2 --> G[guardrails<br/>monotone quantiles · overdue bound · clamp]
         G --> X2[explain: TreeSHAP top-k → stage groups → waterfall → narrative]
         X2 --> RESP[orjson response + headers]
@@ -102,13 +104,13 @@ sequenceDiagram
 
     CLI->>SIM: generate(sim.yaml, seed)
     SIM-->>DATA: shipments, events, cause_ledger, external_series
-    DATA->>DATA: Pandera validate + invariants (Σ Δ = D)
-    DATA->>DATA: split: out-of-time test (last 20% by departure) + 5-fold GroupKFold(shipment_id)
+    DATA->>DATA: validate (data/validation.py) + invariants (Σ Δ = D)
+    DATA->>DATA: split: voyage-cut out-of-time test (latest voyages, ≥ 20% of shipments) + 5 voyage-grouped folds + temporal selection slice (latest 20% of training voyages)
     DATA->>FEAT: expand to as-of checkpoints (≈8–10 rows / shipment)
     FEAT->>FEAT: fit route/port/carrier priors OUT-OF-FOLD
     FEAT->>MOD: X, y_remaining, y_late, y_stage_increments
     MOD->>MOD: baselines · LGBM quantiles (P10/P50/P90) · late clf + isotonic · stage chain
-    MOD->>MOD: CQR conformal offsets per checkpoint group (on calibration fold)
+    MOD->>MOD: CQR offsets per checkpoint group = max(voyage-OOF offset, temporal-slice offset)
     MOD->>EVAL: predictions on frozen test
     EVAL->>EVAL: metrics by checkpoint · bootstrap CIs · fidelity vs cause ledger · robustness
     EVAL->>ART: publish bundle IF quality gates pass (manifest.json)
@@ -149,7 +151,7 @@ flowchart LR
     PR --> RESP[Response]
     CO --> RESP
     P --> RESP
-    AL --> Q[[bounded asyncio queue]]
+    AL --> Q[[bounded queue · thread · drop + count]]
     P --> Q
     Q --> W[Background writer] --> DB[(Ledger DB<br/>SQLite WAL → Postgres)]
     DB --> MON[Monitoring:<br/>live MAE · coverage · lane trust · PSI]
@@ -210,7 +212,7 @@ flowchart LR
 ### 6.2 Guardrails on every prediction
 
 1. **Quantile non-crossing:** sort `[P10, P50, P90]` after conformal adjustment.
-2. **Plausible ETA floor:** `ETA_q ≥ as_of + ½ × planned remaining time` (the overdue bound applies to the *next* milestone only; slack can absorb delay downstream).
+2. **Plausible ETA floor (heuristic):** *as built* `ETA_q ≥ max(as_of, t_last + 0.5 × (planned_DELIVERED − planned_last))`, where `t_last` is the last reported event. The 0.5 is a hard-coded heuristic, not a physical bound; its binding rate and effect on coverage are not yet measured (ImprovementPlan P0-6). The overdue bound applies to the *next* milestone only, inside the projection; slack can absorb delay downstream.
 3. **Physical plausibility clamp:** `ETA ≥ as_of` for undelivered shipments; `|D̂| ≤ max_delay_cap` (config, default 30 days) → flag `out_of_distribution`.
 4. **Consistency:** waterfall components must sum to P50 (±0.1 h), asserted in tests and logged if violated in production.
 5. **Cold start:** unseen route/port/carrier → hierarchical prior back-off (lane → region → global), flag `cold_start=true`.
@@ -218,7 +220,7 @@ flowchart LR
 ### 6.3 Boundary validation
 
 - **API:** Pydantic v2 models with field constraints (event ordering, UTC tz-aware timestamps, enum ports, max 50 events, max 1,000 rows per batch). Errors are RFC 7807 `application/problem+json`.
-- **Data:** Pandera schemas on every parquet read/write; invariant checks (`Σ Δ_k = D`, monotone actual timestamps).
+- **Data:** the in-house validator (`data/validation.py`) on every CSV/NPZ read/write; invariant checks (`Σ Δ_k = D`, strictly increasing report times, `DELIVERED` present).
 - **Artifacts:** `manifest.json` carries a schema version, feature list hash, a SHA-256 checksum per file, and the training metrics. Serving refuses to load a bundle whose feature hash ≠ code's `FEATURE_REGISTRY` hash. **Training/serving skew is impossible by construction** because both use the same `features/` code.
 
 ### 6.4 Quality gates before publishing a model (`cascade publish`)
@@ -226,11 +228,12 @@ flowchart LR
 | Gate | Threshold |
 |---|---|
 | MAE vs carry-forward baseline | ≥ 15% improvement (hard), 25% (target) |
-| P10–P90 coverage (test) | 75–85% |
-| Late-classifier Brier | ≤ 0.18 |
-| Attribution fidelity top-1 | ≥ 60% (hard) |
+| P10–P90 coverage (test) | *as built:* 70–90% hard, 80 ± 5 pp target |
+| Late-classifier Brier | *as built:* ≤ 0.20 (PRD target ≤ 0.15 is reported separately as met/unmet) |
+| Attribution fidelity | *as built:* lift vs lane-history explainer ≥ 10 pp (the original top-1 ≥ 60% is not met: 42%) |
+| Waterfall additivity violations | 0 (*a bookkeeping check: real identity tests are ImprovementPlan P0-2*) |
 | Latency p95 (perf test) | < 50 ms |
-| No metric regresses > 5% vs current published version | relative |
+| No metric regresses > 5% vs current published version | relative (*not implemented in v1.0*) |
 
 ---
 
@@ -281,7 +284,7 @@ flowchart LR
 
 ### ADR-003 — Predict *remaining* delay from as-of snapshots (nowcasting)
 - **Decision:** Target = `D − observed_delay_at_checkpoint`. One model across checkpoints, with `checkpoint_stage` as a feature.
-- **Consequences:** + ETA updates naturally as events arrive, + handles missing intermediates, + gives an ETA convergence curve. − Rows of one shipment are correlated → **GroupKFold by shipment** is mandatory.
+- **Consequences:** + ETA updates naturally as events arrive, + handles missing intermediates, + gives an ETA convergence curve. − Rows of one shipment are correlated → **grouping by voyage** (which keeps each shipment and its co-loaded peers together) is mandatory.
 
 ### ADR-004 — Conformalized Quantile Regression for intervals
 - **Decision:** LightGBM quantile models + CQR offsets per checkpoint group.

@@ -11,6 +11,8 @@
 | [Rules.md](Rules.md) | Golden rules, code/data/ML/API/UX/testing rules, git workflow, quality gates | All contributors (incl. AI assistants) |
 | [Phases.md](Phases.md) | 72-hour roadmap, phase gates, cut lists, report outline, demo script, solo critical path | Leads, everyone |
 | [AsBuilt.md](AsBuilt.md) | Every deviation between plan and implementation, with reasons | Reviewers |
+| [ReviewVerification.md](ReviewVerification.md) | External review checked claim by claim against the code (what is confirmed, what is not, what it missed) | Reviewers |
+| [ImprovementPlan.md](ImprovementPlan.md) | v1.1 "trust every ETA" plan: P0/P1/P2 tickets with owners, files and acceptance criteria | Implementers |
 | [ModelCard.md](ModelCard.md) | Auto-generated model card (intended use, performance, weaknesses) | Everyone |
 | [ImplementationPlan.md](ImplementationPlan.md) | Ticket-level plan: owners, estimates, dependencies, files, acceptance criteria, risks | Implementers |
 

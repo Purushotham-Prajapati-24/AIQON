@@ -121,7 +121,12 @@ def waterfall_figure(example: dict, out: Path) -> Path:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    steps = example["waterfall"]
+    # a 0 h learned-baseline row (λ = 0) carries no information; drop it
+    steps = [
+        s
+        for s in example["waterfall"]
+        if not (s["kind"] == "baseline" and abs(float(s["hours"])) < 0.05)
+    ]
     labels, lefts, widths, colors, hatches = [], [], [], [], []
     run = 0.0
     for s in steps:
@@ -145,7 +150,7 @@ def waterfall_figure(example: dict, out: Path) -> Path:
             {"realized": VERMILLION, "baseline": GREY, "total": "#1a1a1a"}.get(kind, BLUE)
         )
         hatches.append("///" if kind == "forecast" else "")
-    fig, ax = plt.subplots(figsize=(3.9, 2.45), dpi=220)
+    fig, ax = plt.subplots(figsize=(3.9, 0.32 * len(steps) + 0.3), dpi=220)
     y = range(len(steps))[::-1]
     for yi, x0, w, c, hh, s in zip(y, lefts, widths, colors, hatches, steps, strict=True):
         ax.barh(
@@ -196,6 +201,12 @@ def results_markdown(m: dict, seeds: dict | None) -> str:
             mean_sd(seeds, "mae_improvement_vs_B2", pct) if seed_col else "",
         ),
         (
+            # λ = 0 makes the P50 the rulebook; show it so the gain is attributed honestly.
+            "MAE of the operator rulebook alone (no ML) · learned weight λ",
+            f"{hrs(a['overall']['physics_rulebook']['mae'])} · λ = {m['model_selection']['shrink']}",
+            "not recorded per seed yet",
+        ),
+        (
             "P10–P90 interval coverage (target 80%)",
             pct(h["coverage_p10_p90_overall"]),
             mean_sd(seeds, "coverage_p10_p90_overall", pct) if seed_col else "",
@@ -208,7 +219,7 @@ def results_markdown(m: dict, seeds: dict | None) -> str:
             else "",
         ),
         (
-            "Root-cause stage vs cause ledger: top-1 · top-2",
+            "Future-delay driver (rulebook stage projection at λ = 0) vs cause ledger: top-1 · top-2",
             f"{pct(h['attribution_top1'])} · {pct(h['attribution_top2'])}",
             f"{mean_sd(seeds, 'attribution_top1', pct)} · {mean_sd(seeds, 'attribution_top2', pct)}"
             if seed_col
@@ -225,7 +236,7 @@ def results_markdown(m: dict, seeds: dict | None) -> str:
             mean_sd(seeds, "propagation_spearman", num) if seed_col else "",
         ),
         (
-            "Waterfall additivity violations",
+            "Waterfall bookkeeping check (rows sum to P50)",
             f"{h['waterfall_additivity_violations']} / {m['checks']['waterfall_checked']}",
             "",
         ),
@@ -276,7 +287,7 @@ CSS = """
 * { box-sizing: border-box; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 10pt;
-       line-height: 1.27; color: var(--ink); margin: 0; background: #fff; }
+       line-height: 1.23; color: var(--ink); margin: 0; background: #fff; }
 h1 { font-size: 15.5pt; margin: 0 0 1mm; color: var(--blue); letter-spacing: -0.2px; }
 .sub { color: var(--muted); font-size: 9pt; margin-bottom: 2.5mm; }
 h2 { font-size: 11.5pt; margin: 2.6mm 0 1.1mm; color: var(--blue);
@@ -456,10 +467,10 @@ positive on average but not reliably large.</p>"""
 (95% CI {pct(ci_b1[0])}–{pct(ci_b1[1])}) and {pct(h["mae_improvement_vs_B2"])} better than a lane-level
 propagation prior. Its P10–P90 ranges cover {pct(h["coverage_p10_p90_overall"])} of outcomes (target {pct(nominal)}),
 P(late&nbsp;&gt;&nbsp;{late_h}&nbsp;h) has Brier {num(h["brier_tau24"], 3)} and PR-AUC {num(h["pr_auc_tau24"])},
-and every forecast splits exactly into stage contributions ({chk["waterfall_additivity_violations"]} additivity violations in {chk["waterfall_checked"]}).
-Because a structural causal simulator records a <i>cause ledger</i> for every hour of delay, we can check that explanations are <i>right</i>:
-the top-ranked stage is the true root cause {pct(h["attribution_top1"])} of the time (top-2: {pct(h["attribution_top2"])}).
-Caveat: most accuracy comes from a mechanistic operator-rulebook projection; the learned median correction did not beat it out-of-time, so validation set its weight to {sel["shrink"]}.</p></div>
+and every P50 is shown as realised delay plus a per-stage projection of the delay still to come.
+Because a structural causal simulator records a <i>cause ledger</i> for every hour of delay, we can score that explanation:
+the stage projected to add the most future delay is the ledger's top future stage {pct(h["attribution_top1"])} of the time (top-2: {pct(h["attribution_top2"])}).
+Caveat: the point forecast {"<b>and</b> these stage explanations come" if sel["shrink"] == 0 else "comes mostly"} from a mechanistic operator-rulebook projection; the learned median correction did not beat it out-of-time, so validation set its weight to {sel["shrink"]}. The ML contributes the P10–P90 spread, P(late) and the stage forecasts.</p></div>
 
 <h2>1 · Problem and definitions</h2>
 <p>A container shipment moves through a fixed <b>stage graph</b>: gate-in → origin departure → (hub arrival → hub
@@ -505,7 +516,7 @@ fail to report discharge. Timestamps carry reporting jitter, and delivery is alw
 <li><b>Propagation features.</b> These include projected hub buffer versus cut-off, congestion × current lateness, days to the next business slot, rail cut-off slack, and missingness flags that carry signal (EDI tier, gaps so far).</li>
 <li><b>Residual quantile GBM with temporal shrinkage.</b> LightGBM models P10/P50/P90 of the residual on top of the rulebook ({tc["n_estimators"]} trees, {tc["num_leaves"]} leaves). The learned median correction is blended in with weight λ ∈ {{{shrink_grid}}}, chosen on the latest training voyages. <b>λ = {sel["shrink"]} was selected</b>, so the median comes from the rulebook, and ML contributes uncertainty, P(late) and stage forecasts.</li>
 <li><b>Drift-aware CQR and P(late).</b> Conformalised quantile regression per checkpoint group (offset = max(out-of-fold, temporal-slice)) protects coverage under the seasonal shift. P(late) blends a monotone classifier + isotonic calibration with the quantile-implied probability (weight from {{{blend_grid}}}; selected {sel["late_blend"]}).</li>
-<li><b>Explanations.</b> Exact TreeSHAP (LightGBM <code>pred_contrib</code>) is aggregated to stage groups. Realised delay + baseline + stage contributions form an <b>additive waterfall</b> that sums to the P50; deterministic templates write narratives for ops, customer and analyst.</li>
+<li><b>Explanations.</b> Stage bar = rulebook projected increment + λ × exact TreeSHAP of the residual model (<code>pred_contrib</code>){"; at λ = 0 the bars, and the attribution score, are the <b>rulebook alone</b>" if sel["shrink"] == 0 else ""}. Realised delay + stage bars + a floor/ordering adjustment = P50; templates write ops/customer/analyst narratives. Future-stage attribution is inherently noisy, so we report top-2 and lift, not just top-1.</li>
 <li><b>Decision layer.</b> Promise ETA with hysteresis, alerts, cost-of-delay, an intervention advisor (model re-run under a fixed action menu), a scenario radar and a prediction ledger; FastAPI with a fallback chain (lane propagation prior → carry-forward) and a Streamlit control tower.</li>
 </ul>
 
@@ -575,7 +586,7 @@ reversals per shipment vs {num(dec["raw_eta_reversals_per_shipment"])} for the r
 <h3>Worked example: {esc(ex["shipment_id"])} ({esc(ex["lane_id"])}), as of {esc(ex["as_of"][:16].replace("T", " "))} UTC</h3>
 <div class=two>
 <figure style="margin-top:0"><img src="{wf_uri}" style="width:100%">
-<figcaption>Figure 2 · Additive waterfall: realised delay (solid) + forecast stage contributions (hatched) = P50 ({hrs(dh["p50"], 0)}).</figcaption></figure>
+<figcaption>Figure 2 · Additive waterfall: realised delay (solid) + projected stage contributions (hatched) = P50 ({hrs(dh["p50"], 0)}).</figcaption></figure>
 <div>
 <div class=quote>{esc(narrative)}</div>
 <p class=small>The main driver ({esc(top["label"])}, {hrs(top["contribution_h"], 0)}) is a projected missed connection: one more sailing headway.
@@ -585,11 +596,10 @@ The cause ledger agrees: the true root cause is <b>{esc(ex["root_cause_group"].t
 
 <h2>5 · Limitations and next steps</h2>
 <ul>
-<li><b>Synthetic-to-real gap.</b> Mechanisms are plausible but not fitted to real carrier data, so absolute numbers are not real-world performance; the <i>method</i> (as-of nowcasting, rulebook prior + residuals, conformal ranges, ledger-validated explanations) is what transfers.</li>
-<li><b>Counterfactuals are associational.</b> The advisor re-runs the predictive model, not the causal mechanism. Its fidelity is measured (Spearman {num(adv["spearman"])}) but it is not causal identification.</li>
-<li><b>Small n and the Q4 shift.</b> With {a["n_test_shipments"]} test shipments the confidence intervals are wide{", and seed-to-seed variation is real (Table 6)" if seeds else ""}. The learned median correction did not generalise across the seasonal shift, so we let validation switch it off (λ = {sel["shrink"]}) instead of reporting an optimistic in-season number.</li>
-<li><b>Root-cause forecasting is noisy.</b> Which future stage will dominate is often unknowable before arrival, so we report top-2 and lift over a naive explainer, not just top-1.</li>
-<li><b>Roadmap.</b> (1) An AIS/EDI adapter that maps real milestones onto the stage graph; (2) survival / AFT models for censored in-flight shipments; (3) GNN-style port-network features for congestion spill-over; (4) drift monitoring on the prediction ledger, with automated conformal re-calibration and champion/challenger bundles.</li>
+<li><b>Synthetic-to-real gap.</b> Plausible mechanisms, not fitted to real data; reports are never late and schedules never revised.</li>
+<li><b>Counterfactuals are associational.</b> The advisor re-runs the predictive model; fidelity vs true interventions is measured (Spearman {num(adv["spearman"])}), not guaranteed.</li>
+<li><b>Small n and the Q4 shift.</b> {a["n_test_shipments"]} test shipments: wide CIs, resampled by shipment, not voyage{" (seed spread: Table 6)" if seeds else ""}; the learned median was switched off (λ = {sel["shrink"]}).</li>
+<li><b>Roadmap.</b> Reporting latency and schedule revisions, an AIS/EDI adapter, survival models, drift monitoring (<code>docs/ImprovementPlan.md</code>).</li>
 </ul>
 </body></html>
 """

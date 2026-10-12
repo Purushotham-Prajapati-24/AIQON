@@ -1,6 +1,8 @@
 # Rules — CASCADE Engineering, ML & Collaboration Rules
 
 > **As-built note:** implementation details that changed during the build are recorded in [`AsBuilt.md`](AsBuilt.md); where this page and the code disagree, AsBuilt.md is authoritative.
+>
+> **Review reconciliation (2026-10-13):** an external review was verified claim by claim against the code in [`ReviewVerification.md`](ReviewVerification.md); statements that described the *plan* rather than the build were corrected in place (marked *as built*). Follow-up work is in [`ImprovementPlan.md`](ImprovementPlan.md).
 
 > Non-negotiable rules for everyone (humans and AI assistants) contributing to CASCADE.
 > **MUST** = enforced by CI or review. **SHOULD** = strong default; deviations need a one-line justification in the PR.
@@ -44,10 +46,10 @@
 ## 3. Data Rules
 
 1. Raw generated data is **immutable**. `data/raw/<run_id>/` is never edited, only regenerated.
-2. Every parquet read/write passes a **Pandera schema** (MUST).
+2. Every data read/write passes the **in-house validator** `data/validation.py` (MUST). *As built: CSV/JSON/NPZ; parquet is blocked on the build machine, and Pandera was dropped.*
 3. **Invariants asserted on generation:** `Σ ledger hours = total_delay_h` (±1 min); actual timestamps monotone per shipment; `DELIVERED` always present; structural absence ≠ missing.
 4. Missingness is **typed**: `structural | mcar | mnar`. Features MUST NOT treat structural absence as NaN.
-5. **Splits:** out-of-time test = last 20% by planned departure, frozen per seed in `data/splits/<seed>.json`. CV MUST use `GroupKFold` by `voyage_id`. **Nobody looks at test metrics while tuning.** The test split is evaluated only by `cascade evaluate` on a candidate run.
+5. **Splits:** out-of-time test = last 20% by planned departure, frozen per seed in `data/splits/<seed>.json`. CV MUST group by `voyage_id` (as built: greedy voyage→fold assignment), and the test cut MUST keep whole voyages. **The independent unit is the voyage**: report voyage counts per split, and bootstrap CIs SHOULD resample voyages. **Nobody looks at test metrics while tuning.** The test split is evaluated only by `cascade evaluate` on a candidate run.
 6. Priors / target encodings are fit **inside each fold** only (MUST); a test verifies OOF construction.
 7. External factors for future dates MUST be the noisy *forecast* version, never the realized series.
 8. No real personal or company data in the repo. Synthetic only, unless a public dataset's license is recorded in `data/README.md`.
@@ -61,13 +63,16 @@
 - Every feature MUST be registered in `features/registry.py` with `family`, `stage_group`, `monotone`, `dtype` and a description. Unregistered columns fail the pipeline.
 - Monotone constraints are set from **domain knowledge** (registry), not tuned away.
 - Prefer simple models: a new model family needs ≥ 5% MAE improvement *with bootstrap CI not crossing 0* to justify its complexity.
-- Hyperparameter search is bounded (≤ 30 Optuna trials) and seeded.
+- Hyperparameter search, if any, is bounded and seeded (*as built: none; only λ and the P(late) blend are selected on the temporal slice*).
 
 ### 4.2 Explainability
 - Stage contributions MUST sum (with the base value) to the P50 prediction within 0.1 h, asserted in tests.
 - Narratives come from templates only. Any number in a narrative MUST come from the `Explanation` object (test: regex numbers ⊆ facts).
 - Every explanation change MUST report **attribution fidelity** before and after.
 - Customer-audience text MUST NOT contain carrier/terminal blame or raw feature names.
+- Every explanation component MUST be labelled by its source: **observed** (facts), **rulebook** (mechanistic projection), **learned** (ML correction, with its λ), **guardrail** (floor, ordering). A rulebook number MUST NOT be presented as a model contribution.
+- No causal claim ("X caused the delay") may rest on feature importance alone. Causal wording is reserved for simulator ledger ground truth or explicit, labelled what-if scenarios.
+- Report original targets next to revised gates, with met/unmet status. Never replace a missed target silently.
 
 ### 4.3 Evaluation
 - Report metrics **by checkpoint**, not just overall.
@@ -80,9 +85,9 @@
 |---|---|
 | MAE improvement vs B1 | ≥ 15% |
 | P10–P90 coverage (test) | 70–90% |
-| Brier (late, τ=24h) | ≤ 0.20 |
+| Brier (late, τ=24h) | ≤ 0.20 (the PRD target ≤ 0.15 is reported separately as met/unmet) |
 | Attribution lift vs lane-history explainer | ≥ 10 pp |
-| Waterfall additivity violations | 0 |
+| Waterfall additivity violations | 0 (bookkeeping check; real identity tests: ImprovementPlan P0-2) |
 | Latency p95 `/v1/predict` | < 50 ms |
 | Regression vs current published | no headline metric worse by > 5% |
 
