@@ -244,7 +244,8 @@ function CostSplit({ v }: { v: Moment["ops"]["cost_usd"] }) {
 }
 
 function Narrative({ m }: { m: Moment }) {
-  const [who, setWho] = useState<"ops" | "customer">("customer");
+  const { role } = useStore();
+  const [who, setWho] = useState<"ops" | "customer">(role?.audience ?? "customer");
   const [copied, setCopied] = useState(false);
   const v = m.ops;
   const main = v.drivers[0];
