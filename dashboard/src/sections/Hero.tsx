@@ -75,7 +75,7 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
             <span className="h-px w-6 bg-line-2" />
             {[v.shipment.origin, v.shipment.hub, v.shipment.dest].filter(Boolean).map(port).join(" → ")}
           </motion.p>
-          <h1 className="font-display text-[clamp(2.9rem,7.1vw,7.6rem)] md:whitespace-nowrap font-extrabold uppercase leading-[0.86] tracking-[-0.015em]">
+          <h1 className="font-display text-[clamp(2.9rem,7.1vw,6.75rem)] md:whitespace-nowrap font-extrabold uppercase leading-[0.86] tracking-[-0.015em]">
             {[
               <>
                 {Math.round(hubHours)} hours late <span className="text-fg-3">at the hub.</span>
