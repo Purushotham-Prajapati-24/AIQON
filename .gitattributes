@@ -1,0 +1,6 @@
+# Published model bundles and recorded API snapshots are checksummed or compared byte-for-byte:
+# check them out exactly as stored, never with converted line endings.
+artifacts/** -text
+dashboard/public/snapshot/** -text
+# Shell scripts must keep LF even on Windows checkouts.
+*.sh text eol=lf
