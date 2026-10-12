@@ -1,0 +1,105 @@
+{
+ "schema_version": 1,
+ "version": "1.1.0",
+ "created_at": "2026-10-12T20:50:58+00:00",
+ "git_sha": "b1b78f7",
+ "feature_hash": "c29c39bf7296cd76",
+ "files": {
+  "external.npz": "856b8b645aad36995bde82c1c27e6a54cf00adabde1c04f76739db30f811c023",
+  "insights.json": "c94b635aa6d1b2c26651662bd174c3d57bda3bef61569df08350352df4340b29",
+  "model.json": "d8854857d89343cb69e3e1c469f16a00c10a969f384c4e8dd204ebf9c1038694",
+  "models/clf.txt": "268d93943520ca899041a3b0d242f3e775c5110ab25479e111d86eb1f2523e99",
+  "models/q10.txt": "081cbc92ae45c8540c5946e1d58aaea6ac9ca08d05a202169932658795b4e818",
+  "models/q50.txt": "16b6b6f1abee550766e4d860b3cdefdfe340d7c346062435e27e3c02b793161e",
+  "models/q90.txt": "0f87a466aa7c7aee3201090e8ad3c5adfa50755b7aaabd2db144e5573a27356d",
+  "models/stage_CUSTOMS.txt": "19b61d5eb684cbae4ae2862af0a9c95da8d5bbed6ecbf88e3da810c439e6e85a",
+  "models/stage_INLAND.txt": "46dbc410b67ce98e60e3baa3ef865b6ba9433bdc7839dfb529678b2830e2a15c",
+  "models/stage_OCEAN.txt": "47228310f5f7f1d86dbc59b5c47a3cdbf95644da8cb51317fb2180498cec02f4",
+  "models/stage_ORIGIN.txt": "5ca861a407b524e41a31afdd6d01305f0fae7ed62e73ef36e8a5a6e974e35446",
+  "models/stage_PORT.txt": "d0f209aab4f3ae6a35bfa43ac0082fadcff40988330020cf6c1a93ecc12c13bf",
+  "models/stage_TRANSSHIPMENT.txt": "8a08c1deb254d0c97f74c8b3f3add251dab1994ea7dad846e9a9ad64d39ff1b3",
+  "world_events.csv": "bc3c0b352c603b93d6d9c2916e6cd8f2b48c2a0e7a920eacd9493542b47fb5f9",
+  "world_now.txt": "81955a0110db422d66d64fdd93342643c6028bcd2278274c34795a41438baf1d",
+  "world_shipments.csv": "bbde06583691dda827b7fbc9e607c2608304387b949a08b955fa135d9281ac88"
+ },
+ "metrics": {
+  "mae_cascade_h": 24.511007691488906,
+  "mae_B1_h": 38.52814033087847,
+  "mae_B2_h": 34.92036965275976,
+  "mae_improvement_vs_B1": 0.3638154481117144,
+  "mae_improvement_vs_B1_ci95": [
+   0.2908484983364751,
+   0.4409398913389528
+  ],
+  "mae_improvement_vs_B2": 0.2980885387176364,
+  "mae_improvement_vs_B1_ci95_voyage": [
+   0.24333982109140895,
+   0.4761965787454404
+  ],
+  "mae_rulebook_h": 24.514009888785388,
+  "mae_improvement_vs_rulebook": 0.0001224686336548375,
+  "mae_improvement_vs_rulebook_ci95_voyage": [
+   -0.0034044798366399064,
+   0.0031464783082329846
+  ],
+  "mae_ratio_cascade_vs_rulebook": 0.9998775313663452,
+  "shrink": 0.0,
+  "n_test_voyages": 20,
+  "eta_floor_binding_share": 0.006896551724137931,
+  "coverage_p10_p90_overall": 0.8027586206896552,
+  "brier_tau24": 0.18072112837036472,
+  "pr_auc_tau24": 0.8556633449023431,
+  "pr_auc_tau24_at_arrival": 0.9105282471988928,
+  "attribution_top1": 0.4188034188034188,
+  "attribution_top2": 0.6866096866096866,
+  "attribution_top1_major": 0.5,
+  "attribution_lift_vs_lane_prior": 0.1566951566951567,
+  "propagation_spearman": 0.4613635372827144,
+  "advisor_spearman": 0.43602409093813566,
+  "alert_lead_ge_48h_share": 0.967741935483871,
+  "promise_flip_ratio": 0.8333333333333334,
+  "late_alert_false_positive_rate": 0.25806451612903225,
+  "alerts_per_100_shipment_days": 8.634985605852977,
+  "attribution_ambiguous_share": 0.25071225071225073,
+  "promise_hit_rate": 0.8891129032258064,
+  "promise_reversals_per_shipment": 0.6290322580645161,
+  "raw_eta_reversals_per_shipment": 0.7903225806451613,
+  "latency_p95_ms": 1.6747699701227232,
+  "identity_violations": 0
+ },
+ "gates": {
+  "mae_improvement_vs_B1": {
+   "value": 0.3638154481117144,
+   "rule": ">= 0.15",
+   "pass": true
+  },
+  "coverage_p10_p90_overall": {
+   "value": 0.8027586206896552,
+   "rule": "between (0.7, 0.9)",
+   "pass": true
+  },
+  "brier_tau24": {
+   "value": 0.18072112837036472,
+   "rule": "<= 0.2",
+   "pass": true
+  },
+  "attribution_lift_vs_lane_prior": {
+   "value": 0.1566951566951567,
+   "rule": ">= 0.1",
+   "pass": true
+  },
+  "identity_violations": {
+   "value": 0,
+   "rule": "<= 0",
+   "pass": true
+  },
+  "latency_p95_ms": {
+   "value": 1.6747699701227232,
+   "rule": "< 50.0",
+   "pass": true
+  }
+ },
+ "gates_passed": true,
+ "data_seed": 42,
+ "n_shipments": 300
+}

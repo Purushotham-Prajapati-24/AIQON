@@ -106,8 +106,8 @@ def reliability(metrics: dict, out: Path) -> None:
 def attribution(metrics: dict, out: Path) -> None:
     acc = metrics["attribution_fidelity"]["accuracy"]
     keys = [
-        ("shap_top1", "CASCADE stage SHAP (top-1)"),
-        ("shap_top2", "CASCADE stage SHAP (top-2)"),
+        ("shap_top1", "CASCADE stage ranking (top-1)"),
+        ("shap_top2", "CASCADE stage ranking (top-2)"),
         ("stage_forecast_top1", "Reconciled stage forecast"),
         ("lane_prior_top1", "Lane-history explainer"),
         ("random_top1", "Random future stage"),
@@ -215,18 +215,20 @@ def waterfall_example(result_json: dict, out: Path) -> None:
     for i, (s, v, k) in enumerate(zip(starts, vals, kinds, strict=True)):
         color = {
             "realized": OKABE["vermillion"],
-            "baseline": OKABE["grey"],
-            "forecast": OKABE["blue"],
-            "guardrail": OKABE["purple"],
+            "rulebook": OKABE["blue"],
+            "learned": OKABE["green"],
+            "ordering": OKABE["purple"],
+            "floor": OKABE["purple"],
+            "delivered": OKABE["grey"],
             "total": OKABE["black"],
-        }[k]
+        }.get(k, OKABE["grey"])
         ax.barh(
             i,
             v,
             left=s,
             color=color,
-            hatch="//" if k == "forecast" else None,
-            edgecolor="white" if k == "forecast" else color,
+            hatch="//" if k in ("rulebook", "learned") else None,
+            edgecolor="white" if k in ("rulebook", "learned") else color,
             alpha=0.9,
         )
         ax.text(
@@ -240,7 +242,9 @@ def waterfall_example(result_json: dict, out: Path) -> None:
     ax.set_yticks(range(len(labels)), labels, fontsize=7)
     ax.invert_yaxis()
     ax.axvline(0, color=OKABE["grey"], lw=0.8)
-    ax.set_xlabel("Hours vs plan (solid = realized, hatched = forecast)")
+    ax.set_xlabel(
+        "Hours vs plan (solid = observed, hatched = projected: rulebook blue, learned green)"
+    )
     ax.set_title(
         f"{result_json['shipment_id']}: delay waterfall at {result_json['checkpoint'].replace('_', ' ').lower()}"
     )

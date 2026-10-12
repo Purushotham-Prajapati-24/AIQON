@@ -51,6 +51,51 @@ def test_rows_targets_are_consistent(rows):
 def test_checkpoint_is_last_observed_event(sim):
     views = views_from_frames(sim.shipments, sim.events)
     v = next(iter(views.values()))
-    for e, t in v.reported.items():
-        snap = build_snapshot(v, t + 0.01, sim.external)
+    for e in v.reported:
+        snap = build_snapshot(v, v.known_at(e) + 0.01, sim.external)  # once the report arrived
         assert snap.checkpoint >= EVENT_INDEX[e] + 1
+
+
+def _feature_vector(snap):
+    return np.array([snap.features[n] for n in snap.features], dtype=float)
+
+
+def _late_report_case(sim):
+    """A shipment with a milestone that happened before t but whose report arrives after t."""
+    views = views_from_frames(sim.shipments, sim.events)
+    for v in views.values():
+        for e in sorted(v.reported, key=lambda x: EVENT_INDEX[x]):
+            if e == EventType.DELIVERED:
+                continue
+            ev_t, arrive = v.reported[e], v.known_at(e)
+            if arrive - ev_t > 1.0:  # a report that lagged the event by more than an hour
+                return v, e, (ev_t + arrive) / 2
+    raise AssertionError("simulator produced no lagged reports")
+
+
+def test_late_report_is_invisible_until_it_arrives(sim):
+    """Event at t-x, report at t+y: the row at t must not change however the report is timed."""
+    v, e, t = _late_report_case(sim)
+    base = _feature_vector(build_snapshot(v, t, sim.external))
+    for later in (0.1, 5.0, 500.0):  # the report arrives later still: nothing at t may change
+        av = dict(v.available)
+        av[e] = t + later
+        pert = build_snapshot(replace(v, available=av), t, sim.external)
+        assert np.array_equal(base, _feature_vector(pert), equal_nan=True)
+
+
+def test_report_arriving_before_t_is_used(sim):
+    """Moving the same report's arrival to before t makes it visible, so the row may change."""
+    v, e, t = _late_report_case(sim)
+    base = build_snapshot(v, t, sim.external)
+    av = dict(v.available)
+    av[e] = v.reported[e]  # report arrives the moment it happened
+    seen = build_snapshot(replace(v, available=av), t, sim.external)
+    assert seen.checkpoint > base.checkpoint
+    assert not np.array_equal(_feature_vector(base), _feature_vector(seen), equal_nan=True)
+
+
+def test_reports_never_precede_their_event(sim):
+    rep = sim.events[sim.events.reported]
+    assert (rep.available_h >= rep.actual_h - 1e-9).all()
+    assert (rep.available_h >= rep.reported_h - 1e-9).all()

@@ -8,6 +8,10 @@ mcar_rate: 0.06               # random milestone reporting gaps
 edi_tier2_rate: 0.08          # extra gaps for medium-quality carrier feeds
 edi_tier3_rate: 0.25          # extra gaps for poor carrier feeds (MNAR)
 discharge_congestion_rate: 0.15   # DISCHARGED goes missing more often when the terminal is congested
-jitter_h: 0.75                # reporting timestamp noise
+jitter_h: 0.75                # error in the event time stated in a milestone message
+latency_median_tier1_h: 0.5   # reporting latency (message arrives after the event), median by carrier EDI tier
+latency_median_tier2_h: 2.0
+latency_median_tier3_h: 6.0
+latency_sigma: 0.8            # lognormal spread of the latency
 mean_shipments_per_voyage: 2.0
 max_connection_slack_h: 54    # designed hub connection slack is U(0, this) on top of 6 h minimum

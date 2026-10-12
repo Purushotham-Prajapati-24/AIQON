@@ -128,3 +128,33 @@ def test_tampered_bundle_is_refused(bundle_dir, tmp_path):
     f.write_text(f.read_text() + "\n")
     with pytest.raises(ArtifactError):
         load_bundle(dst)
+
+
+def test_prediction_carries_data_quality_and_explanation_mode(client, body):
+    r = client.post("/v1/predict", json=body).json()
+    dq = r["data_quality"]
+    assert dq["mode"] == "model"
+    assert dq["confidence_reason"] in {"horizon", "missing_data", "stale_data", "fallback"}
+    assert {"last_milestone", "next_expected", "missing_critical", "source_tier"} <= set(dq)
+    assert r["explanation"]["mode"] in {"rulebook", "rulebook+learned", "learned"}
+
+
+def test_alerts_carry_the_explanation_contract(client):
+    alerts = client.get("/v1/alerts", params={"window_days": 120}).json()["alerts"]
+    assert alerts
+    for a in alerts:
+        assert a["reason_code"] == a["rule"]
+        assert a["new_risk"] in {"ON_TRACK", "AT_RISK", "LATE"}
+        assert a["recommended_next_step"]
+
+
+def test_reported_at_before_event_is_rejected(client, body):
+    import copy
+
+    b = copy.deepcopy(body)
+    obs = b["shipment"]["observed"]
+    if not obs:
+        return
+    e, t = next(iter(obs.items()))
+    b["shipment"]["reported_at"] = {e: "2000-01-01T00:00:00Z"}
+    assert client.post("/v1/predict", json=b).status_code == 422

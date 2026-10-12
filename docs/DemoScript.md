@@ -1,7 +1,7 @@
 # CASCADE: 5-Minute Demo Script
 
 > Target length **4:45** (hard limit 5:00). Six scenes, following `docs/Phases.md` §7.2.
-> All numbers below were read from the running app (model v1.0.0, world "now" = Sat 08 Nov 2025 07:32 UTC). If you retrain, re-check them before recording.
+> All numbers below were read from the running app (model v1.1.0, world "now" = Sat 08 Nov 2025 07:32 UTC). If you retrain, re-check them before recording.
 
 ## Before you record (checklist)
 
@@ -28,8 +28,8 @@
 ## Scene 2 · 0:25–1:05 · Fleet overview
 
 **Clicks:**
-1. Point at the KPI row: **48 active · 22 late · 9 at risk · $11,072 expected delay cost**.
-2. Point at the table "Shipments ranked by risk": top row is **SHP-000174, Shanghai → Tanjung Pelepas → Rotterdam, P(late) 99.99%, P50 +240 h, range +6.9 d … +12.5 d**.
+1. Point at the KPI row: **48 active · 23 late · 8 at risk · about $11.4k expected delay cost**.
+2. Point at the table "Shipments ranked by risk": the top two rows are **SHP-000178** (Ho Chi Minh City → Singapore → Antwerp, P(late) 98%) and **SHP-000174** (Shanghai → Tanjung Pelepas → Rotterdam, P(late) 98%, P50 +240 h).
 3. Scroll down to **Network risk map** for two seconds, then scroll back up.
 
 **Say:**
@@ -38,14 +38,14 @@
 ## Scene 3 · 1:05–2:25 · Shipment detail + time-travel (the key moment)
 
 **Clicks:**
-1. Sidebar → **Shipment Detail**. It opens on **SHP-000174** (the riskiest shipment).
+1. Sidebar → **Shipment Detail**. In the **Shipment** box pick **SHP-000174**. Point at the 🔎 **Evidence** line (last report, how old it is, feed quality, what the forecast rests on).
 2. Drag the **⏪ Time-travel** slider all the way left to **Booked · 26 Sep**.
-   - Card shows expected delay **+2.0 d**, P(late) about **51%**. The main driver is already **Transshipment**.
-3. Move one notch right to **After Arrive Ts · 10 Oct**: the vessel reached Tanjung Pelepas **46 h late**.
-   - Expected delay jumps to **+7.0 d**, P(late) **83%**.
+   - Card shows expected delay **+2.0 d**, P(late) about **48%**. The main driver is already **Transshipment**.
+3. Move one notch right to **After Arrive Ts · 10 Oct** (the report reached CASCADE about two hours after the event): the vessel reached Tanjung Pelepas **46 h late**.
+   - Expected delay jumps to **+7.0 d**, P(late) **82%**.
    - Scroll to **Delay waterfall**: the hatched **Transshipment** bar is about **+126 h**. The narrative says "projected to reach Tanjung Pelepas after the connection cut-off (buffer short by 36 h)".
-4. Move one more notch to **After Depart Ts · 17 Oct**: the hub departure confirms the missed connection (actual departure a week after plan). Expected delay **+8.0 d**, P(late) **96%**.
-5. Drag the slider to the far right, **Now · 08 Nov** (the slider only offers milestones reported by "now"): expected **+10.0 d**, range +6.9 … +12.5 d. Main driver is now **Destination port: Rotterdam berth utilisation 93%**, and the promise date is **2025-11-16**.
+4. Move one more notch to **After Depart Ts · 18 Oct**: the hub departure confirms the missed connection (actual departure a week after plan). Expected delay **+8.0 d**, P(late) **95%**.
+5. Drag the slider to the far right, **Now · 08 Nov** (the slider only offers milestones reported by "now"): expected **+10.0 d**, range +6.2 … +12.1 d. Main driver is now **Destination port: Rotterdam berth utilisation 93%**, and the promise date is **2025-11-16**.
 6. Click the **Customer** radio button for one second to show the plain-language version, then go back to **Ops planner**.
 
 **Say:**
@@ -55,18 +55,18 @@
 
 **Clicks:**
 1. In the **Shipment** box, pick **SHP-000245**.
-2. Scroll to **Recommended actions**. The top action is ✅ **Book overtime / weekend customs clearance: saves 2.0 d, $490 avoided for $250 (net +$240); P(late) after: 14%** (39% before; see the card at the top).
+2. Scroll to **Recommended actions**. The top action is ✅ **Book overtime / weekend customs clearance: saves 2.0 d, $490 avoided for $250 (net +$240); P(late) after: 17%** (44% before). Point at the three ticks under it: ✓ consistent ✓ feasible in time ✓ pays off. Berth priority shows ✗ pays off.
 3. Scroll back up to point at **Promise date** and **Expected delay cost** on the card. *(optional)*
 
 **Say:**
-> "Predictions are only useful if someone can act on them. For this shipment, the advisor checks a fixed menu of actions. Booking weekend customs clearance saves about two days: it costs 250 dollars and avoids 490 in delay costs, and it cuts the late probability from 39% to 14%. The customer gets a *promise date* that has hysteresis, so it doesn't flip every time the raw ETA wobbles. The promise held in 87% of cases, with fewer reversals than the raw ETA."
+> "Predictions are only useful if someone can act on them. For this shipment, the advisor checks a fixed menu of actions. Booking weekend customs clearance saves about two days: it costs 250 dollars and avoids 490 in delay costs, and it cuts the late probability from 44% to 17%. Every action says whether it is still possible in time and whether it pays for itself, and which assumptions it rests on. The customer gets a *promise date* that has hysteresis, so it doesn't flip every time the raw ETA wobbles. The promise held in 89% of cases, with fewer reversals than the raw ETA."
 
 ## Scene 5 · 3:15–3:50 · Disruption radar
 
 **Clicks:**
 1. Sidebar → **What If and Scenarios** → tab **Fleet disruption radar**.
 2. Preset disruption → **Indian Ocean cyclone for 4 days** → **Run impact analysis**.
-3. Result: **3 shipments affected, +2 late, +$1,003 expected cost**. Two go **On track → Late** (SHP-000062, SHP-000008).
+3. Result: **3 shipments affected, +2 late, +$1,007 expected cost**. Two go **On track → Late** (SHP-000062, SHP-000008).
 
 **Say:**
 > "The same engine works at fleet level. If a cyclone hits the Indian Ocean for four days, which shipments care? Only three are on affected legs, and two of them flip from on-track to late, about a thousand dollars of expected cost. Ops gets a short list instead of an alarm about everything."
@@ -74,15 +74,15 @@
 ## Scene 6 · 3:50–4:45 · Insights + architecture
 
 **Clicks:**
-1. Sidebar → **Model Insights**. Point at the KPI row: **MAE −36% vs carry-forward (95% CI 29–44%) · coverage 82% · PR-AUC 0.85 · root cause 42% top-1 / 70% top-2 · p95 8.5 ms**.
+1. Sidebar → **Model Insights**. Point at the KPI row: **MAE −36% vs carry-forward (95% CI 29–44%) · coverage 80% · PR-AUC 0.86 · future-delay driver 42% top-1 / 69% top-2 · p95 1.7 ms**.
 2. Tab **Explanation fidelity**: point at the bars (CASCADE top-2 vs lane-history vs random) and the **Advisor fidelity** line (Spearman 0.43, 72% direction agreement).
 3. Tab **Delay propagation**: the Φ heatmap. *(optional)*
 4. Switch to the README tab → architecture diagram.
 
 **Say:**
-> "Does it work? On a later, out-of-time test season, ETA error is 36% lower than carry-forward. Across five simulator seeds, the average is 28%, which is the fairer number. The 80% ranges cover 82% of outcomes. And because the simulator records the true cause of every hour of delay, we can *score* the explanations: the blamed stage is the true root cause 42% of the time, 70% in the top two, against 26% for a lane-history guess. That's the weakest claim, and the report says so. One honest finding: most of the accuracy comes from an operator-rulebook projection. The learned correction didn't beat it on validation, so the pipeline switched it off. The ML adds calibrated probabilities and ranges instead.
+> "Does it work? On a later, out-of-time test season, ETA error is 36% lower than carry-forward. Across five simulator seeds, the average is 27%, which is the fairer number. The 80% ranges cover 80% of outcomes. And because the simulator records the true cause of every hour of delay, we can *score* the explanations: the stage named as the main future driver is the true one 42% of the time, 69% in the top two, against 26% for a lane-history guess, and a quarter of cases are genuinely ambiguous. That's the weakest claim, and the report says so. One honest finding: most of the accuracy comes from an operator-rulebook projection. The learned correction didn't beat it on validation, so the pipeline switched it off, and the screen says so: every bar is labelled rulebook, learned or observed. The ML adds calibrated probabilities and ranges instead. The model card lists the targets we missed.
 >
-> Architecture: one command runs simulate, train, evaluate and publish behind quality gates. The API answers in under 10 milliseconds and falls back to a propagation prior if anything fails. Code, report and Docker setup are in the repo. Thank you."
+> Architecture: one command runs simulate, train, evaluate and publish behind quality gates. The API answers in about 2 milliseconds and falls back to a propagation prior if anything fails. Code, report and Docker setup are in the repo. Thank you."
 
 ---
 

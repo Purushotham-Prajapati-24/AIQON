@@ -5,6 +5,33 @@
 > **Owners:** **C1** = core code (`src/`, `app/`, `tests/`, `configs/`, `eval/model_card.py`) · **C2** = docs, report, README, screenshots, demo · **YOU** = decisions and recording.
 > The C1 work is packaged as a ready-to-paste prompt in `claude1.md` (repo root, gitignored).
 
+## Status — v1.1.0 implemented (2026-10-13)
+
+The P0 tickets were implemented (by C2, at the user's request), along with most of P1 and two P2 items. Bundle `artifacts/v1.1.0`, tests 57/57, all hard gates pass. Results: [`ModelCard.md`](ModelCard.md) (generated) and [`AsBuilt.md`](AsBuilt.md) §8.
+
+| Ticket | Status | Notes |
+|---|---|---|
+| P0-1 Explanation labels | ✅ | Waterfall kinds `realized / rulebook / learned / ordering / floor / delivered / total`. The response carries `explanation.mode` and `shrink`. Drivers carry `source`. The analyst narrative states λ |
+| P0-2 Real identities | ✅ | `identity_errors()` (a, b, c) on 261 checkpoints, max error ≈ 1e-10 h; a negative test proves the check can fail |
+| P0-3 Rulebook baseline | ✅ | Headline, voyage CI, per-seed values and info gate `mae_ratio_cascade_vs_rulebook ≤ 1.01` |
+| P0-4 Targets vs results | ✅ | `metrics.targets`, generated into the model card. Unmet: G2b Brier, G4 top-1, G6b flip ratio; partly met: G3 |
+| P0-5 Information time | ✅ | `available_h = max(actual, reported) + latency` (lognormal by EDI tier, separate RNG stream). API `reported_at`. The reviewer's two leakage tests pass. Post-delivery snapshots are dropped |
+| P0-6 ETA floor | ✅ | `eta_floor_min_remaining_frac` in config; applied on the fallback path too; binding share and a no-floor ablation are reported (it binds on < 1% of snapshots) |
+| P0-7 Small fixes | ✅ | P(late) blend selected with the deployed isotonic classifier; confusion matrix re-oriented; `cold_start` flag and claim removed; monotone method `basic` + an audit test; ledger documented as best-effort and reports `durable`; compose ledger is file-backed |
+| P0-8 Docs | ✅ | This page, ReviewVerification, AsBuilt |
+| P1-1 Independence-aware evaluation | ✅ | Split counts in voyages; voyage-cluster bootstrap; coverage with n and a voyage CI; attribution ambiguity, per-checkpoint and unambiguous accuracy |
+| P1-2 Embargo | ✅ | `metrics.embargo` (retrain without labels realised after the first test departure) |
+| P1-3 `data_quality` object | ✅ | On every prediction; an Evidence row on Shipment Detail. Forecast age is not modelled (forecasts are issued at the as-of time) |
+| P1-4 Alerts | 🟡 | Contract fields (reason, evidence time, previous → new risk and P(late), next step, data-quality flags), FPR, burden and lead-time distribution to the actual delivery are done. **Not done:** thresholds tuned on validation (they are still fixed rules), and a duplicates-suppressed count |
+| P1-5 Advisor | ✅ | Deadline milestone + lead time, three validity flags, assumptions, baseline vs scenario, benefit range over +0 / +6 / +12 h; feasible actions ranked first |
+| P1-6 Propagation | ✅ | δ ∈ {1, 6, 12, 24} h, near-cut-off vs comfortable buffer, n per cell (cells are captioned, not greyed out) |
+| P1-7 Promise P80 | ❌ | Still a normal approximation; documented as such (Design §11.1) |
+| P1-8 Error slices | ❌ | Only by checkpoint, checkpoint group, missingness rate and attribution ambiguity |
+| P2-1 / P2-2 Schedule revisions, duplicate/corrected messages | ❌ | Design only (below) |
+| P2-3 Simulator sensitivity | ✅ | `cascade sensitivity` → `reports/sensitivity.json` (7 variants) |
+| P2-4 Latency methodology | 🟡 | Environment and method are recorded in `metrics.meta.environment`; HTTP/concurrency figures are not published |
+| P2-5 / P2-6 Durable ledger, per-row batch fallback | 🟡 / ❌ | The compose ledger is file-backed; PSI and per-row batch fallback are not done |
+
 ## 0. Principles for this round
 
 1. **Report, don't rescue.** If a fix makes a metric worse, publish the worse number. Original targets stay visible next to revised gates.

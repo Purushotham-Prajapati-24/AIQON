@@ -33,6 +33,7 @@ class TrainConfig:
     stage_models: bool = True
     late_threshold_h: float = 24.0
     alpha: float = 0.2  # 1 - nominal interval coverage (P10-P90)
+    eta_floor_min_remaining_frac: float = 0.5  # heuristic ETA floor (0 = only ETA >= as_of)
     seed: int = 0
     exclude_features: tuple[str, ...] = field(default_factory=tuple)
 
@@ -65,7 +66,8 @@ def _params(
         if cfg.target_mode == "residual":  # physics already in the base: leave its residual free
             mono = [0 if n in PHYS_COLS else m for n, m in zip(FEATURE_NAMES, mono, strict=True)]
         p["monotone_constraints"] = mono
-        p["monotone_constraints_method"] = "advanced"
+        # "advanced" is silently downgraded to "basic" when feature_fraction < 1: say so explicitly
+        p["monotone_constraints_method"] = "basic"
     return p
 
 
@@ -98,8 +100,9 @@ def _targets(rows: pd.DataFrame, cfg: TrainConfig) -> np.ndarray:
 
 def fit_boosters(rows: pd.DataFrame, cfg: TrainConfig) -> dict[str, lgb.Booster]:
     X, y = _X(rows, cfg), _targets(rows, cfg)
-    # LightGBM forbids monotone constraints with quantile objectives (leaf renewal), so the
-    # constraints apply to the late classifier; quantile models are audited for monotonicity.
+    # LightGBM 4.x rejects monotone constraints for objectives that renew leaf outputs
+    # (quantile, L1), so the constraints apply to the late classifier only; its monotonicity is
+    # checked in tests/property/test_model_invariants.py. Quantile models are unconstrained.
     b = {
         k: _fit(X, y, _params(cfg, "quantile", a, monotone=False), cfg.n_estimators)
         for k, a in QUANTILES.items()
@@ -163,7 +166,17 @@ def select_on_temporal_validation(
         k: _fit(Xt, yt, _params(cfg, "quantile", a, monotone=False), cfg.n_estimators).predict(Xv)
         for k, a in QUANTILES.items()
     }
-    clf = _fit(Xt, tr.y_late.to_numpy(float), _params(cfg, "binary"), cfg.n_estimators).predict(Xv)
+    # select the blend with the classifier *as deployed*: isotonic-calibrated on out-of-fold scores
+    yl = tr.y_late.to_numpy(float)
+    clf_params = _params(cfg, "binary")
+    fold_tr = tr.shipment_id.map(inner.fold_of).to_numpy()
+    clf_oof = np.zeros(len(tr))
+    for k in range(inner.n_folds):
+        m = fold_tr == k
+        if m.any() and (~m).any():
+            clf_oof[m] = _fit(Xt[~m], yl[~m], clf_params, cfg.n_estimators).predict(Xt[m])
+    iso_sel = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(clf_oof, yl)
+    clf = iso_sel.predict(_fit(Xt, yl, clf_params, cfg.n_estimators).predict(Xv))
     cur = va.current_delay_h.to_numpy(float)
     base = cur + (
         va[list(PHYS_COLS)].sum(axis=1).to_numpy(float) if cfg.target_mode == "residual" else 0.0
@@ -258,6 +271,7 @@ def train(
         stage_weights=stage_w,
         shrink=shrink,
         late_blend=late_blend,
+        eta_floor_frac=cfg.eta_floor_min_remaining_frac,
         version=version,
     )
     oof["y_remaining"] = y

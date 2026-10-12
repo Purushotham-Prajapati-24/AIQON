@@ -12,4 +12,5 @@ monotone: true                # applied to the late classifier (LightGBM forbids
 stage_models: true
 late_threshold_h: 24
 alpha: 0.2                    # P10-P90 nominal coverage = 1 - alpha
+eta_floor_min_remaining_frac: 0.5  # heuristic ETA floor: remaining stages take >= this share of planned time (0 = ETA >= as_of only)
 seed: 0

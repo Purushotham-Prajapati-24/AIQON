@@ -55,6 +55,16 @@ def validate_events(events: pd.DataFrame, shipments: pd.DataFrame) -> None:
     _require(events.shipment_id.isin(shipments.shipment_id).all(), "events: orphan shipment_id")
     delivered = events[events.event == EventType.DELIVERED.value]
     _require(delivered.reported.all(), "events: DELIVERED must always be reported (ground truth)")
+    if "available_h" in events.columns:  # information-time contract
+        rep = events[events.reported]
+        _require(
+            bool((rep.available_h >= rep.actual_h - 1e-9).all()),
+            "events: a report became available before its event happened",
+        )
+        _require(
+            bool((rep.available_h >= rep.reported_h - 1e-9).all()),
+            "events: a report became available before its stated event time",
+        )
     for sid, g in events.sort_values(["shipment_id", "seq"]).groupby("shipment_id"):
         _require(
             bool(np.all(np.diff(g.actual_h.values) >= -1e-9)),

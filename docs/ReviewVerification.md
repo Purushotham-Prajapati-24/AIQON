@@ -4,6 +4,10 @@
 > **Verdicts:** ✅ **Confirmed** (the code has the problem) · 🟡 **Partly** (real, but narrower or different than stated) · ❌ **Not confirmed** (the code already handles it, or the claim rests on a stale or wrong doc) · ➕ **New** (found during verification; the reviewer could not see it).
 > The resulting work is planned in [`ImprovementPlan.md`](ImprovementPlan.md).
 
+> **Resolution (v1.1.0, 2026-10-13):** the verdicts below describe **v1.0.0**. The fixes are tracked in [`ImprovementPlan.md`](ImprovementPlan.md) → *Status*, with results in [`AsBuilt.md`](AsBuilt.md) §8. In v1.1:
+> - information time (§1.1–1.4), explanation honesty and real identities (§4), split and evidence reporting (§2.4–2.7, §5.2, §6.2), alert burden (§5.6), advisor validity (§7.3), propagation by shock size (§7.4), `data_quality` (§7.1) and parameter sensitivity (§7.5) are **fixed**;
+> - schedule revisions (§1.5), calibrated P80 (§6.4), error slices (§7.7) and validation-tuned alert thresholds remain **open** and are documented.
+
 ## Bottom line
 
 The review is **mostly right, and in its most important point it understates the problem.** The verification found:

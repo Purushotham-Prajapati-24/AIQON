@@ -130,6 +130,16 @@ def guard(fn):
         st.stop()
 
 
+SOURCE_MARK = {
+    "realized": "● ",
+    "rulebook": "◦ ",
+    "learned": "◆ ",
+    "ordering": "▪ ",
+    "floor": "▪ ",
+    "delivered": "▪ ",
+}
+
+
 def waterfall_chart(items: list[dict], height: int = 360) -> go.Figure:
     measure, x, y, text = [], [], [], []
     for it in items:
@@ -155,21 +165,18 @@ def waterfall_chart(items: list[dict], height: int = 360) -> go.Figure:
             totals={"marker": {"color": OK["blue"]}},
         )
     )
-    # mark forecast bars (hatched) vs realized (solid)
+    # mark each bar by its source: observed fact, rulebook projection, learned, adjustment
     kinds = [it["kind"] for it in items]
     fig.update_yaxes(
         autorange="reversed",
-        ticktext=[
-            ("◦ " if k in ("forecast", "baseline", "guardrail") else "● ") + yy
-            for k, yy in zip(kinds, y, strict=True)
-        ],
+        ticktext=[SOURCE_MARK.get(k, "") + yy for k, yy in zip(kinds, y, strict=True)],
         tickvals=y,
     )
     fig.update_layout(
         height=height,
         margin=dict(l=10, r=70, t=10, b=10),
         showlegend=False,
-        xaxis_title="hours vs plan   (● realized · ◦ forecast)",
+        xaxis_title="hours vs plan   (● observed · ◦ rulebook · ◆ learned · ▪ adjustment)",
     )
     # A decreasing bar near the left edge puts its "outside" label on top of the axis labels:
     # widen the x-range on the left so the label stays inside the plot.

@@ -80,6 +80,21 @@ st.markdown(
     ),
     unsafe_allow_html=True,
 )
+dq = s.get("data_quality") or {}
+if dq.get("mode"):
+    age = dq.get("last_milestone_age_h")
+    bits = [
+        f"last report: {(dq.get('last_milestone') or 'none').replace('_', ' ').lower()}"
+        + (f" ({age:.0f} h ago)" if age is not None else ""),
+        f"next expected: {(dq.get('next_expected') or '—').replace('_', ' ').lower()}"
+        + (f", {dq['next_overdue_h']:.0f} h overdue" if dq.get("next_overdue_h", 0) > 1 else ""),
+        f"feed quality: EDI tier {dq.get('source_tier')}",
+        f"served by: {dq['mode'].replace('_', ' ')}",
+        f"uncertainty driven by: {dq.get('confidence_reason', '').replace('_', ' ')}",
+    ]
+    if dq.get("reporting_gap_inferred"):
+        bits.append("silence treated as a missing report")
+    st.caption("🔎 Evidence · " + " · ".join(bits))
 
 # ---- answer first: ETA card + narrative ---------------------------------------------------------
 a, b = st.columns([1, 2])
@@ -113,8 +128,12 @@ with left:
     st.markdown("#### Delay waterfall")
     if "waterfall" in s:
         st.plotly_chart(waterfall_chart(s["waterfall"]), use_container_width=True)
+        ex = s.get("explanation", {})
         st.caption(
-            "● realized delay from observed milestones · ◦ forecast contributions by stage (exact, additive)"
+            "● observed delay from milestone reports · ◦ operator-rulebook projection by stage · "
+            "◆ learned correction · ▪ post-processing (ordering, ETA floor). "
+            + ex.get("note", "")
+            + " Parts add up exactly to the P50."
         )
 with right:
     st.markdown("#### Why? Stage drivers")
@@ -122,7 +141,12 @@ with right:
         sign = "+" if drv["contribution_h"] >= 0 else "−"
         with st.expander(f"{drv['label']}: {sign}{abs(drv['contribution_h']):.0f} h"):
             st.write(drv["phrase"].capitalize())
-            st.caption(f"Top signal: `{drv['top_feature']}` = {drv['value']:.2f}")
+            src = {
+                "rulebook": "operator-rulebook projection",
+                "learned": "learned correction",
+                "rulebook+learned": "rulebook projection + learned correction",
+            }.get(drv.get("source", ""), "model")
+            st.caption(f"Source: {src} · signal `{drv['top_feature']}` = {drv['value']:.2f}")
     if s.get("stage_forecast_hours"):
         st.markdown("**Where further delay is expected (reconciled stage forecast)**")
         sf = {GROUP_LABEL[k]: v for k, v in s["stage_forecast_hours"].items() if abs(v) >= 0.5}
@@ -162,13 +186,33 @@ for rec in recs:
         icon, verdict = "⏱️", " · saves time, but costs more than the delay it avoids"
     else:
         icon, verdict = "▫️", ""
+    val = rec.get("validity", {})
+    if val and not val.get("operationally_feasible", True):
+        icon, verdict = "⛔", " · too late to arrange before its cut-off milestone"
+    elif val and not all(val.values()):
+        icon = "⏱️" if rec["hours_saved"] > 6 else "▫️"
+    ticks = " ".join(
+        ("✓ " if val.get(k) else "✗ ") + label
+        for k, label in (
+            ("mechanically_valid", "consistent"),
+            ("operationally_feasible", "feasible in time"),
+            ("economically_justified", "pays off"),
+        )
+    )
+    rng = rec.get("benefit_range_h") or []
+    spread = (
+        f" (range {dur(rng[0]).lstrip('+')}–{dur(rng[1]).lstrip('+')} if 6–12 h later)"
+        if rng
+        else ""
+    )
     line = (
-        f"{icon} **{rec['label']}** — saves **{dur(rec['hours_saved']).lstrip('+')}**, "
+        f"{icon} **{rec['label']}** — saves **{dur(rec['hours_saved']).lstrip('+')}**{spread}, "
         f"{usd(rec['usd_saved'])} avoided for {usd(rec['action_cost_usd'])} "
         f"(net {usd(rec['net_value_usd'], signed=True)}); "
         f"P(late) after: {rec['p_late_after']:.0%}  \n"
-        f"<span style='opacity:.7'>{rec['description']} · feasible because "
-        f"{rec['feasible_reason']}{verdict}</span>"
+        f"<span style='opacity:.7'>{rec['description']} · applies because "
+        f"{rec['feasible_reason']}{verdict}<br>{ticks} · assumes "
+        f"{'; '.join(rec.get('assumptions', [])) or 'other conditions fixed'}</span>"
     )
     # escape "$": two of them in one string would otherwise render as LaTeX math
     st.markdown(line.replace("$", r"\$"), unsafe_allow_html=True)

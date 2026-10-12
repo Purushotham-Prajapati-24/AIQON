@@ -34,7 +34,8 @@ META_COLS = [
     "current_delay",
     "planned_delivered",
     "planned_departure",
-    "min_remaining_h",
+    "floor_plan_remaining_h",
+    "floor_elapsed_h",
 ]
 TARGET_COLS = ["y_total", "y_remaining", "y_late"] + [f"y_inc_{g.value}" for g in PHYSICAL_GROUPS]
 
@@ -42,8 +43,12 @@ TARGET_COLS = ["y_total", "y_remaining", "y_late"] + [f"y_inc_{g.value}" for g i
 def views_from_frames(shipments: pd.DataFrame, events: pd.DataFrame) -> dict[str, ShipmentView]:
     rep = events[events.reported]
     rep_map: dict[str, dict[EventType, float]] = {}
-    for sid, ev, t in zip(rep.shipment_id, rep.event, rep.reported_h, strict=True):
+    avail_map: dict[str, dict[EventType, float]] = {}
+    # older bundles have no availability column: reports were known at their stated time
+    avail = rep.available_h if "available_h" in rep.columns else rep.reported_h
+    for sid, ev, t, a in zip(rep.shipment_id, rep.event, rep.reported_h, avail, strict=True):
         rep_map.setdefault(sid, {})[EventType(ev)] = float(t)
+        avail_map.setdefault(sid, {})[EventType(ev)] = float(a)
     views = {}
     for r in shipments.itertuples(index=False):
         planned = {
@@ -62,6 +67,7 @@ def views_from_frames(shipments: pd.DataFrame, events: pd.DataFrame) -> dict[str
             planned=planned,
             reported=rep_map.get(r.shipment_id, {}),
             carrier_edi_tier=int(r.carrier_edi_tier),
+            available=avail_map.get(r.shipment_id, {}),
         )
     return views
 
@@ -75,8 +81,8 @@ def checkpoint_times(
     seq = event_sequence(NETWORK.lanes[view.lane_id].has_transshipment)
     out = [(view.planned[E.GATE_IN_ORIGIN] - 72.0, "booked")]
     for e in seq[:-1]:
-        if e in view.reported:
-            out.append((view.reported[e] + 1 / 60, "event"))
+        if e in view.reported:  # a snapshot right after the report *arrives*
+            out.append((view.known_at(e) + 1 / 60, "event"))
     if mid_stage:
         for i, e in enumerate(seq):
             if e in MID_STAGE_EVENTS and i > 0:
@@ -108,6 +114,9 @@ def build_rows(
         stage_inc = inc.loc[s.shipment_id]
         for as_of, kind in checkpoint_times(view, actual_all[s.shipment_id], rng, mid_stage):
             snap = build_snapshot(view, as_of, ext)
+            if snap.last_event == E.DELIVERED:
+                # a late report arrived after delivery was confirmed: nothing left to predict
+                continue
             last_idx = EVENT_INDEX[snap.last_event] if snap.last_event is not None else -1
             fut = {g: 0.0 for g in PHYSICAL_GROUPS}
             for stage_name, h in stage_inc.items():
@@ -126,7 +135,8 @@ def build_rows(
                 "current_delay": snap.current_delay,
                 "planned_delivered": snap.planned_delivered,
                 "planned_departure": view.planned[E.DEPART_ORIGIN],
-                "min_remaining_h": float(snap.context.get("min_remaining_h", 0.0)),
+                "floor_plan_remaining_h": float(snap.context["floor_plan_remaining_h"]),
+                "floor_elapsed_h": float(snap.context["floor_elapsed_h"]),
                 "y_total": s.total_delay_h,
                 "y_remaining": s.total_delay_h - snap.current_delay,
                 "y_late": float(s.is_late),

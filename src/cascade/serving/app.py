@@ -432,6 +432,7 @@ def payload(sid: str, as_of: str | None = None):
             "carrier_edi_tier": v.carrier_edi_tier,
             "planned": {e.value: _iso(h) for e, h in v.planned.items()},
             "observed": {e.value: _iso(h) for e, h in v.reported.items()},
+            "reported_at": {e.value: _iso(v.known_at(e)) for e in v.reported},
         },
         "as_of": _iso(t),
     }
@@ -547,7 +548,11 @@ def monitoring():
     return {
         "by_checkpoint": S.ledger.accuracy(),
         "by_lane": S.ledger.lane_trust(),
-        "ledger": asdict(S.ledger.stats),
+        "ledger": asdict(S.ledger.stats)
+        | {
+            "durable": S.ledger.path != ":memory:",
+            "mode": "best-effort telemetry (bounded queue; overflow dropped and counted)",
+        },
     }
 
 

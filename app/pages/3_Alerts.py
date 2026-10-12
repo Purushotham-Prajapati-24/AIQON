@@ -28,9 +28,20 @@ for a in res["alerts"]:
         continue
     c = st.columns([1, 6, 1])
     c[0].markdown(f"{icon[a['severity']]} **{a['severity'].upper()}**")
+    change = ""
+    if a.get("new_risk"):
+        p_prev = a.get("previous_p_late")
+        change = (
+            f"Risk {a.get('previous_risk') or 'new'} → **{a['new_risk']}** · P(late) "
+            + (f"{p_prev:.0%} → " if p_prev is not None else "")
+            + f"{a['new_p_late']:.0%} · Next step: {a.get('recommended_next_step', '')}  \n"
+        )
+    dq = ", ".join(a.get("data_quality_flags", []))
     c[1].markdown(
         f"**{a['shipment_id']} · {a['rule'].replace('_', ' ').title()}** — {a['message']}  \n"
-        f"<span style='opacity:.65'>raised {ts(a['created_at'], '%d %b %H:%M')} ({a['age_h']:.0f} h ago)</span>",
+        + change
+        + f"<span style='opacity:.65'>{'Data: ' + dq + ' · ' if dq else ''}evidence as of "
+        f"{ts(a['created_at'], '%d %b %H:%M')} ({a['age_h']:.0f} h ago)</span>",
         unsafe_allow_html=True,
     )
     if c[2].button("Open", key=a["alert_id"]):

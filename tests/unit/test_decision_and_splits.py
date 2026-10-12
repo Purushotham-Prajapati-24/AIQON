@@ -77,3 +77,58 @@ def test_priors_are_out_of_fold(sim, rows, splits):
     assert with_p.prior_lane_mean_delay.iloc[0] == pytest.approx(
         table["prior_lane_mean_delay"].get(lane, table["prior_lane_mean_delay"]["__global__"])
     )
+
+
+def test_advisor_states_validity_deadline_and_ranges(engine, world):
+    """Every recommendation carries preconditions, assumptions, before/after and 3 validity flags."""
+    from cascade.decision.advisor import SENSITIVITY_SHIFTS_H
+
+    seen = 0
+    for sid in sorted(world.views):
+        v = world.views[sid]
+        for cp in world.checkpoints(sid)[:3]:
+            _, recs = engine.advise(v, cp["as_of"])
+            for r in recs:
+                seen += 1
+                assert set(r.validity) == {
+                    "mechanically_valid",
+                    "operationally_feasible",
+                    "economically_justified",
+                }
+                assert r.validity["economically_justified"] == (r.net_value_usd > 0)
+                assert r.validity["operationally_feasible"] == (r.hours_to_deadline >= 0)
+                assert r.feasible_reason and r.assumptions and r.deadline_event
+                assert (
+                    {"p10", "p50", "p90", "p_late"}
+                    <= set(r.baseline)
+                    <= set(r.scenario)
+                    | {
+                        "p10",
+                        "p50",
+                        "p90",
+                        "p_late",
+                    }
+                )
+                assert len(r.benefit_range_h) == 2 and r.benefit_range_h[0] <= r.benefit_range_h[1]
+                assert r.benefit_range_h[0] - 1e-6 <= r.hours_saved <= r.benefit_range_h[1] + 1e-6
+            # feasible actions are always ranked before infeasible ones
+            flags = [r.validity["operationally_feasible"] for r in recs]
+            assert flags == sorted(flags, reverse=True)
+        if seen >= 20:
+            break
+    assert seen > 0 and len(SENSITIVITY_SHIFTS_H) == 3
+
+
+def test_advisor_deadline_passes_once_cutoff_milestone_happened():
+    from cascade.decision.advisor import Action, hours_to_deadline
+    from cascade.domain.stages import EventType as Ev
+    from cascade.features.snapshot import Snapshot, WhatIf
+
+    a = Action("x", "x", "x", 1.0, WhatIf(), Ev.ARRIVE_DEST_PORT, 24.0)
+    planned = {Ev.ARRIVE_DEST_PORT: 1000.0}
+    snap = Snapshot({}, 900.0, 3, None, 10.0, 1200.0, {}, [], None, {Ev.ARRIVE_DEST_PORT: 10.0})
+    assert hours_to_deadline(a, snap, planned) == pytest.approx(1000 + 10 - 900 - 24)
+    late = Snapshot({}, 990.0, 3, None, 10.0, 1200.0, {}, [], None, {Ev.ARRIVE_DEST_PORT: 10.0})
+    assert hours_to_deadline(a, late, planned) < 0  # too late to arrange the 24 h lead time
+    done = Snapshot({}, 900.0, 6, None, 10.0, 1200.0, {Ev.ARRIVE_DEST_PORT: 1005.0}, [], None)
+    assert hours_to_deadline(a, done, planned) == -float("inf")

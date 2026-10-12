@@ -39,7 +39,7 @@ def generate_data(seed: int = 42, n: int = 300, out: Path = ROOT / "data") -> No
 def run_all(
     seed: int = 42,
     n: int = 300,
-    version: str = "1.0.0",
+    version: str = "1.1.0",
     fast: bool = False,
     force: bool = False,
     train_config: Path = ROOT / "configs" / "train.yaml",
@@ -86,6 +86,14 @@ def seeds(seeds: str = "42,7,11,23,99", n: int = 300) -> None:
     )
     for k, v in summary.items():
         typer.echo(f"{k:<32} {v['mean']:.3f} ± {v['sd']:.3f}")
+
+
+@app.command()
+def sensitivity(seed: int = 42, n: int = 300) -> None:
+    """Simulator-parameter sensitivity: rerun on worlds whose mechanics differ (no publishing)."""
+    from cascade.eval.sensitivity import run_sensitivity
+
+    run_sensitivity(seed, n, ROOT / "reports", log=typer.echo)
 
 
 @app.command()
