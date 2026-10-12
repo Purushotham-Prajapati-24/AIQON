@@ -138,7 +138,14 @@ with right:
                     cliponaxis=False,
                 )
             )
-            fig.update_layout(height=220, margin=dict(l=10, r=60, t=5, b=5), xaxis_title="hours")
+            # pad the x-range so outside labels (incl. negative bars) stay clear of the axis labels
+            lo, hi = min(0.0, *sf.values()), max(0.0, *sf.values())
+            pad = 0.25 * (hi - lo) + 4
+            fig.update_layout(
+                height=220,
+                margin=dict(l=10, r=60, t=5, b=5),
+                xaxis=dict(title="hours", range=[lo - pad if lo < 0 else 0, hi + pad]),
+            )
             st.plotly_chart(fig, use_container_width=True)
 
 # ---- recommended actions ----------------------------------------------------------------------
@@ -155,15 +162,16 @@ for rec in recs:
         icon, verdict = "⏱️", " · saves time, but costs more than the delay it avoids"
     else:
         icon, verdict = "▫️", ""
-    st.markdown(
+    line = (
         f"{icon} **{rec['label']}** — saves **{dur(rec['hours_saved']).lstrip('+')}**, "
         f"{usd(rec['usd_saved'])} avoided for {usd(rec['action_cost_usd'])} "
         f"(net {usd(rec['net_value_usd'], signed=True)}); "
         f"P(late) after: {rec['p_late_after']:.0%}  \n"
         f"<span style='opacity:.7'>{rec['description']} · feasible because "
-        f"{rec['feasible_reason']}{verdict}</span>",
-        unsafe_allow_html=True,
+        f"{rec['feasible_reason']}{verdict}</span>"
     )
+    # escape "$": two of them in one string would otherwise render as LaTeX math
+    st.markdown(line.replace("$", r"\$"), unsafe_allow_html=True)
 st.caption(adv["disclaimer"])
 
 with st.expander("API: reproduce this prediction"):
