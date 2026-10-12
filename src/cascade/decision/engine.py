@@ -65,6 +65,19 @@ class Result:
     # where the P50 came from, in delay hours (model path only):
     # raw (observed + rulebook + λ·learned) + ordering + floor + delivered == delay_p50
     p50_parts: dict[str, float] | None = None
+    delay_p80: float | None = None  # calibrated P80 (promise quantile)
+
+    schedule: dict | None = None  # original commitment vs carrier's current plan
+
+    @property
+    def eta_p80(self) -> float:
+        """P80 ETA; without a calibrated value, the normal approximation from P50/P90."""
+        from cascade.models.predictor import P80_FROM_P50_P90
+
+        d80 = self.delay_p80
+        if d80 is None:
+            d80 = self.delay_p50 + P80_FROM_P50_P90 * max(self.delay_p90 - self.delay_p50, 0.0)
+        return self.planned_delivered + d80
 
     @property
     def data_quality(self) -> dict:
@@ -129,6 +142,7 @@ class Result:
                 "observed": round(self.delay_observed, 2),
                 "p10": round(self.delay_p10, 2),
                 "p50": round(self.delay_p50, 2),
+                "p80": round(self.eta_p80 - self.planned_delivered, 2),
                 "p90": round(self.delay_p90, 2),
             },
             "p_late": round(self.p_late, 4),
@@ -138,6 +152,7 @@ class Result:
             "cost_usd": {k: round(v, 0) for k, v in self.cost_usd.items()},
             "promise": self.promise,
             "flags": self.flags,
+            "schedule": self.schedule,
             "timing_ms": {k: round(v, 3) for k, v in self.timing_ms.items()},
         }
         if self.explanation is not None:
@@ -230,22 +245,18 @@ class Engine:
         snaps = self.snapshots(items, whatif, ext)
         t1 = time.perf_counter()
         results: list[Result] = []
-        try:
-            X, pr = self._arrays(snaps)
-            if not np.all(np.isfinite([pr.delay_p10, pr.delay_p50, pr.delay_p90, pr.p_late])):
-                raise FloatingPointError("non-finite prediction")
-            degraded = None
-        except Exception as exc:
-            X, pr, degraded = None, None, f"model_error: {type(exc).__name__}"
+        rows = self._rows_with_fallback(snaps)  # per row: (X, arrays, index) or the failure reason
         t2 = time.perf_counter()
         for i, ((view, _), snap) in enumerate(zip(items, snaps, strict=True)):
-            if pr is not None:
-                res = self._result(view, snap, pr, i)
+            row = rows[i]
+            if isinstance(row, str):  # only this row degrades, never the whole batch
+                res = self._fallback(view, snap, row)
             else:
-                res = self._fallback(view, snap, degraded or "model_error")
-            if explain and X is not None and pr is not None:
+                X, pr, j = row
+                res = self._result(view, snap, pr, j)
+            if explain and not isinstance(row, str):
                 te = time.perf_counter()
-                xi = X[i : i + 1]
+                xi = X[j : j + 1]
                 adjust = {k: v for k, v in (res.p50_parts or {}).items() if k != "raw"}
                 res.explanation = build_explanation(
                     snap,
@@ -265,6 +276,7 @@ class Engine:
                     shrink=self.model.shrink,
                 )
                 res.timing_ms["explain"] = (time.perf_counter() - te) * 1000
+            res.schedule = schedule_view(view, res)
             if with_cost:
                 res.cost_usd = self.cost(view, res)
             res.timing_ms.update(
@@ -276,6 +288,33 @@ class Engine:
                 promise, _ = self.replay_decisions(view, t)
                 res.promise = promise
         return results
+
+    def _rows_with_fallback(
+        self, snaps: list[Snapshot]
+    ) -> list[tuple[np.ndarray, PredictionArrays, int] | str]:
+        """Vectorised inference; if it fails, retry row by row so one bad row degrades alone."""
+
+        def finite(pr: PredictionArrays, j: int) -> bool:
+            vals = (pr.delay_p10[j], pr.delay_p50[j], pr.delay_p90[j], pr.p_late[j])
+            return bool(np.all(np.isfinite(vals)))
+
+        try:
+            X, pr = self._arrays(snaps)
+            return [
+                (X, pr, j) if finite(pr, j) else "model_error: non-finite prediction"
+                for j in range(len(snaps))
+            ]
+        except Exception:
+            out: list[tuple[np.ndarray, PredictionArrays, int] | str] = []
+            for s in snaps:
+                try:
+                    Xs, prs = self._arrays([s])
+                    out.append(
+                        (Xs, prs, 0) if finite(prs, 0) else "model_error: non-finite prediction"
+                    )
+                except Exception as exc:
+                    out.append(f"model_error: {type(exc).__name__}")
+            return out
 
     def predict(
         self,
@@ -323,12 +362,17 @@ class Engine:
             flags,
             snapshot=snap,
             p50_parts=_p50_parts(pr, i),
+            delay_p80=float(pr.delay_p80[i]) if pr.delay_p80 is not None else None,
         )
 
     def _fallback(self, view: ShipmentView, snap: Snapshot, reason: str) -> Result:
         """Fallback 1: propagation prior; fallback 2: carry-forward (unknown lane)."""
         try:
-            rem = self.model.fallback.predict_one(view.lane_id, snap.checkpoint, snap.current_delay)
+            rem = float(
+                self.model.fallback.predict_one(view.lane_id, snap.checkpoint, snap.current_delay)
+            )
+            if not math.isfinite(rem):
+                raise FloatingPointError("non-finite propagation prior")
             source = "propagation_prior"
         except Exception:
             rem, source = 0.0, "carry_forward"
@@ -413,7 +457,7 @@ class Engine:
         return times
 
     def replay_decisions(
-        self, view: ShipmentView, as_of: float
+        self, view: ShipmentView, as_of: float, stats: dict[str, int] | None = None
     ) -> tuple[dict | None, list[AlertEvent]]:
         """Fold the decision rules over the shipment's own history up to as_of."""
         times = self.checkpoint_times(view, as_of)
@@ -429,7 +473,7 @@ class Engine:
                 promise,
                 r.as_of,
                 eta50,
-                r.planned_delivered + r.delay_p90,
+                r.eta_p80,
                 r.delay_p90 - r.delay_p10,
                 r.risk_tier,
             )
@@ -452,7 +496,9 @@ class Engine:
                 data_quality_flags=tuple(f"missing:{e}" for e in r.flags.get("missing_events", []))
                 + (("degraded",) if r.flags.get("degraded") else ()),
             )
-            new = evaluate_alerts(prev, cur, open_rules)
+            new = evaluate_alerts(
+                prev, cur, open_rules, late_alert_p=self.model.late_alert_p, stats=stats
+            )
             alerts.extend(new)
             open_rules |= {a.rule for a in new}
             prev = cur
@@ -543,12 +589,18 @@ class World:
     actual_delivered: dict[str, float]
     total_delay: dict[str, float]
     now_h: float
+    revisions: pd.DataFrame = field(default_factory=pd.DataFrame)
 
     @classmethod
     def from_frames(
-        cls, shipments: pd.DataFrame, events: pd.DataFrame, now_h: float | None = None
+        cls,
+        shipments: pd.DataFrame,
+        events: pd.DataFrame,
+        now_h: float | None = None,
+        revisions: pd.DataFrame | None = None,
     ) -> World:
-        views = views_from_frames(shipments, events)
+        revisions = revisions if revisions is not None else pd.DataFrame()
+        views = views_from_frames(shipments, events, revisions)
         gi = events[events.event == E.GATE_IN_ORIGIN.value].set_index("shipment_id").actual_h
         dl = events[events.event == E.DELIVERED.value].set_index("shipment_id").actual_h
         if now_h is None:
@@ -562,6 +614,7 @@ class World:
             dl.to_dict(),
             shipments.set_index("shipment_id").total_delay_h.to_dict(),
             now_h,
+            revisions,
         )
 
     @classmethod
@@ -569,11 +622,14 @@ class World:
         shipments = pd.read_csv(root / "world_shipments.csv")
         events = pd.read_csv(root / "world_events.csv")
         now = float((root / "world_now.txt").read_text())
-        return cls.from_frames(shipments, events, now)
+        rev_path = root / "world_revisions.csv"
+        revisions = pd.read_csv(rev_path) if rev_path.exists() else None
+        return cls.from_frames(shipments, events, now, revisions)
 
     def save(self, root: Path) -> None:
         self.shipments.to_csv(root / "world_shipments.csv", index=False)
         self.events.to_csv(root / "world_events.csv", index=False)
+        self.revisions.to_csv(root / "world_revisions.csv", index=False)
         (root / "world_now.txt").write_text(f"{self.now_h:.4f}")
 
     def status(self, sid: str, t: float) -> str:
@@ -586,7 +642,7 @@ class World:
     def view_as_of(self, sid: str, t: float) -> ShipmentView:
         """The view an operator would have at time t (only milestone reports received by then)."""
         v = self.views[sid]
-        rep = v.known_by(t)
+        rep = v.known_by(t)  # values as known at t (a later correction is not yet applied)
         return ShipmentView(
             v.shipment_id,
             v.lane_id,
@@ -599,6 +655,7 @@ class World:
             rep,
             v.carrier_edi_tier,
             {e: v.known_at(e) for e in rep},
+            revisions=tuple(r for r in v.revisions if r[0] <= t),
         )
 
     def checkpoints(self, sid: str) -> list[dict]:
@@ -624,6 +681,21 @@ def group_label(g: str) -> str:
     from cascade.domain.stages import GROUP_LABEL
 
     return GROUP_LABEL[StageGroup(g)]
+
+
+def schedule_view(view: ShipmentView, res: Result) -> dict:
+    """Lateness stays vs the original commitment; the carrier's latest plan is shown beside it."""
+    iso = lambda h: to_datetime(h).isoformat().replace("+00:00", "Z")  # noqa: E731
+    plan, n_rev = view.plan_at(res.as_of)
+    current = plan[E.DELIVERED]
+    return {
+        "original_planned_delivery": iso(view.planned[E.DELIVERED]),
+        "current_plan_delivery": iso(current),
+        "revisions_known": n_rev,
+        "carrier_plan_delay_h": round(current - view.planned[E.DELIVERED], 2),
+        "delay_vs_original_commitment_h": round(res.delay_p50, 2),
+        "delay_vs_current_plan_h": round(res.planned_delivered + res.delay_p50 - current, 2),
+    }
 
 
 def _p50_parts(pr: PredictionArrays, i: int) -> dict[str, float] | None:

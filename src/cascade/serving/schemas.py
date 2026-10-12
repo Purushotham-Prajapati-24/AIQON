@@ -14,6 +14,13 @@ from cascade.features.snapshot import ShipmentView, WhatIf
 Audience = Literal["ops", "customer", "analyst"]
 
 
+class ScheduleRevisionIn(BaseModel):
+    """A carrier re-plan: new planned times for some milestones, known from effective_at."""
+
+    effective_at: AwareDatetime
+    planned: dict[EventType, AwareDatetime] = Field(min_length=1)
+
+
 class ShipmentIn(BaseModel):
     shipment_id: str = Field(min_length=1, max_length=64, examples=["SHP-000123"])
     lane_id: str = Field(examples=["CNSHA-SGSIN-NLRTM"])
@@ -28,6 +35,9 @@ class ShipmentIn(BaseModel):
     # Optional: when each observed milestone's message reached you. A milestone only counts once
     # it has arrived by `as_of`; omitted = known from its event time.
     reported_at: dict[EventType, AwareDatetime] = Field(default_factory=dict, max_length=50)
+    # Optional carrier schedule versions. `planned` stays the original commitment (lateness is
+    # measured against it); revisions only inform the "current plan" shown beside the ETA.
+    schedule_revisions: list[ScheduleRevisionIn] = Field(default_factory=list, max_length=50)
 
     @field_validator("lane_id")
     @classmethod
@@ -78,6 +88,10 @@ class ShipmentIn(BaseModel):
             reported={e: to_hours(t) for e, t in self.observed.items()},
             carrier_edi_tier=self.carrier_edi_tier,
             available={e: to_hours(t) for e, t in self.reported_at.items()},
+            revisions=tuple(
+                (to_hours(r.effective_at), {e: to_hours(t) for e, t in r.planned.items()})
+                for r in self.schedule_revisions
+            ),
         )
 
 

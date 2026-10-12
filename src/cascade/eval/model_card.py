@@ -136,6 +136,28 @@ def write_model_card(m: dict, path: Path) -> None:
             f"| {g} | {_f(d['coverage'], True)} | {_f(d['width_h'])} h | {d['n_snapshots']} | "
             f"{d['n_shipments']} | {d['n_voyages']} | {_f(lo, True)} – {_f(hi, True)} |"
         )
+    if m.get("slices"):
+        lines += [
+            "",
+            "## Error slices (where the model works poorly)",
+            "",
+            "Slices with fewer than 5 test voyages are suppressed.",
+            "",
+            "| Slice | Group | MAE (h) | B1 MAE (h) | Coverage | Brier | Voyages / shipments / snapshots |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for dim in ("horizon", "route", "edi_tier", "dest_congestion", "missing_events"):
+            for g, s in m["slices"].get(dim, {}).items():
+                n = f"{s['n_voyages']} / {s['n_shipments']} / {s['n_snapshots']}"
+                if s["suppressed"]:
+                    lines.append(
+                        f"| {dim.replace('_', ' ')} | {g} | — | — | — | — | {n} (suppressed) |"
+                    )
+                else:
+                    lines.append(
+                        f"| {dim.replace('_', ' ')} | {g} | {_f(s['mae'])} | {_f(s['mae_B1'])} | "
+                        f"{_f(s['coverage'], True)} | {_f(s['brier'], nd=3)} | {n} |"
+                    )
     lines += [
         "",
         "## Known weaknesses",

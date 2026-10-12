@@ -59,14 +59,31 @@ def _aid(sid: str, rule: str, t: float) -> str:
     return hashlib.sha1(f"{sid}|{rule}|{t:.3f}".encode()).hexdigest()[:12]
 
 
+def alert_tier(s: PredState, late_alert_p: float) -> str:
+    """The tier used for alerting: LATE also needs P(late) >= the validation-tuned threshold."""
+    if s.tier == "LATE" and s.p_late < late_alert_p:
+        return "AT_RISK"
+    return s.tier
+
+
 def evaluate_alerts(
-    prev: PredState | None, cur: PredState, open_rules: set[str]
+    prev: PredState | None,
+    cur: PredState,
+    open_rules: set[str],
+    late_alert_p: float = 0.0,
+    stats: dict[str, int] | None = None,
 ) -> list[AlertEvent]:
-    """Rules fire on transitions; one open alert per (shipment, rule) except promise moves."""
+    """Rules fire on transitions; one open alert per (shipment, rule) except promise moves.
+
+    `late_alert_p` is chosen on out-of-fold training predictions (never on test); 0 reproduces
+    the plain tier rule. `stats` counts duplicates the deduplication suppressed.
+    """
     out: list[AlertEvent] = []
 
     def fire(rule: str, sev: str, msg: str, dedupe: bool = True) -> None:
         if dedupe and rule in open_rules:
+            if stats is not None:
+                stats["duplicates_suppressed"] = stats.get("duplicates_suppressed", 0) + 1
             return
         out.append(
             AlertEvent(
@@ -87,13 +104,15 @@ def evaluate_alerts(
             )
         )
 
-    prev_rank = TIER_RANK[prev.tier] if prev else 0
-    if TIER_RANK[cur.tier] > prev_rank:
-        rule = "TIER_ESCALATION_LATE" if cur.tier == "LATE" else "TIER_ESCALATION_AT_RISK"
+    prev_rank = TIER_RANK[alert_tier(prev, late_alert_p)] if prev else 0
+    tier = alert_tier(cur, late_alert_p)
+    if TIER_RANK[tier] > prev_rank:
+        rule = "TIER_ESCALATION_LATE" if tier == "LATE" else "TIER_ESCALATION_AT_RISK"
         fire(
             rule,
-            "critical" if cur.tier == "LATE" else "warn",
-            f"Risk tier escalated to {cur.tier}.",
+            "critical" if tier == "LATE" else "warn",
+            f"Risk tier escalated to {tier}"
+            + (f" (P(late) {cur.p_late:.0%})." if tier == "LATE" else "."),
         )
     if (
         prev

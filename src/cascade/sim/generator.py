@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from cascade.domain.delay import DEFAULT_LATE_THRESHOLD_H
+from cascade.domain.feed import collapse_messages
 from cascade.domain.network import NETWORK, Network
 from cascade.domain.stages import EVENT_INDEX, GROUP_OF_STAGE, EventType, event_sequence
 from cascade.sim.external import ExternalSeries, generate_external
@@ -47,6 +48,14 @@ class SimConfig:
     latency_median_tier2_h: float = 2.0
     latency_median_tier3_h: float = 6.0
     latency_sigma: float = 0.8
+    # message feed noise (separate RNG stream): duplicated messages, and first messages with a
+    # wrong time that a later message corrects
+    duplicate_rate: float = 0.05
+    correction_rate: float = 0.08
+    correction_error_h: tuple[float, float] = (3.0, 8.0)
+    correction_delay_h: tuple[float, float] = (6.0, 48.0)
+    # carrier re-plans the downstream schedule when a milestone deviates this much from the plan
+    replan_threshold_h: float = 12.0
 
 
 @dataclass
@@ -57,6 +66,8 @@ class SimOutput:
     draws: pd.DataFrame
     external: ExternalSeries
     config: SimConfig = field(default_factory=SimConfig)
+    messages: pd.DataFrame = field(default_factory=pd.DataFrame)  # raw feed log
+    revisions: pd.DataFrame = field(default_factory=pd.DataFrame)  # carrier schedule versions
 
     def save(self, out_dir: Path) -> None:
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -65,12 +76,18 @@ class SimOutput:
         self.events.to_csv(out_dir / "events.csv", index=False)
         self.ledger.to_csv(out_dir / "cause_ledger.csv", index=False)
         self.draws.to_csv(out_dir / "draws.csv", index=False)
+        self.messages.to_csv(out_dir / "messages.csv", index=False)
+        self.revisions.to_csv(out_dir / "schedule_revisions.csv", index=False)
         self.external.save(out_dir / "external.npz")
         (out_dir / "sim_config.json").write_text(json.dumps(asdict(self.config), indent=2))
 
     @classmethod
     def load(cls, out_dir: Path) -> SimOutput:
-        cfg = SimConfig(**json.loads((out_dir / "sim_config.json").read_text()))
+        raw = json.loads((out_dir / "sim_config.json").read_text())
+        cfg = SimConfig(**{k: tuple(v) if isinstance(v, list) else v for k, v in raw.items()})
+        opt = lambda name: (  # noqa: E731
+            pd.read_csv(out_dir / name) if (out_dir / name).exists() else pd.DataFrame()
+        )
         return cls(
             shipments=pd.read_csv(out_dir / "shipments.csv"),
             events=pd.read_csv(out_dir / "events.csv"),
@@ -78,6 +95,8 @@ class SimOutput:
             draws=pd.read_csv(out_dir / "draws.csv"),
             external=ExternalSeries.load(out_dir / "external.npz"),
             config=cfg,
+            messages=opt("messages.csv"),
+            revisions=opt("schedule_revisions.csv"),
         )
 
 
@@ -181,9 +200,13 @@ def generate(cfg: SimConfig, net: Network = NETWORK) -> SimOutput:
     shipments = pd.DataFrame(ship_rows)
     shipments = shipments.sort_values("planned_DEPART_ORIGIN", kind="stable").reset_index(drop=True)
     events = add_reporting_latency(pd.DataFrame(event_rows), shipments, cfg)
+    events, messages = add_feed_noise(events, cfg)
+    revisions = schedule_revisions(events, shipments, cfg)
     return SimOutput(
         shipments=shipments,
         events=events,
+        messages=messages,
+        revisions=revisions,
         ledger=pd.DataFrame(ledger_rows),
         draws=pd.DataFrame(draw_rows),
         external=ext,
@@ -210,6 +233,85 @@ def add_reporting_latency(
     out = events.copy()
     out["available_h"] = np.where(out.reported.to_numpy(bool), sent + latency, np.nan)
     return out
+
+
+def add_feed_noise(events: pd.DataFrame, cfg: SimConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Turn each reported milestone into feed messages (duplicates, wrong-then-corrected times),
+    then rebuild the event table from the log exactly as an ingestion service would."""
+    rng = np.random.default_rng([cfg.seed, 0xFEED])  # independent of physics and latency
+    ev = events.sort_values(["shipment_id", "seq"]).reset_index(drop=True)
+    rows = []
+    for _sid, g in ev.groupby("shipment_id", sort=False):
+        rep = g[g.reported]
+        times = rep.reported_h.to_numpy(float)
+        for k, r in enumerate(rep.itertuples(index=False)):
+            first, final, sent = float(r.reported_h), float(r.reported_h), float(r.available_h)
+            correct = r.event != E.DELIVERED.value and rng.random() < cfg.correction_rate
+            if correct:  # first message is wrong by a few hours, keeps the milestone order
+                err = float(rng.uniform(*cfg.correction_error_h)) * (
+                    1 if rng.random() < 0.5 else -1
+                )
+                lo = times[k - 1] + 0.1 if k > 0 else -np.inf
+                hi = min(times[k + 1] - 0.1 if k + 1 < len(times) else np.inf, sent - 0.05)
+                first = float(np.clip(final + err, lo, hi))
+            rows.append((r.shipment_id, r.event, first, sent))
+            if rng.random() < cfg.duplicate_rate:
+                rows.append((r.shipment_id, r.event, first, sent + float(rng.uniform(0.1, 3.0))))
+            if correct and abs(first - final) > 1e-9:
+                rows.append(
+                    (
+                        r.shipment_id,
+                        r.event,
+                        final,
+                        sent + float(rng.uniform(*cfg.correction_delay_h)),
+                    )
+                )
+    messages = pd.DataFrame(rows, columns=["shipment_id", "event", "stated_h", "recorded_at"])
+    log = collapse_messages(messages)
+    out = ev.merge(log, on=["shipment_id", "event"], how="left")
+    # final (corrected) stated time and first arrival, as rebuilt from the log
+    out["reported_h"] = np.where(out.reported, out.stated_h, np.nan)
+    out["available_h"] = np.where(out.reported, out.first_recorded_at, np.nan)
+    out["initial_reported_h"] = np.where(out.reported, out.first_stated_h, np.nan)
+    out["corrected_at"] = np.where(
+        out.reported & out.corrected.fillna(False), out.recorded_at, np.nan
+    )
+    out["n_messages"] = out.n_messages.fillna(0).astype(int)
+    keep = [c for c in events.columns] + ["initial_reported_h", "corrected_at", "n_messages"]
+    return out[keep], messages
+
+
+def schedule_revisions(
+    events: pd.DataFrame, shipments: pd.DataFrame, cfg: SimConfig
+) -> pd.DataFrame:
+    """Carrier re-plans: when a reported milestone deviates > threshold from the plan in force,
+    every later milestone is shifted by that deviation, effective once that report is in."""
+    planned_cols = {e: f"planned_{e.value}" for e in EventType}
+    ships = shipments.set_index("shipment_id")
+    rows = []
+    for sid, g in (
+        events[events.reported].sort_values(["shipment_id", "seq"]).groupby("shipment_id")
+    ):
+        s = ships.loc[sid]
+        plan = {e: float(s[c]) for e, c in planned_cols.items() if pd.notna(s[c])}
+        seq = sorted(plan, key=lambda e: EVENT_INDEX[e])
+        rev = 0
+        for r in g.itertuples(index=False):
+            e = EventType(r.event)
+            if e == E.DELIVERED:
+                continue
+            dev = float(r.reported_h) - plan[e]
+            if abs(dev) <= cfg.replan_threshold_h:
+                continue
+            rev += 1
+            eff = float(r.available_h) + 0.5
+            for e2 in seq[seq.index(e) + 1 :]:
+                plan[e2] += dev
+                rows.append((sid, rev, eff, e2.value, plan[e2]))
+            plan[e] = float(r.reported_h)
+    return pd.DataFrame(
+        rows, columns=["shipment_id", "revision", "effective_at", "event", "planned_h"]
+    )
 
 
 def _collect(

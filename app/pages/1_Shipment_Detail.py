@@ -94,6 +94,13 @@ if dq.get("mode"):
     ]
     if dq.get("reporting_gap_inferred"):
         bits.append("silence treated as a missing report")
+    sc = s.get("schedule") or {}
+    if sc.get("revisions_known"):
+        bits.append(
+            f"carrier's current plan: {ts(sc['current_plan_delivery'], '%d %b')} "
+            f"({sc['revisions_known']} revision(s); lateness still vs the original "
+            f"{ts(sc['original_planned_delivery'], '%d %b')})"
+        )
     st.caption("🔎 Evidence · " + " · ".join(bits))
 
 # ---- answer first: ETA card + narrative ---------------------------------------------------------

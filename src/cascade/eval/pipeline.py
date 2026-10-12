@@ -161,6 +161,7 @@ def headline(metrics: dict) -> dict:
         "mae_cascade_h": acc["overall"]["cascade"]["mae"],
         "mae_B1_h": acc["overall"]["B1_carry_forward"]["mae"],
         "mae_B2_h": acc["overall"]["B2_propagation_prior"]["mae"],
+        "mae_B3_carrier_plan_h": acc["overall"]["B3_carrier_plan"]["mae"],
         "mae_improvement_vs_B1": acc["improvement_vs_B1"],
         "mae_improvement_vs_B1_ci95": acc["bootstrap_vs_B1"]["improvement"],
         "mae_improvement_vs_B2": acc["improvement_vs_B2"],
@@ -213,7 +214,9 @@ def run(cfg: PipelineConfig, log=print) -> dict:
     sim.save(data_dir)
 
     log("[2/7] building as-of checkpoint rows")
-    rows = build_rows(sim.shipments, sim.events, sim.ledger, sim.external, seed=cfg.seed)
+    rows = build_rows(
+        sim.shipments, sim.events, sim.ledger, sim.external, seed=cfg.seed, revisions=sim.revisions
+    )
     splits = make_splits(sim.shipments, seed=cfg.seed)
     splits.save(data_dir / "splits.json")
 
@@ -225,7 +228,12 @@ def run(cfg: PipelineConfig, log=print) -> dict:
     log("[4/7] evaluating on the out-of-time test set")
     test_s = sim.shipments[sim.shipments.shipment_id.isin(splits.test_ids)]
     test_e = sim.events[sim.events.shipment_id.isin(splits.test_ids)]
-    world = World.from_frames(test_s, test_e)
+    test_r = (
+        sim.revisions[sim.revisions.shipment_id.isin(splits.test_ids)]
+        if not sim.revisions.empty
+        else None
+    )
+    world = World.from_frames(test_s, test_e, revisions=test_r)
     engine = Engine(
         Bundle(result.model, {}, Path(".")),
         sim.external,
@@ -302,6 +310,9 @@ def run(cfg: PipelineConfig, log=print) -> dict:
                         "info_gates": info_gates,
                         "targets": metrics["targets"],
                         "splits": metrics["splits"],
+                        "slices": metrics["slices"],
+                        "feed": metrics["feed"],
+                        "drift": metrics["drift"],
                         "meta": metrics["meta"],
                     }
                 ),

@@ -54,6 +54,9 @@ def save_bundle(model: CascadeModel, out_dir: Path, extra_manifest: dict | None 
         (out_dir / "models" / f"{name}.txt").write_text(booster.model_to_string())
     state = {
         "offsets": model.offsets,
+        "offsets80": model.offsets80,
+        "late_alert_p": model.late_alert_p,
+        "drift_ref": model.drift_ref,
         "iso_x": model.iso_x,
         "iso_y": model.iso_y,
         "priors": model.priors,
@@ -103,6 +106,9 @@ def load_bundle(path: Path, verify: bool = True) -> Bundle:
     model = CascadeModel(
         boosters=boosters,
         offsets=state["offsets"],
+        offsets80=state.get("offsets80", {}),
+        late_alert_p=state.get("late_alert_p", 0.0),
+        drift_ref=state.get("drift_ref", {}),
         iso_x=state["iso_x"],
         iso_y=state["iso_y"],
         priors=state["priors"],

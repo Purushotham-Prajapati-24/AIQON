@@ -36,11 +36,31 @@ META_COLS = [
     "planned_departure",
     "floor_plan_remaining_h",
     "floor_elapsed_h",
+    "carrier_plan_delay_h",  # carrier's current plan for delivery vs the original commitment
 ]
 TARGET_COLS = ["y_total", "y_remaining", "y_late"] + [f"y_inc_{g.value}" for g in PHYSICAL_GROUPS]
 
 
-def views_from_frames(shipments: pd.DataFrame, events: pd.DataFrame) -> dict[str, ShipmentView]:
+def revisions_by_shipment(
+    revisions: pd.DataFrame | None,
+) -> dict[str, tuple[tuple[float, dict[EventType, float]], ...]]:
+    if revisions is None or revisions.empty:
+        return {}
+    out: dict[str, tuple[tuple[float, dict[EventType, float]], ...]] = {}
+    for sid, g in revisions.groupby("shipment_id"):
+        out[str(sid)] = tuple(
+            (
+                float(r.effective_at.iloc[0]),
+                {EventType(e): float(h) for e, h in zip(r.event, r.planned_h, strict=True)},
+            )
+            for _, r in g.groupby("revision", sort=True)
+        )
+    return out
+
+
+def views_from_frames(
+    shipments: pd.DataFrame, events: pd.DataFrame, revisions: pd.DataFrame | None = None
+) -> dict[str, ShipmentView]:
     rep = events[events.reported]
     rep_map: dict[str, dict[EventType, float]] = {}
     avail_map: dict[str, dict[EventType, float]] = {}
@@ -49,6 +69,20 @@ def views_from_frames(shipments: pd.DataFrame, events: pd.DataFrame) -> dict[str
     for sid, ev, t, a in zip(rep.shipment_id, rep.event, rep.reported_h, avail, strict=True):
         rep_map.setdefault(sid, {})[EventType(ev)] = float(t)
         avail_map.setdefault(sid, {})[EventType(ev)] = float(a)
+    init_map: dict[str, dict[EventType, float]] = {}
+    fix_map: dict[str, dict[EventType, float]] = {}
+    if "corrected_at" in rep.columns:
+        fixed = rep[rep.corrected_at.notna()]
+        for sid, ev, first, at in zip(
+            fixed.shipment_id,
+            fixed.event,
+            fixed.initial_reported_h,
+            fixed.corrected_at,
+            strict=True,
+        ):
+            init_map.setdefault(sid, {})[EventType(ev)] = float(first)
+            fix_map.setdefault(sid, {})[EventType(ev)] = float(at)
+    rev_map = revisions_by_shipment(revisions)
     views = {}
     for r in shipments.itertuples(index=False):
         planned = {
@@ -68,6 +102,9 @@ def views_from_frames(shipments: pd.DataFrame, events: pd.DataFrame) -> dict[str
             reported=rep_map.get(r.shipment_id, {}),
             carrier_edi_tier=int(r.carrier_edi_tier),
             available=avail_map.get(r.shipment_id, {}),
+            initial=init_map.get(r.shipment_id, {}),
+            corrected_at=fix_map.get(r.shipment_id, {}),
+            revisions=rev_map.get(r.shipment_id, ()),
         )
     return views
 
@@ -100,9 +137,12 @@ def build_rows(
     seed: int = 0,
     mid_stage: bool = True,
     events_override: pd.DataFrame | None = None,
+    revisions: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """One row per (shipment, checkpoint). Prior columns are left NaN (fold-specific)."""
-    views = views_from_frames(shipments, events_override if events_override is not None else events)
+    views = views_from_frames(
+        shipments, events_override if events_override is not None else events, revisions
+    )
     actual_all: dict[str, dict[EventType, float]] = {}
     for sid, ev, t in zip(events.shipment_id, events.event, events.actual_h, strict=True):
         actual_all.setdefault(sid, {})[EventType(ev)] = float(t)
@@ -135,6 +175,8 @@ def build_rows(
                 "current_delay": snap.current_delay,
                 "planned_delivered": snap.planned_delivered,
                 "planned_departure": view.planned[E.DEPART_ORIGIN],
+                "carrier_plan_delay_h": view.plan_at(as_of)[0][E.DELIVERED]
+                - view.planned[E.DELIVERED],
                 "floor_plan_remaining_h": float(snap.context["floor_plan_remaining_h"]),
                 "floor_elapsed_h": float(snap.context["floor_elapsed_h"]),
                 "y_total": s.total_delay_h,

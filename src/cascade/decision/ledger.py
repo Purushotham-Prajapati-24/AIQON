@@ -8,6 +8,7 @@ never delayed by persistence. The default store is ``:memory:`` (lost on restart
 
 from __future__ import annotations
 
+import contextlib
 import json
 import queue
 import sqlite3
@@ -19,7 +20,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS predictions (
   id INTEGER PRIMARY KEY AUTOINCREMENT, shipment_id TEXT, as_of REAL, model_version TEXT,
   checkpoint INTEGER, lane_id TEXT, delay_p10 REAL, delay_p50 REAL, delay_p90 REAL, p_late REAL,
-  degraded INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+  degraded INTEGER, features TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE INDEX IF NOT EXISTS ix_pred_ship ON predictions(shipment_id, as_of);
 CREATE TABLE IF NOT EXISTS alerts (
   alert_id TEXT PRIMARY KEY, shipment_id TEXT, rule TEXT, severity TEXT, created_at REAL,
@@ -46,6 +47,9 @@ class Ledger:
         if self.path != ":memory:":
             self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.executescript(SCHEMA)
+        # ledgers created before drift monitoring lack the features column
+        with contextlib.suppress(sqlite3.OperationalError):
+            self._conn.execute("ALTER TABLE predictions ADD COLUMN features TEXT")
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._drain, daemon=True, name="ledger-writer")
         self._thread.start()
@@ -111,6 +115,14 @@ class Ledger:
             "AVG(CASE WHEN a.total_delay_h BETWEEN p.delay_p10 AND p.delay_p90 THEN 1.0 ELSE 0.0 END) AS coverage "
             "FROM predictions p JOIN actuals a USING (shipment_id) GROUP BY p.checkpoint ORDER BY p.checkpoint"
         )
+
+    def logged_features(self, limit: int = 5000) -> list[dict]:
+        """Feature values of the most recent logged predictions (for live drift / PSI)."""
+        rows = self.query(
+            "SELECT features FROM predictions WHERE features IS NOT NULL ORDER BY id DESC LIMIT ?",
+            (limit,),
+        )
+        return [json.loads(r["features"]) for r in rows]
 
     def lane_trust(self) -> list[dict]:
         return self.query(

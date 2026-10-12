@@ -133,3 +133,33 @@ def test_advisor_deadline_passes_once_cutoff_milestone_happened():
     assert hours_to_deadline(a, late, planned) < 0  # too late to arrange the 24 h lead time
     done = Snapshot({}, 900.0, 6, None, 10.0, 1200.0, {Ev.ARRIVE_DEST_PORT: 1005.0}, [], None)
     assert hours_to_deadline(a, done, planned) == -float("inf")
+
+
+def test_late_alert_needs_the_tuned_probability_and_counts_duplicates():
+    from cascade.decision.alerts import PredState as S
+
+    def st(t, tier, p):
+        return S("X", t, 30.0, p, tier, None, 0.0, 4, 1.0, 10.0)
+
+    stats: dict[str, int] = {}
+    quiet = evaluate_alerts(st(0, "ON_TRACK", 0.1), st(1, "LATE", 0.55), set(), 0.7, stats)
+    rules = [a.rule for a in quiet]
+    assert "TIER_ESCALATION_LATE" not in rules  # LATE needs P(late) >= 0.7
+    assert "TIER_ESCALATION_AT_RISK" in rules
+    loud = evaluate_alerts(st(1, "LATE", 0.55), st(2, "LATE", 0.85), set(), 0.7, stats)
+    assert [a.rule for a in loud] == ["TIER_ESCALATION_LATE", "P_LATE_JUMP"]
+    again = evaluate_alerts(
+        st(2, "AT_RISK", 0.2), st(3, "LATE", 0.9), {"TIER_ESCALATION_LATE"}, 0.7, stats
+    )
+    assert "TIER_ESCALATION_LATE" not in [a.rule for a in again]
+    assert stats["duplicates_suppressed"] >= 1
+    # threshold 0 reproduces the plain tier rule
+    plain = evaluate_alerts(st(0, "ON_TRACK", 0.1), st(1, "LATE", 0.3), set(), 0.0)
+    assert "TIER_ESCALATION_LATE" in [a.rule for a in plain]
+
+
+def test_alert_threshold_is_chosen_out_of_fold(trained):
+    sel = trained.selection["late_alert_threshold"]
+    assert set(sel) == {"0.0", "0.5", "0.6", "0.7", "0.8", "0.9"}
+    best = max(sel, key=lambda k: (round(sel[k]["f1"], 4), float(k)))
+    assert trained.model.late_alert_p == float(best)

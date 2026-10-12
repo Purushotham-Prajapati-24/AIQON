@@ -167,3 +167,21 @@ def test_advise_is_valid_json_at_every_checkpoint(client):
         for cp in client.get(f"/v1/shipments/{sid}/checkpoints").json():
             r = client.get(f"/v1/shipments/{sid}/advise", params={"as_of": cp["as_of"]})
             assert r.status_code == 200, (sid, cp["label"], r.text[:200])
+
+
+def test_schedule_revisions_are_reported_beside_the_original_commitment(client, body):
+    import copy
+
+    b = copy.deepcopy(body)
+    planned = b["shipment"]["planned"]
+    as_of = b["as_of"]
+    b["shipment"]["schedule_revisions"] = [
+        {"effective_at": "2000-01-01T00:00:00Z", "planned": {"DELIVERED": planned["DELIVERED"]}},
+        {"effective_at": "2099-01-01T00:00:00Z", "planned": {"DELIVERED": "2099-02-01T00:00:00Z"}},
+    ]
+    r = client.post("/v1/predict", json=b).json()
+    sc = r["schedule"]
+    assert sc["revisions_known"] == 1  # the 2099 revision is not known yet at as_of
+    assert sc["original_planned_delivery"] == r["planned_delivery"]
+    assert sc["delay_vs_original_commitment_h"] == r["delay_hours"]["p50"]
+    assert as_of
