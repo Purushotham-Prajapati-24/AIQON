@@ -129,7 +129,7 @@ Implemented from [`ImprovementPlan.md`](ImprovementPlan.md) (status table there)
 
 ## 9. v1.2.0 — the remaining review items, published (2026-10-13)
 
-The code for the items above landed after v1.1.0 was published, so the v1.1.0 bundle, metrics and report described older code (issue #6). v1.2.0 is the same code, retrained and republished with `cascade all`, `cascade seeds` and `cascade sensitivity`; the report and README table are regenerated from those files. The v1.1.0 bundle is kept in git history (tag `model-v1.1.0`).
+The code for the items above landed after v1.1.0 was published, so the v1.1.0 bundle, metrics and report described older code (issue #6). v1.2.0 is the same code, retrained and republished with `cascade all`, `cascade seeds` and `cascade sensitivity`; the report and README table are regenerated from those files. The v1.1.0 bundle stays in git history (`git checkout aaf17d6 -- artifacts/v1.1.0` restores it).
 
 | Area | As built | Effect (seed 42; 5-seed mean ± sd in brackets) |
 |---|---|---|
