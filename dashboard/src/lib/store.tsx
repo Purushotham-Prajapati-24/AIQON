@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, detectMode, type Mode } from "./api";
-import { roleById, type Role, type RoleId } from "./roles";
+import { roleById, type Role } from "./roles";
+import { session as auth, type Session } from "./session";
 import type { World } from "./types";
 
 interface Store {
@@ -14,9 +15,12 @@ interface Store {
   select: (sid: string, scroll?: boolean) => void;
   theme: "dark" | "light";
   toggleTheme: () => void;
-  /** Chosen on the entry screen; null shows the entry screen. */
+  /** "checking" while the saved session is verified; "out" shows the sign-in screen. */
+  auth: { status: "checking" | "in" | "out"; session: Session | null; notice: string | null };
+  /** The signed-in user's role: where the page opens and how explanations are worded. */
   role: Role | null;
-  setRole: (id: RoleId | null) => void;
+  signedIn: (s: Session) => void;
+  signOut: (notice?: string) => Promise<void>;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -32,28 +36,27 @@ function initialTheme(): "dark" | "light" {
   return matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
-function initialRole(): RoleId | null {
-  // A deep link straight to a section skips the entry screen.
-  if (location.hash.length > 1) return "first";
-  try {
-    return (roleById(localStorage.getItem("cascade-role"))?.id as RoleId) ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode | null>(null);
   const [world, setWorld] = useState<World | null>(null);
   const [days, setDays] = useState(0);
   const [selected, setSelected] = useState(HERO_SHIPMENT);
   const [theme, setTheme] = useState(initialTheme);
-  const [roleId, setRoleId] = useState<RoleId | null>(initialRole);
+  const [authState, setAuth] = useState<Store["auth"]>({ status: "checking", session: null, notice: null });
 
   useEffect(() => {
     detectMode().then(setMode);
-    api.world().then(setWorld);
+    auth.current().then((s) => setAuth({ status: s ? "in" : "out", session: s, notice: null }));
+    const onSignedOut = () =>
+      setAuth({ status: "out", session: null, notice: "Your session ended. Sign in again to continue." });
+    addEventListener("cascade:signed-out", onSignedOut);
+    return () => removeEventListener("cascade:signed-out", onSignedOut);
   }, []);
+
+  // Data loads only for a signed-in user (in CASCADE_AUTH=required mode it would be refused).
+  useEffect(() => {
+    if (authState.status === "in") api.world().then(setWorld, () => undefined);
+  }, [authState.status]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -68,21 +71,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSelected(sid);
     if (scroll) document.getElementById("shipment")?.scrollIntoView({ behavior: "smooth" });
   }, []);
-  const setRole = useCallback((id: RoleId | null) => {
-    setRoleId(id);
-    try {
-      if (id) localStorage.setItem("cascade-role", id);
-      else localStorage.removeItem("cascade-role");
-    } catch {
-      /* storage blocked */
-    }
+  const signedIn = useCallback((s: Session) => setAuth({ status: "in", session: s, notice: null }), []);
+  const signOut = useCallback(async (notice?: string) => {
+    await auth.signOut();
+    setAuth({ status: "out", session: null, notice: notice ?? null });
   }, []);
-  const role = useMemo(() => roleById(roleId), [roleId]);
+  const role = useMemo(() => roleById(authState.session?.user.role ?? null), [authState.session]);
   const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
 
   const value = useMemo(
-    () => ({ mode, world, days, setDays, selected, select, theme, toggleTheme, role, setRole }),
-    [mode, world, days, selected, select, theme, toggleTheme, role, setRole],
+    () => ({ mode, world, days, setDays, selected, select, theme, toggleTheme, auth: authState, role, signedIn, signOut }),
+    [mode, world, days, selected, select, theme, toggleTheme, authState, role, signedIn, signOut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

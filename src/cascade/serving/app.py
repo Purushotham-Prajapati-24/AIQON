@@ -15,7 +15,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -30,7 +30,15 @@ from cascade.domain.stages import EventType, event_sequence
 from cascade.models.artifacts import ArtifactError, latest_bundle_dir, load_bundle
 from cascade.models.drift import DRIFT_FEATURES, psi
 from cascade.models.drift import status as drift_status
-from cascade.serving.schemas import BatchRequest, PredictRequest, ScenarioRequest, WhatIfRequest
+from cascade.serving import auth
+from cascade.serving.schemas import (
+    BatchRequest,
+    DemoLoginRequest,
+    LoginRequest,
+    PredictRequest,
+    ScenarioRequest,
+    WhatIfRequest,
+)
 from cascade.sim.external import ExternalSeries
 
 log = logging.getLogger("cascade.api")
@@ -45,6 +53,8 @@ class State:
         self.ready = False
         self.error: str | None = None
         self.insights: dict = {}
+        self.auth: auth.Settings | None = None
+        self.throttle = auth.Throttle()
 
 
 S = State()
@@ -68,6 +78,9 @@ def load_engine(artifacts: Path | None = None, version: str | None = None) -> En
 async def lifespan(app: FastAPI):
     import json
 
+    # Auth settings are read at startup so a bad value fails loudly instead of on first sign-in.
+    S.auth = auth.Settings()
+    S.throttle = auth.Throttle()
     try:
         S.engine = load_engine()
         S.insights = (
@@ -125,13 +138,57 @@ def _log_prediction(ledger: Ledger | None, r) -> None:
     )
 
 
+def _session(request: Request) -> tuple[auth.User, int] | None:
+    """The signed-in user from the session cookie or a Bearer token; None if there is none."""
+    settings = S.auth or auth.Settings()
+    token = request.cookies.get(auth.COOKIE)
+    header = request.headers.get("authorization", "")
+    if header.lower().startswith("bearer "):
+        token = header[7:].strip()
+    if not token:
+        return None
+    try:
+        return auth.verify(token, settings)
+    except auth.AuthError as exc:
+        raise HTTPException(401, str(exc)) from exc
+
+
+def require_session(request: Request) -> None:
+    """Gate for every route: in CASCADE_AUTH=required mode, /v1 data routes need a session."""
+    settings = S.auth
+    path = request.url.path
+    if settings is None or settings.mode != "required" or request.method == "OPTIONS":
+        return
+    if not path.startswith("/v1/") or path.startswith("/v1/auth/"):
+        return
+    if _session(request) is None:
+        raise HTTPException(401, "sign in required")
+
+
 app = FastAPI(
     title="CASCADE Inference API",
     version="1.0.0",
     description="Stage-aware shipment ETA, delay propagation, explanations and decisions.",
     lifespan=lifespan,
+    dependencies=[Depends(require_session)],
 )
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# Browsers may send the session cookie only to listed origins (credentials rule out "*").
+# Server-to-server clients (TMS, Streamlit) are not affected by CORS.
+_ORIGINS = [
+    o.strip()
+    for o in os.environ.get(
+        "CASCADE_CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173",
+    ).split(",")
+    if o.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.middleware("http")
@@ -174,8 +231,20 @@ async def _validation(request: Request, exc: RequestValidationError):
 
 @app.exception_handler(HTTPException)
 async def _http(request: Request, exc: HTTPException):
-    kinds = {404: "not-found", 503: "not-ready", 400: "bad-request", 413: "payload-too-large"}
-    return _problem(exc.status_code, kinds.get(exc.status_code, "error"), str(exc.detail))
+    kinds = {
+        400: "bad-request",
+        401: "unauthorized",
+        403: "forbidden",
+        404: "not-found",
+        413: "payload-too-large",
+        429: "too-many-requests",
+        503: "not-ready",
+    }
+    resp = _problem(exc.status_code, kinds.get(exc.status_code, "error"), str(exc.detail))
+    if exc.status_code == 401:
+        resp.headers["WWW-Authenticate"] = 'Bearer realm="cascade"'
+        resp.delete_cookie(auth.COOKIE, path="/")
+    return resp
 
 
 def engine() -> Engine:
@@ -202,6 +271,84 @@ def ready():
     if not S.ready:
         raise HTTPException(503, S.error or "warming up")
     return {"ready": True, "model_version": S.engine.model.version}
+
+
+# ---- auth (JWT sessions) ------------------------------------------------------------------------
+def _settings() -> auth.Settings:
+    if S.auth is None:
+        raise HTTPException(503, "auth not initialised")
+    return S.auth
+
+
+def _start_session(response: Response, user: auth.User) -> dict:
+    settings = _settings()
+    token, exp = auth.issue(user, settings)
+    response.set_cookie(
+        auth.COOKIE,
+        token,
+        max_age=settings.ttl_s,
+        httponly=True,
+        samesite="lax",
+        secure=settings.cookie_secure,
+        path="/",
+    )
+    return {"user": auth.public(user), "expires_at": exp, "token": token, "mode": settings.mode}
+
+
+@app.get("/v1/auth/config", tags=["auth"])
+def auth_config():
+    st = _settings()
+    return {"mode": st.mode, "demo_login": st.demo_login, "session_hours": st.ttl_s / 3600}
+
+
+@app.get("/v1/auth/demo-users", tags=["auth"])
+def demo_users():
+    """Demo accounts for one-click sign-in (empty when CASCADE_DEMO_LOGIN=0)."""
+    if not _settings().demo_login:
+        return {"users": [], "password_hint": None}
+    return {
+        "users": [auth.public(u) for u in auth.USERS.values()],
+        "password_hint": auth.DEMO_PASSWORD,
+    }
+
+
+@app.post("/v1/auth/login", tags=["auth"])
+def login(req: LoginRequest, request: Request, response: Response):
+    key = request.client.host if request.client else "unknown"
+    if S.throttle.blocked(key):
+        raise HTTPException(429, "too many failed sign-ins; wait a minute and try again")
+    user = auth.authenticate(req.username, req.password)
+    if user is None:
+        S.throttle.fail(key)
+        raise HTTPException(401, "wrong username or password")
+    S.throttle.clear(key)
+    return _start_session(response, user)
+
+
+@app.post("/v1/auth/demo-login", tags=["auth"])
+def demo_login(req: DemoLoginRequest, response: Response):
+    if not _settings().demo_login:
+        raise HTTPException(403, "demo sign-in is turned off on this server")
+    user = auth.USERS.get(req.user_id)
+    if user is None:
+        raise HTTPException(404, f"unknown demo user {req.user_id}")
+    return _start_session(response, user)
+
+
+@app.get("/v1/auth/me", tags=["auth"])
+def me(request: Request):
+    found = _session(request)
+    if found is None:
+        raise HTTPException(401, "not signed in")
+    user, exp = found
+    return {"user": auth.public(user), "expires_at": exp, "mode": _settings().mode}
+
+
+@app.post("/v1/auth/logout", tags=["auth"], status_code=204)
+def logout(response: Response):
+    response.delete_cookie(auth.COOKIE, path="/")
+    response.status_code = 204
+    return None
 
 
 @app.get("/v1/model", tags=["ops"])
