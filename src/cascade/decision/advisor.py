@@ -58,7 +58,8 @@ class Recommendation:
     baseline: dict[str, float] = field(default_factory=dict)  # p10/p50/p90 delay h, p_late
     scenario: dict[str, float] = field(default_factory=dict)
     deadline_event: str = ""
-    hours_to_deadline: float = 0.0  # projected time left before the cut-off, minus lead time
+    # projected time left before the cut-off, minus lead time; None = cut-off milestone already passed
+    hours_to_deadline: float | None = 0.0
     benefit_range_h: list[float] = field(default_factory=list)  # min/max over sensitivity shifts
     validity: dict[str, bool] = field(default_factory=dict)
 
@@ -217,7 +218,7 @@ def rank_actions(
                 baseline={k: v for k, v in base_detail.items() if k != "eta_ok"},
                 scenario={k: v for k, v in scen.items() if k != "eta_ok"},
                 deadline_event=a.deadline_event.value,
-                hours_to_deadline=float(min(slack, 1e6)),
+                hours_to_deadline=None if slack == -float("inf") else float(min(slack, 1e6)),
                 benefit_range_h=[float(min(benefits)), float(max(benefits))] if benefits else [],
                 validity={
                     "mechanically_valid": mech,

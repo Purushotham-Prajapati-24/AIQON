@@ -40,7 +40,9 @@ streamlit run app/Home.py                                # 3. control tower on h
 
 If your machine blocks the `cascade` launcher, `python -m cascade.cli serve` does the same thing.
 
-To rebuild everything from scratch (simulate → train → evaluate → gate → publish, about 1 minute), run `cascade all --force`. This overwrites `data/`, `reports/` and `artifacts/v1.1.0`. `cascade seeds` reruns the 5-seed stability study, and `cascade sensitivity` reruns the wrong-assumption study (7 worlds with changed simulator mechanics → `reports/sensitivity.json`).
+**React dashboard** (alternative UI): `cd dashboard && npm install && npm run dev` → http://localhost:5173. It uses the live API when it's running and a recorded run of the real model otherwise. See [`dashboard/README.md`](dashboard/README.md).
+
+To rebuild everything from scratch (simulate → train → evaluate → gate → publish, about 1 minute), run `cascade all --force`. This overwrites `data/`, `reports/` and `artifacts/v1.1.0`. `cascade seeds` reruns the 5-seed stability study, and `cascade sensitivity` reruns the wrong-assumption study (the baseline plus 6 worlds with changed simulator mechanics → `reports/sensitivity.json`).
 
 **Docker alternative** (API + UI, healthchecked, API runs as a non-root user):
 
