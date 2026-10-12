@@ -218,6 +218,9 @@ def select_on_temporal_validation(
 
 
 ALERT_P_GRID = (0.0, 0.5, 0.6, 0.7, 0.8, 0.9)
+ACTIONABLE_LEAD_H = (
+    48.0  # PRD G6: a LATE alert is useful only if it fires >= 48 h before planned delivery
+)
 
 
 def select_late_alert_threshold(
@@ -226,7 +229,10 @@ def select_late_alert_threshold(
     """Pick the P(late) threshold for the LATE alert on voyage-grouped out-of-fold predictions.
 
     Replays the rule "first snapshot with P50 delay > tau and P(late) >= theta" per training
-    shipment and maximises shipment-level F1 for 'eventually late'. Test data is never used.
+    shipment and maximises shipment-level *actionable* F1 for 'eventually late': precision counts
+    every alert, but a late shipment only counts as caught if its first LATE alert fired at least
+    ``ACTIONABLE_LEAD_H`` before planned delivery. Plain F1 rewarded a high threshold that alerted
+    reliably but too late to act (issue #6). Test data is never used.
     """
     cur = rows.current_delay_h.to_numpy(float)
     q = np.sort(np.vstack([oof[k].to_numpy(float) for k in BAND]), axis=0) + cur
@@ -237,23 +243,35 @@ def select_late_alert_threshold(
         {
             "sid": rows.shipment_id.to_numpy(),
             "t": rows.as_of.to_numpy(float),
+            "plan_end": rows.planned_delivered.to_numpy(float),
             "tier_late": q[1] > cfg.late_threshold_h,
             "p": p_late,
             "late": rows.y_late.to_numpy(int),
         }
     ).sort_values(["sid", "t"])
     truth = df.groupby("sid").late.max()
+    plan_end = df.groupby("sid").plan_end.first()
+    n_late = max(int((truth == 1).sum()), 1)
     curve: dict[str, dict[str, float]] = {}
     for th in ALERT_P_GRID:
-        fired = df[df.tier_late & (df.p >= th)].groupby("sid").size().reindex(truth.index).fillna(0)
-        alerted = fired > 0
+        first = df[df.tier_late & (df.p >= th)].groupby("sid").t.min().reindex(truth.index)
+        alerted = first.notna()
+        timely = alerted & ((plan_end - first) >= ACTIONABLE_LEAD_H)
         tp = int((alerted & (truth == 1)).sum())
+        tp_timely = int((timely & (truth == 1)).sum())
         prec = tp / max(int(alerted.sum()), 1)
-        rec = tp / max(int((truth == 1).sum()), 1)
-        f1 = 2 * prec * rec / max(prec + rec, 1e-9)
+        rec = tp / n_late
+        rec_timely = tp_timely / n_late
+        f1 = 2 * prec * rec_timely / max(prec + rec_timely, 1e-9)
         fpr = int((alerted & (truth == 0)).sum()) / max(int((truth == 0).sum()), 1)
-        curve[str(th)] = {"precision": prec, "recall": rec, "f1": f1, "fpr": fpr}
-    best = max(ALERT_P_GRID, key=lambda th: (round(curve[str(th)]["f1"], 4), th))
+        curve[str(th)] = {
+            "precision": prec,
+            "recall": rec,
+            "recall_ge_48h": rec_timely,
+            "f1_actionable": f1,
+            "fpr": fpr,
+        }
+    best = max(ALERT_P_GRID, key=lambda th: (round(curve[str(th)]["f1_actionable"], 4), th))
     return float(best), curve
 
 

@@ -15,6 +15,7 @@ import argparse
 import datetime as dt
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -28,10 +29,24 @@ REPORTS = ROOT / "reports"
 OUT_DIR = ROOT / "report"
 HTML_OUT = OUT_DIR / "report.html"
 PDF_OUT = OUT_DIR / "CASCADE_Technical_Report.pdf"
+MAX_PAGES = 3  # the Aiqon brief asks for a 2–3 page report
 README = ROOT / "README.md"
-EDGE_CANDIDATES = [
+# Any Chromium-based browser can print the PDF. Checked in order; $CASCADE_PDF_BROWSER wins.
+BROWSER_PATHS = [
     Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
     Path(r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"),
+    Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
+    Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+    Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
+    Path("/Applications/Chromium.app/Contents/MacOS/Chromium"),
+]
+BROWSER_COMMANDS = [
+    "msedge",
+    "google-chrome",
+    "google-chrome-stable",
+    "chromium",
+    "chromium-browser",
+    "chrome",
 ]
 
 CHECKPOINT_LABEL = {
@@ -292,7 +307,7 @@ CSS = """
         --ink:#1a1a1a; --muted:#555; --rule:#d0d0d0; --band:#eef5fb; }
 * { box-sizing: border-box; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 10pt;
+body { font-family: Arial, "Liberation Sans", "Helvetica Neue", Helvetica, sans-serif; font-size: 10pt;
        line-height: 1.23; color: var(--ink); margin: 0; background: #fff; }
 h1 { font-size: 15.5pt; margin: 0 0 1mm; color: var(--blue); letter-spacing: -0.2px; }
 .sub { color: var(--muted); font-size: 9pt; margin-bottom: 2.5mm; }
@@ -302,7 +317,7 @@ h3 { font-size: 10pt; margin: 2mm 0 0.8mm; break-after: avoid; }
 p { margin: 0 0 1.3mm; text-align: justify; hyphens: auto; }
 ul { margin: 0 0 1.5mm; padding-left: 4.5mm; }
 li { margin: 0 0 0.6mm; }
-code, .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9pt; }
+code, .mono { font-family: Consolas, "Liberation Mono", Menlo, monospace; font-size: 9pt; }
 .tldr { background: var(--band); border-left: 3px solid var(--blue); padding: 1.8mm 2.6mm;
         margin: 0 0 2mm; }
 .tldr p { margin: 0; }
@@ -340,6 +355,12 @@ def build_html(m: dict, seeds: dict | None, sim: dict, author: str) -> str:
     prop = m["propagation_fidelity"]
     adv = m["advisor_fidelity"]
     dec = m["decision"]
+    lead_seeds = ((seeds or {}).get("summary") or {}).get("alert_lead_ge_48h_share")
+    seed_lead = (
+        f" ({pct(lead_seeds['mean'])} ± {pct(lead_seeds['sd'])} over seeds)"
+        if isinstance(lead_seeds, dict)
+        else ""
+    )
     sel = m["model_selection"]
     ex = m["example"]
     chk = m["checks"]
@@ -628,29 +649,39 @@ The cause ledger agrees: the true root cause is <b>{esc(ex["root_cause_group"].t
 </div>
 
 <h2>5 · Limitations and next steps</h2>
-<p><b>Synthetic</b> mechanisms, not fitted to real data (schedules never revised, messages never corrected); <b>associational</b> counterfactuals (advisor Spearman {num(adv["spearman"])} vs true interventions); <b>small n</b>: {a["n_test_shipments"]} test shipments in {a.get("n_test_voyages", "?")} voyages, so CIs are wide and resampled by voyage. <b>Next:</b> schedule revisions, a calibrated P80 promise, validation-tuned alert thresholds, an AIS/EDI adapter (<code>docs/ImprovementPlan.md</code>).</p>
+<p><b>Synthetic</b> mechanisms, not fitted to real data (revisions and feed corrections are simulated); <b>associational</b> counterfactuals (advisor Spearman {num(adv["spearman"])} vs true interventions); <b>small n</b>: {a["n_test_shipments"]} test shipments in {a.get("n_test_voyages", "?")} voyages, so CIs are wide. <b>Alert timing:</b> the LATE threshold (P(late) ≥ {num(dec.get("late_alert_p_threshold", float("nan")), 1)}, actionable F1 on training folds) warns {pct(dec["alert_lead_ge_48h_share"])} of late test shipments ≥ 48 h ahead{seed_lead}. <b>Next:</b> an AIS/EDI adapter, survival models, drift-triggered recalibration.</p>
 </body></html>
 """
 
 
-def find_edge() -> Path | None:
-    for p in EDGE_CANDIDATES:
+def find_browser() -> Path | None:
+    env = os.environ.get("CASCADE_PDF_BROWSER")
+    if env and Path(env).exists():
+        return Path(env)
+    for p in BROWSER_PATHS:
         if p.exists():
             return p
-    found = shutil.which("msedge")
-    return Path(found) if found else None
+    for name in BROWSER_COMMANDS:
+        found = shutil.which(name)
+        if found:
+            return Path(found)
+    return None
 
 
 def to_pdf(html_path: Path, pdf_path: Path) -> None:
-    edge = find_edge()
-    if edge is None:
-        sys.exit("Microsoft Edge not found; open report/report.html and print to PDF instead.")
+    browser = find_browser()
+    if browser is None:
+        sys.exit(
+            "No Chromium-based browser found (Edge, Chrome or Chromium). Install one, set "
+            "CASCADE_PDF_BROWSER to its path, or open report/report.html and print to PDF."
+        )
     pdf_path.unlink(missing_ok=True)
     subprocess.run(
         [
-            str(edge),
+            str(browser),
             "--headless",
             "--disable-gpu",
+            "--no-sandbox",
             "--no-pdf-header-footer",
             "--allow-file-access-from-files",
             f"--print-to-pdf={pdf_path}",
@@ -661,7 +692,7 @@ def to_pdf(html_path: Path, pdf_path: Path) -> None:
         timeout=120,
     )
     if not pdf_path.exists():
-        sys.exit("Edge did not write the PDF.")
+        sys.exit(f"{browser.name} did not write the PDF.")
 
 
 def pdf_page_count(pdf_path: Path) -> int:
@@ -688,7 +719,12 @@ def main() -> None:
         say("refreshed README.md results table")
     if not args.no_pdf:
         to_pdf(HTML_OUT, PDF_OUT)
-        say(f"wrote {PDF_OUT.relative_to(ROOT)} ({pdf_page_count(PDF_OUT)} pages)")
+        pages = pdf_page_count(PDF_OUT)
+        say(f"wrote {PDF_OUT.relative_to(ROOT)} ({pages} pages)")
+        if pages > MAX_PAGES:
+            sys.exit(
+                f"report is {pages} pages; the brief allows {MAX_PAGES}. Shorten it before submitting."
+            )
 
 
 if __name__ == "__main__":
