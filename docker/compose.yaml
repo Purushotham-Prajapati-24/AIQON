@@ -8,7 +8,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
-    image: cascade-api:1.1.0
+    image: cascade-api:1.2.0
     ports:
       - "${CASCADE_API_PORT:-8000}:8000"
     environment:
@@ -26,7 +26,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.ui
-    image: cascade-ui:1.1.0
+    image: cascade-ui:1.2.0
     ports:
       - "${CASCADE_UI_PORT:-8501}:8501"
     environment:

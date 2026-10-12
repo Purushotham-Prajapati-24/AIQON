@@ -32,7 +32,7 @@ ROOT = Path(__file__).resolve().parents[3]
 class PipelineConfig:
     seed: int = 42
     n_shipments: int = 300
-    version: str = "1.1.0"
+    version: str = "1.2.0"
     fast: bool = False  # skip robustness + ablations
     publish: bool = True
     force: bool = False  # publish even if a hard gate fails (flagged in manifest)

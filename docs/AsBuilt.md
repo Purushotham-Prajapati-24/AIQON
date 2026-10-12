@@ -124,4 +124,20 @@ Implemented from [`ImprovementPlan.md`](ImprovementPlan.md) (status table there)
 - **unmet**: G2b Brier (0.181 vs ≤ 0.15), G4 top-1 (42% vs ≥ 70%), G6b promise flip ratio (0.83 vs ≤ 0.40);
 - **partly met**: G3 (post-customs 89% is above the 80 ± 5 band).
 
-**Still open** (documented, not hidden): calibrated P80 (P1-7), error slices (P1-8), validation-tuned alert thresholds (P1-4b), schedule revisions and corrected messages (P2-1/2), PSI drift, per-row batch fallback.
+**Then open, now done in v1.2.0 (§9):** calibrated P80 (P1-7), error slices (P1-8), validation-tuned alert thresholds (P1-4b), schedule revisions and corrected messages (P2-1/2), PSI drift, per-row batch fallback.
+
+
+## 9. v1.2.0 — the remaining review items, published (2026-10-13)
+
+The code for the items above landed after v1.1.0 was published, so the v1.1.0 bundle, metrics and report described older code (issue #6). v1.2.0 is the same code, retrained and republished with `cascade all`, `cascade seeds` and `cascade sensitivity`; the report and README table are regenerated from those files. The v1.1.0 bundle stays in git history (`git checkout aaf17d6 -- artifacts/v1.1.0` restores it).
+
+| Area | As built | Effect (seed 42; 5-seed mean ± sd in brackets) |
+|---|---|---|
+| Accuracy | Unchanged method | MAE 24.5 h, **37% better than carry-forward** [28% ± 6%]; coverage 81% [81% ± 2%]; Brier 0.185 [0.165 ± 0.019] |
+| Calibrated P80 promise | Trained q80 + one-sided drift-aware conformal offset, kept within [P50, P90]; the promise date uses it | Promise holds in **92%** of cases [91% ± 1%] |
+| Schedule revisions and feed messages | Carriers revise plans (versioned, `effective_at`); feeds send duplicates and wrong-then-corrected timestamps, collapsed idempotently; snapshots see the first value until the correction arrives | 1.6 revisions per shipment; 145 corrected and 104 duplicated milestones; the API reports the current plan beside the original commitment; carrier-plan baseline B3 added |
+| LATE alert threshold | P(late) threshold chosen on voyage-grouped out-of-fold training predictions. **Changed in this release:** the objective is *actionable* F1, where a late shipment counts as caught only if alerted ≥ 48 h before planned delivery. Plain F1 picked θ = 0.8, which alerted reliably but too late (median 1.4 h before planned delivery) | θ = 0.7: recall 100%, precision 86%, false-positive rate 16%; **32%** of late test shipments warned ≥ 48 h ahead [60% ± 15%]. Seed 42 is the least favourable seed here: its Q4 test season shifts P(late) upward late in the journey |
+| Error slices | By horizon, route, EDI tier, congestion, missing events, lane (suppressed below 5 voyages) | In the model card; error is largest beyond 21 days out (MAE 40.9 h) |
+| PSI drift | Training reference in the bundle; train→test PSI in metrics; live `/v1/monitoring/drift` from the ledger | Congestion forecasts drift into the Q4 test season (PSI 1.2 at destination), as designed |
+| Reliability | Bundle checksums ignore line endings; committed bundle tested in CI on Ubuntu and Windows (issue #4) | A fresh clone serves on any OS |
+
