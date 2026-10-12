@@ -1,6 +1,10 @@
 # Implementation Plan — CASCADE
 
 > **As-built note:** implementation details that changed during the build are recorded in [`AsBuilt.md`](AsBuilt.md); where this page and the code disagree, AsBuilt.md is authoritative.
+>
+> **Review reconciliation (2026-10-13):** an external review was verified claim by claim against the code in [`ReviewVerification.md`](ReviewVerification.md); statements that described the *plan* rather than the build were corrected in place (marked *as built*). Follow-up work is in [`ImprovementPlan.md`](ImprovementPlan.md).
+>
+> **Superseded for follow-up work:** the v1.0 tickets below are historical. Current work is planned in [`ImprovementPlan.md`](ImprovementPlan.md) (v1.1, "trust every ETA").
 
 > Ticket-level work breakdown with owners, estimates, dependencies, files and acceptance criteria.
 > Phase goals & gates: [`Phases.md`](Phases.md) · Rules every ticket follows: [`Rules.md`](Rules.md).

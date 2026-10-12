@@ -1,6 +1,8 @@
 # Phases — CASCADE Delivery Roadmap (72 hours)
 
 > **As-built note:** implementation details that changed during the build are recorded in [`AsBuilt.md`](AsBuilt.md); where this page and the code disagree, AsBuilt.md is authoritative.
+>
+> **Review reconciliation (2026-10-13):** an external review was verified claim by claim against the code in [`ReviewVerification.md`](ReviewVerification.md); statements that described the *plan* rather than the build were corrected in place (marked *as built*). Follow-up work is in [`ImprovementPlan.md`](ImprovementPlan.md).
 
 > Phase goals, deliverables, exit gates, cut lists and the demo/report plan.
 > Ticket-level breakdown with acceptance criteria and estimates: [`ImplementationPlan.md`](ImplementationPlan.md).
@@ -55,7 +57,7 @@ gantt
 |---|---|
 | Repo skeleton (TechStack §4 layout), `pyproject.toml`, `uv.lock`, pre-commit, ruff/mypy config, `.importlinter` | C |
 | `domain/stages.py`, `domain/delay.py` (+ tests for `Σ Δ = D`), `domain/schemas.py` (Pydantic: `Shipment`, `Event`, `PredictRequest`, `Prediction`, `Explanation`) | B (ML lead) |
-| Pandera schemas for `shipments`, `events`, `cause_ledger`, `external_daily` | A |
+| Schemas (*as built: in-house validator, not Pandera*) for `shipments`, `events`, `cause_ledger`, `external_daily` | A |
 | `FeatureRow` + `FEATURE_REGISTRY` skeleton; `Predictor` protocol; artifact `manifest.json` schema | B |
 | OpenAPI v1 stubs returning fixture responses (unblocks UI) | C |
 | GitHub Actions: lint → types → tests | C |
@@ -78,7 +80,7 @@ gantt
 | External series: congestion (seasonal + AR(1)), weather (storm episodes) | A | As-of forecast generator with horizon-scaled noise |
 | Stage mechanics + cause ledger | A | Recovery, missed connection, berth queue + window miss, customs calendar, rail cut-off, receiving windows |
 | Missingness (structural / MCAR / MNAR) | A | Typed |
-| Generator CLI → parquet + validation + invariants | A | `cascade generate --n 300 --seed 42` |
+| Generator CLI → CSV/JSON/NPZ (*as built*) + validation + invariants | A | `cascade generate --n 300 --seed 42` |
 | EDA notebook: delay distributions, increments by stage, cause mix | A/D | Feeds report §Data |
 | Snapshot expansion + leakage property tests | B | The anti-leakage core |
 | Splits (out-of-time + GroupKFold by voyage), frozen | B | |
@@ -105,23 +107,23 @@ gantt
 | Deliverable | Owner |
 |---|---|
 | Feature families: plan, progress, **propagation** ★, external, OOF priors, data-quality | B |
-| LightGBM quantile models (P10/P50/P90) with monotone constraints; target choice (remaining vs residual-over-B2) by CV | B |
+| LightGBM quantile models (P10/P50/P90) (*as built: no monotone constraints on quantiles; residual over the operator rulebook, λ chosen on temporal validation*) | B |
 | Late classifier + isotonic calibration | B |
 | CQR conformal offsets per checkpoint group | B |
 | Stage-grouped contributions (`pred_contrib`), waterfall, narrative templates (ops/customer/analyst) | B |
 | Attribution-fidelity evaluator vs ledger | B |
 | Artifact publish with manifest + quality gates; API loads the real model | B/C |
-| Decision layer: Promise ETA, cost-of-delay, alert rules, async SQLite ledger | C |
+| Decision layer: Promise ETA, cost-of-delay, alert rules, SQLite ledger (*as built: background thread, best-effort*) | C |
 | UI: Shipment Detail hero page (ETA card, Gantt timeline with time-travel, waterfall, drivers, narrative copy button), Fleet KPIs + risk table | D |
 
 **Exit Gate 2 (end of Day 2):**
-- [ ] MAE ≥ 25% better than B1 overall (≥ 15% hard floor), with bootstrap CI.
-- [ ] Coverage of P10–P90 within 80% ± 5 pp per checkpoint group.
-- [ ] PR-AUC (late) ≥ 0.75 at the destination-arrival checkpoint.
-- [ ] Attribution fidelity top-1 ≥ 70% (60% hard floor), beating the route-prior explainer.
-- [ ] Waterfall additivity: 0 violations on the test set.
-- [ ] `/v1/predict` p95 < 50 ms (pytest-benchmark).
-- [ ] Shipment Detail page works end-to-end with time-travel.
+- [x] MAE ≥ 25% better than B1 overall (≥ 15% hard floor), with bootstrap CI. *v1.0: 36% (CI 29–44%), 5 seeds 28% ± 5%; attributable to the rulebook (λ = 0)*
+- [ ] Coverage of P10–P90 within 80% ± 5 pp per checkpoint group. *v1.0: 78 / 78 / 84 / 89%: post-customs above the band (partly met)*
+- [x] PR-AUC (late) ≥ 0.75 at the destination-arrival checkpoint. *v1.0: 0.90*
+- [ ] Attribution fidelity top-1 ≥ 70% (60% hard floor), beating the route-prior explainer. *v1.0: **not met**, 42% top-1 (70% top-2). It beats the lane-history explainer by +16 pp on seed 42 and +9 ± 7 pp over 5 seeds.*
+- [x] Waterfall additivity: 0 violations on the test set. *A bookkeeping check only (the guardrail row is the remainder); see ReviewVerification §4.3*
+- [x] `/v1/predict` p95 < 50 ms (pytest-benchmark). *v1.0: 8.5 ms in-process (HTTP/concurrency not measured)*
+- [x] Shipment Detail page works end-to-end with time-travel.
 
 **Cut list if Gate 2 is at risk:** skip the stage-chain + reconciliation (the timeline uses SHAP group shares of P50 instead) · skip Optuna · ship analyst/customer narratives later.
 

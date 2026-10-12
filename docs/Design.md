@@ -1,6 +1,8 @@
 # Design — CASCADE
 
 > **As-built note:** implementation details that changed during the build are recorded in [`AsBuilt.md`](AsBuilt.md); where this page and the code disagree, AsBuilt.md is authoritative.
+>
+> **Review reconciliation (2026-10-13):** an external review was verified claim by claim against the code in [`ReviewVerification.md`](ReviewVerification.md); statements that described the *plan* rather than the build were corrected in place (marked *as built*). Follow-up work is in [`ImprovementPlan.md`](ImprovementPlan.md).
 
 > Detailed technical and UX design: domain model, simulator mechanics, data schemas, features, models, explanations, evaluation, API contracts and interface design.
 > System structure and ADRs: [`Architecture.md`](Architecture.md). Requirements: [`PRD.md`](PRD.md).
@@ -39,6 +41,8 @@ R(t)          = D − delay_last_observed(t)                 # remaining delay a
 ETA_q(t)      = planned(DELIVERED) + delay_last_observed(t) + R̂_q(t),  q ∈ {P10,P50,P90}
 late          = 1[D > τ],  τ = 24h (config; also report 48h)
 lower_bound(t)= max(delay_last_observed, now − planned(next_event))  # NEXT milestone only (unless a reporting gap)
+# as built: applied to the projected delay of the next milestone inside the rulebook projection (not an output clamp),
+# and skipped when a reporting gap is inferred (overdue > 48-120 h by event, or the milestone after next is also overdue)
 ETA_floor(t)  = as_of + 0.5 × planned remaining time                # final ETA guardrail
 ```
 
@@ -61,8 +65,8 @@ Each port has: `base_utilization`, `berth_capacity`, `base_handling_h`, `customs
 
 ```mermaid
 flowchart TB
-    season[Season / calendar] --> cong[Port congestion ρ_p(t)]
-    season --> wx[Weather severity w_r(t)]
+    season[Season / calendar] --> cong["Port congestion ρ_p(t)"]
+    season --> wx["Weather severity w_r(t)"]
     carrierLatent[(Carrier reliability<br/>LATENT)] --> depDelay[Δ ORIGIN]
     cong --> depDelay
     wx --> ocean[Δ OCEAN]
@@ -81,13 +85,21 @@ flowchart TB
 
 | Stage | Mechanism (real-world behavior) | Formula sketch | Cause tags |
 |---|---|---|---|
-| **Voyages** | Shipments share vessels, so errors are correlated within a voyage | `voyage_id` groups ~3–8 shipments | — |
+| **Voyages** | Shipments share vessels, so errors are correlated within a voyage | `voyage_id` groups 1 + Poisson(2) shipments, capped at 6 (seed 42: 300 shipments in 103 voyages) | — |
 | **ORIGIN** | Carrier reliability + origin congestion + storms delay departure | `Δ = LogNormal(μ_carrier, σ) + a·max(0, ρ_o − 0.75) + storm` (voyage-shared) | `carrier_late_departure`, `origin_congestion`, `weather` |
 | **OCEAN** | Weather slows the vessel; the vessel **recovers** part of the delay by speeding up (absorption) | `Δ = b·w̄·dist_kdays + ε − min(κ·max(delay_in,0), C_max)` with κ≈0.25, C_max≈18 h | `weather`, `speed_recovery` (negative), `noise` |
 | **TRANSSHIP** | Cargo must be handled at the hub before the connecting cut-off. If late, it **waits for the next sailing** (+168 h weekly / +84 h bi-weekly). Hub congestion lengthens handling | `ready = arr_delay + h_hub·(1+γ·ρ_hub)`; `miss = ready > buffer`; `Δ = miss·headway + ε` | `missed_connection`, `hub_congestion` |
 | **PORT** (berth + discharge) | Queue wait grows non-linearly with utilization (Kingman-like). A late vessel **loses its berth window** and waits longer, which is the congestion × lateness interaction | `W = w0·ρ/(1−ρ)`; `if arr_delay > tol: W ·= (1+λ·ρ)`; `Δ = W − planned_wait + discharge_noise` | `berth_queue`, `berth_window_miss` |
 | **CUSTOMS** | Base processing varies by country. Inspection probability rises with commodity risk and incomplete documents. **Calendar shift** if release lands outside office hours or on a weekend/holiday | `p_insp = σ(a + b·risk + c·doc_incomplete)`; `t_ready → next_business_slot(tz)` | `customs_inspection`, `weekend_holiday_closure`, `customs_variance` |
 | **INLAND** | Rail departs at fixed times, so a missed cut-off waits for the next train. Trucks need appointments. Consignee **receiving windows** (Mon–Sat 08–18 local) | `Δ = wait_to_next_departure + drive_noise + window_shift` | `missed_rail_cutoff`, `receiving_window`, `road_noise` |
+
+**Cause-ledger allocation policy for interactions** (*as built*, `sim/mechanics.py`). Each interaction is booked **wholly to one tag**; nothing is split proportionally:
+- berth congestion × lateness → `berth_window_miss` (the pure congestion wait is `berth_queue`);
+- a missed hub connection → `missed_connection_hub_congestion` if uncongested handling would have made the cut-off, otherwise `missed_connection`. Upstream lateness that caused the miss stays on HUB_DWELL, and the incoming delay is cancelled with `slack_absorption`;
+- a late arrival landing on a weekend → `weekend_holiday_closure`;
+- anything unexplained → `other`.
+
+So "root cause" scores the *stage* where the interaction materialised, not the upstream trigger.
 
 **External series** (daily, per port/region):
 - Congestion `ρ_p(t) = clip(base_p + seasonal_p(t) + AR(1) noise, 0.30, 0.97)`. Seasonality covers the Q4 peak and the Lunar New Year backlog at CN ports, with a spill-over to hubs about 2 weeks later.
@@ -99,10 +111,10 @@ flowchart TB
 | Kind | Generator | Model handling |
 |---|---|---|
 | **Structural** (no TS on direct routes) | By lane | `has_transshipment=0`; TS features = sentinel, not NaN |
-| **MCAR** reporting gaps | Each intermediate event dropped w.p. 0.06 | NaN + `is_observed_*` flags; delay interpolated from neighbours |
+| **MCAR** reporting gaps | Each intermediate event dropped w.p. 0.06 | NaN + `is_observed_*` flags. *As built: not interpolated; the snapshot uses the last observed event and records gaps as `n_missing_past` / `completeness_ratio`* |
 | **MNAR** | Low-EDI carriers drop events w.p. 0.25; `DISCHARGED` drops more when ρ > 0.85 | Missingness flags carry signal (`carrier_edi_tier`, `n_missing_past`) |
 
-`DELIVERED` is always observed (needed as ground truth). Timestamps get ±0–2 h jitter.
+`DELIVERED` is always observed (needed as ground truth). *As built:* report timestamps get ±0.75 h uniform jitter around the occurrence time, and that one number is used both as the event time and as the time the system learned it. A report can therefore precede its event by up to 0.75 h, and reports are never late. ImprovementPlan P0-5 separates `actual_h` (occurrence) from `available_h = actual_h + latency` (latency ≥ 0, by EDI tier).
 
 ### 2.4 Ground truth and the cause ledger
 
@@ -130,7 +142,7 @@ noise_scale: 1.0          # irreducible noise multiplier (robustness study)
 
 ---
 
-## 3. Data Schemas (Parquet, validated with Pandera)
+## 3. Data Schemas (*as built:* CSV/JSON/NPZ, validated by `data/validation.py`)
 
 **`shipments`** — one row per shipment (plan + static attributes)
 
@@ -147,8 +159,8 @@ noise_scale: 1.0          # irreducible noise multiplier (robustness study)
 | `actual_delivered` | timestamp[UTC] | Ground truth |
 | `total_delay_h`, `is_late` | float32, bool | Derived, validated |
 
-**`events`** (long) — `shipment_id, event_type, planned_ts, actual_ts (nullable), reported (bool), location`
-**`cause_ledger`** — `shipment_id, stage, cause, hours`
+**`events`** (long) — *as built:* `shipment_id, event, seq, planned_h, actual_h, reported (bool), reported_h (NaN if missing)`; times are float hours since 2025-01-01 UTC
+**`cause_ledger`** — `shipment_id, stage, group, cause, hours`
 **`external_daily`** — `date, port_or_region, congestion, weather`
 
 ---
@@ -158,8 +170,8 @@ noise_scale: 1.0          # irreducible noise multiplier (robustness study)
 Each shipment expands into **checkpoints**:
 
 1. `BOOKED`: as_of = planned gate-in − 72 h (nothing observed).
-2. After each **reported** event k: as_of = actual(e_k) + 1 min.
-3. One **mid-stage** sample per stage: as_of ~ U(actual(e_k), actual(e_{k+1})). This teaches "overdue" behavior (a vessel is still at sea past its planned arrival).
+2. After each **reported** event k: as_of = reported(e_k) + 1 min (*as built: `reported_h` is the occurrence time ± 0.75 h jitter; there is no separate availability time yet (P0-5)*).
+3. One **mid-stage** sample per stage: as_of ~ U(actual(e_k), actual(e_{k+1})). This teaches "overdue" behavior (a vessel is still at sea past its planned arrival). *As built: one per stage ending at ARRIVE_TS, DEPART_TS, ARRIVE_DEST_PORT, DISCHARGED or CUSTOMS_CLEARED when the stage lasts > 2 h, placed using true actual times.*
 
 That is ≈ 8–12 rows per shipment, so ≈ 3,000 rows for 300 shipments.
 
@@ -216,17 +228,17 @@ Every feature declares: `name, family, stage_group, dtype, monotone (−1/0/+1),
 
 ### 6.2 Main model — "Prior + Residual Booster"
 
-- **Target:** remaining delay `R = D − current_delay`. Variant B: residual over B2. Pick by grouped CV (ablation reported).
+- **Target:** remaining delay `R = D − current_delay`. *As built:* a residual over the **operator-rulebook projection** of every remaining stage (`features/snapshot.py`, coefficients deliberately different from the simulator's). The learned median correction is blended with strength λ ∈ {0, .25, .5, .75, 1}, chosen on the latest 20% of training voyages. **λ = 0 on seed 42**, so the P50 is the rulebook plus the ETA floor; q10/q90 keep their learned spread around it.
 - **Quantile boosters:** three LightGBM models, `objective=quantile`, α ∈ {0.1, 0.5, 0.9}.
-- **Hyperparameters (small-data defaults):** `num_leaves=15, max_depth=5, learning_rate=0.05, n_estimators≤300 (early stopping on grouped CV), min_data_in_leaf=20, feature_fraction=0.8, bagging_fraction=0.8, lambda_l2=1.0, monotone_constraints from registry, num_threads=1 at inference`. Optional Optuna, 30 trials (P1).
+- **Hyperparameters (small-data defaults):** `num_leaves=15, max_depth=5, learning_rate=0.05, n_estimators≤300 (early stopping on grouped CV), min_data_in_leaf=20, feature_fraction=0.8, bagging_fraction=0.8, lambda_l2=1.0, no monotone constraints on the quantile models (*as built:* LightGBM 4.7 raises `Cannot use monotone_constraints in quantile objective`); the late classifier is constrained, but LightGBM silently downgrades method `advanced` to `basic` because `feature_fraction < 1`, and the rulebook `proj_inc_*` features are left unconstrained, num_threads=1 at inference`. Optuna not used (AsBuilt).
 - **Late classifier:** LightGBM binary on `1[D>τ]` + **isotonic calibration** on out-of-fold scores. A consistency monitor compares it with the quantile-implied P(late) (interpolating the predictive CDF).
 
 ### 6.3 Conformal calibration (CQR)
 
-1. Hold out 20% of *training voyages* as the calibration set.
+1. *As built:* there is no separate calibration set. Offsets are computed twice: on 5-fold voyage-grouped OOF predictions over all training rows, and on the temporal slice (latest 20% of training voyages, models fit on the earlier 80%). Per group, the larger one is used (drift-aware CQR).
 2. Score `E_i = max(q̂_10 − y_i, y_i − q̂_90)`.
 3. Per **checkpoint group** g ∈ {pre-departure, at-sea, at-port, post-customs}: `Q_g = quantile(E, ⌈(n_g+1)(1−α)⌉/n_g)`.
-4. At inference: `[q̂_10 − Q_g, q̂_90 + Q_g]`, then sort, then apply the lower bound.
+4. At inference: `[q̂_10 − Q_g, q̂_90 + Q_g]`, then sort, then apply the heuristic ETA floor. Coverage is evaluated on this final output. It is **empirical held-out coverage**, not a guarantee: exchangeability fails under the Q4 shift and voyage correlation.
 
 ### 6.4 Stage-chain forecaster + reconciliation (P1)
 
@@ -253,17 +265,20 @@ propagation.json     # Φ matrix per lane/stage (for UI)
 | Lens | Question answered | Method |
 |---|---|---|
 | **Realized** | "Where has delay already happened?" | Observed Δ_k for completed stages (facts, not model output) |
-| **Forecast drivers** | "Why do we expect *more* delay?" | TreeSHAP on the P50 booster, **summed by stage group** (additivity makes this exact) |
+| **Forecast drivers** | "Why do we expect *more* delay?" | *As built:* rulebook stage projection (`proj_inc_*`) **+ λ × TreeSHAP** of the residual P50 booster, summed by stage group. **At λ = 0 the drivers are the rulebook alone**, and the UI/report must say so (ImprovementPlan P0-1). The reconciled stage-forecast models are a learned alternative (top-1 44.7% vs 42.4%) |
 | **Counterfactual** | "What would change it?" | Re-predict with an intervention (congestion → lane median, upstream delay → 0, weather → calm) |
 
 ### 7.2 Delay waterfall algorithm
 
 ```
-bars = [("Planned delivery", planned_delivered)]
-for each completed stage k:              bars += [(stage_k, Δ_k, kind="realized")]
-bars += [("Typical remaining", shap_base_value, kind="baseline")]
-for g in stage_groups sorted by |φ_g|:   bars += [(g, φ_g, kind="forecast")]
-assert abs(sum(deltas) − D̂_P50) < 0.1h   # enforced
+# as built (explain/explainer.py:237-246)
+for each observed milestone up to last_event:  bars += [(label, Δ_obs, kind="realized")]   # facts; sum = current_delay
+bars += [("Typical remaining delay", λ · q50_bias, kind="baseline")]   # 0.0 h when λ = 0 (misleading label -> P0-1)
+for g in stage_groups with |sum_g| >= 0.05:  bars += [(g, proj_inc_g + λ·SHAP_g, kind="forecast")]  # rulebook (+ learned)
+bars += [("Consistency guardrail", P50 − Σ previous, kind="guardrail")]  # ETA floor + quantile sort, defined as the remainder
+bars += [("Expected total delay (P50)", P50, kind="total")]
+# NOTE: because the guardrail row is the remainder, "parts sum to P50" cannot fail. The real identities
+# (realised + rulebook + learned = raw P50; raw P50 + floor + ordering = final P50) are ImprovementPlan P0-2
 ```
 
 The UI draws realized bars solid and forecast bars hatched, with the P10–P90 bracket on the final bar.
@@ -282,7 +297,7 @@ ACTION    : "{action_hint}"   # lookup: missed_connection → "Check next sailin
 
 ### 7.4 Delay Propagation Matrix
 
-- **Model view:** `Φ̂(lane, i) = mean_x[(f(x | delay_i + δ) − f(x)) / δ] + 1`, with δ = 6 h, over test snapshots right after stage i. The `+1` accounts for carrying the observed delay itself.
+- **Model view:** `Φ̂(lane, i) = mean_x[(f(x | delay_i + δ) − f(x)) / δ] + 1`, with δ = 6 h (*as built: δ = 12 h, a single size, applied after reported DEPART_ORIGIN / ARRIVE_TS / ARRIVE_DEST_PORT / DISCHARGED; no conditioning on connection buffer and no per-cell counts; see ImprovementPlan P1-6*), over test snapshots right after stage i. The `+1` accounts for carrying the observed delay itself.
 - **Truth view:** `Φ_true` from SCM re-simulation (§2.4).
 - Reported as a heatmap. **Propagation fidelity** = Spearman ρ(Φ̂, Φ_true) and MAE.
 - Expected pattern (sanity check): Φ < 1 on long ocean legs (recovery absorbs), Φ ≫ 1 near hub cut-offs (step jump), Φ > 1 when berth congestion is high.
@@ -293,13 +308,13 @@ ACTION    : "{action_hint}"   # lookup: missed_connection → "Check next sailin
 
 | Aspect | Protocol |
 |---|---|
-| **Splits** | Out-of-time test = last 20% of shipments by planned departure (Q4 peak, a realistic shift). Train: 5-fold **GroupKFold by `voyage_id`** (shared vessels must not leak) |
+| **Splits** | *As built:* out-of-time test = the latest **voyages** by planned departure until ≥ 20% of shipments (seed 42: 62 shipments / 20 voyages / 726 snapshots; train 238 / 83 / 2,671). Five folds built by greedy voyage→fold assignment (shared vessels never straddle folds). Temporal selection slice = latest 20% of training voyages. The split is by `shipment_id` after snapshot expansion, with no shipment in two splits. Not yet done: an embargo on training labels realised after the first test departure (P1-2) |
 | **Point accuracy** | MAE, RMSE, median AE, P90 AE of D̂ in hours, **overall and per checkpoint** → *ETA convergence curve* |
 | **Classification** | PR-AUC, ROC-AUC, Brier, F1 at best threshold, reliability diagram (τ = 24 h and 48 h) |
 | **Intervals** | PICP (target 80%), mean interval width, per checkpoint group, interval score |
-| **Explanations** | Attribution fidelity top-1 / top-2 accuracy vs ledger (future stages, pre-arrival checkpoints); compared with *route-prior* and *random* explainers; cause-tag confusion matrix |
+| **Explanations** | Attribution fidelity top-1 / top-2 accuracy vs ledger (future stages, pre-arrival checkpoints); compared with *route-prior* and *random* explainers; cause-tag confusion matrix. *As built: label = argmax of net future-stage ledger increments (> 6 h) at checkpoints ≤ 4. 25% of scored snapshots have a top-1/top-2 margin < 6 h; ambiguity and per-checkpoint results are not yet reported (P1-1)* |
 | **Propagation** | Spearman ρ and MAE between Φ̂ and Φ_true |
-| **Uncertainty of metrics** | Shipment-level bootstrap (1,000×) → 95% CIs; 5 simulator seeds → mean ± sd |
+| **Uncertainty of metrics** | Shipment-level bootstrap (1,000×) → 95% CIs; 5 simulator seeds → mean ± sd. *As built: the bootstrap unit is the shipment; with only 20 test voyages, a voyage-cluster bootstrap is needed (P1-1)* |
 | **Ablations** | −propagation features, −priors, −missingness flags, direct vs residual target, ±monotone constraints |
 | **Robustness** | Extra event dropout of 10/30/50% at test time → MAE degradation curve; `noise_scale` sweep |
 | **Learning curve** | n ∈ {100, 200, 300, 1k, 5k} shipments |
@@ -488,7 +503,7 @@ These components sit **after** the model. They are pure functions over `Predicti
 ### 11.1 Promise ETA with hysteresis (`decision/promise.py`)
 
 ```
-candidate      = ceil_to_day(P80(ETA))                       # P80 interpolated from P50/P90
+candidate      = end_of_utc_day(P80(ETA))   # as built: P80 = P50 + 0.657·(P90 − P50), a normal approximation on conformal-widened bands, NOT a trained/calibrated quantile (P1-7)
 threshold_h    = max(12, 0.25 · (P90 − P10))
 update if:  no promise yet
         or |P50_new − P50_at_last_promise| > threshold_h
@@ -543,7 +558,7 @@ ports: {NLRTM: {demurrage_free_days: 5}, USLAX: {demurrage_usd_per_day: [125, 25
 
 ### 11.6 Prediction ledger & monitoring (`decision/ledger.py`, `monitoring/`)
 
-- **Store:** SQLite (WAL mode) for v1, behind a `LedgerRepository` interface (Postgres later). Writes go through a bounded `asyncio.Queue` with a background writer, **never on the hot path**. If the queue is full, the write is dropped with a counter metric (the prediction still returns).
+- **Store:** *as built:* SQLite behind `Ledger`, default `:memory:` (set `CASCADE_LEDGER` to a file for durability). Writes go through a bounded `queue.Queue(10_000)` drained by a daemon thread, **never on the hot path**. On overflow the write is dropped and counted, and `close()` may lose queued rows, so the ledger is **best-effort telemetry, not an audit log**. Only `predictions` and `actuals` are written today.
 - **Tables:** `predictions`, `promises`, `alerts`, `actuals`.
 - **Live accuracy:** a join on delivery gives rolling MAE by checkpoint, P10–P90 coverage and Brier. **Lane trust score** = `clip(1 − MAE_lane / MAE_global_B1, 0, 1)`, shown as ★★★ next to each ETA.
 - **Drift (P2):** PSI per key feature (weekly vs training reference), alert if PSI > 0.2.

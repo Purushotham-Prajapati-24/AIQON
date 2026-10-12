@@ -7,7 +7,7 @@
 * { box-sizing: border-box; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 10pt;
-       line-height: 1.27; color: var(--ink); margin: 0; background: #fff; }
+       line-height: 1.23; color: var(--ink); margin: 0; background: #fff; }
 h1 { font-size: 15.5pt; margin: 0 0 1mm; color: var(--blue); letter-spacing: -0.2px; }
 .sub { color: var(--muted); font-size: 9pt; margin-bottom: 2.5mm; }
 h2 { font-size: 11.5pt; margin: 2.6mm 0 1.1mm; color: var(--blue);
@@ -54,10 +54,10 @@ figcaption { font-size: 8.6pt; color: var(--muted); text-align: left; margin-top
 (95% CI 29%–44%) and 30% better than a lane-level
 propagation prior. Its P10–P90 ranges cover 82% of outcomes (target 80%),
 P(late&nbsp;&gt;&nbsp;24&nbsp;h) has Brier 0.182 and PR-AUC 0.85,
-and every forecast splits exactly into stage contributions (0 additivity violations in 261).
-Because a structural causal simulator records a <i>cause ledger</i> for every hour of delay, we can check that explanations are <i>right</i>:
-the top-ranked stage is the true root cause 42% of the time (top-2: 70%).
-Caveat: most accuracy comes from a mechanistic operator-rulebook projection; the learned median correction did not beat it out-of-time, so validation set its weight to 0.0.</p></div>
+and every P50 is shown as realised delay plus a per-stage projection of the delay still to come.
+Because a structural causal simulator records a <i>cause ledger</i> for every hour of delay, we can score that explanation:
+the stage projected to add the most future delay is the ledger's top future stage 42% of the time (top-2: 70%).
+Caveat: the point forecast <b>and</b> these stage explanations come from a mechanistic operator-rulebook projection; the learned median correction did not beat it out-of-time, so validation set its weight to 0.0. The ML contributes the P10–P90 spread, P(late) and the stage forecasts.</p></div>
 
 <h2>1 · Problem and definitions</h2>
 <p>A container shipment moves through a fixed <b>stage graph</b>: gate-in → origin departure → (hub arrival → hub
@@ -103,7 +103,7 @@ fail to report discharge. Timestamps carry reporting jitter, and delivery is alw
 <li><b>Propagation features.</b> These include projected hub buffer versus cut-off, congestion × current lateness, days to the next business slot, rail cut-off slack, and missingness flags that carry signal (EDI tier, gaps so far).</li>
 <li><b>Residual quantile GBM with temporal shrinkage.</b> LightGBM models P10/P50/P90 of the residual on top of the rulebook (300 trees, 15 leaves). The learned median correction is blended in with weight λ ∈ {0.0, 0.25, 0.5, 0.75, 1.0}, chosen on the latest training voyages. <b>λ = 0.0 was selected</b>, so the median comes from the rulebook, and ML contributes uncertainty, P(late) and stage forecasts.</li>
 <li><b>Drift-aware CQR and P(late).</b> Conformalised quantile regression per checkpoint group (offset = max(out-of-fold, temporal-slice)) protects coverage under the seasonal shift. P(late) blends a monotone classifier + isotonic calibration with the quantile-implied probability (weight from {0.0, 0.5, 1.0}; selected 0.5).</li>
-<li><b>Explanations.</b> Exact TreeSHAP (LightGBM <code>pred_contrib</code>) is aggregated to stage groups. Realised delay + baseline + stage contributions form an <b>additive waterfall</b> that sums to the P50; deterministic templates write narratives for ops, customer and analyst.</li>
+<li><b>Explanations.</b> Stage bar = rulebook projected increment + λ × exact TreeSHAP of the residual model (<code>pred_contrib</code>); at λ = 0 the bars, and the attribution score, are the <b>rulebook alone</b>. Realised delay + stage bars + a floor/ordering adjustment = P50; templates write ops/customer/analyst narratives. Future-stage attribution is inherently noisy, so we report top-2 and lift, not just top-1.</li>
 <li><b>Decision layer.</b> Promise ETA with hysteresis, alerts, cost-of-delay, an intervention advisor (model re-run under a fixed action menu), a scenario radar and a prediction ledger; FastAPI with a fallback chain (lane propagation prior → carry-forward) and a Streamlit control tower.</li>
 </ul>
 
@@ -178,7 +178,7 @@ reversals per shipment vs 0.79 for the raw ETA.
 <h3>Worked example: SHP-000174 (CNSHA-MYTPP-NLRTM), as of 2025-10-10 07:21 UTC</h3>
 <div class=two>
 <figure style="margin-top:0"><img src="file:///D:/ATQON/report/figures/waterfall_compact.png" style="width:100%">
-<figcaption>Figure 2 · Additive waterfall: realised delay (solid) + forecast stage contributions (hatched) = P50 (168 h).</figcaption></figure>
+<figcaption>Figure 2 · Additive waterfall: realised delay (solid) + projected stage contributions (hatched) = P50 (168 h).</figcaption></figure>
 <div>
 <div class=quote>SHP-000174 is expected 7.0 days late (likely 2.8 days–8.9 days late); 83% chance of more than 24 h late. Already 46 h behind plan. Main driver: Transshipment — projected to reach Tanjung Pelepas after the connection cut-off (buffer short by 36 h) (+126 h). Also contributing: Customs — customs release projected to fall outside office hours / on a non-working day at Rotterdam (+12 h). Suggested action: Check the next sailing from the hub and consider re-booking or priority loading. Confidence is reduced: 2 milestone(s) missing from the feed.</div>
 <p class=small>The main driver (Transshipment, 126 h) is a projected missed connection: one more sailing headway.
@@ -188,10 +188,9 @@ The cause ledger agrees: the true root cause is <b>Transshipment</b>. Expected c
 
 <h2>5 · Limitations and next steps</h2>
 <ul>
-<li><b>Synthetic-to-real gap.</b> Mechanisms are plausible but not fitted to real carrier data, so absolute numbers are not real-world performance; the <i>method</i> (as-of nowcasting, rulebook prior + residuals, conformal ranges, ledger-validated explanations) is what transfers.</li>
-<li><b>Counterfactuals are associational.</b> The advisor re-runs the predictive model, not the causal mechanism. Its fidelity is measured (Spearman 0.43) but it is not causal identification.</li>
-<li><b>Small n and the Q4 shift.</b> With 62 test shipments the confidence intervals are wide, and seed-to-seed variation is real (Table 6). The learned median correction did not generalise across the seasonal shift, so we let validation switch it off (λ = 0.0) instead of reporting an optimistic in-season number.</li>
-<li><b>Root-cause forecasting is noisy.</b> Which future stage will dominate is often unknowable before arrival, so we report top-2 and lift over a naive explainer, not just top-1.</li>
-<li><b>Roadmap.</b> (1) An AIS/EDI adapter that maps real milestones onto the stage graph; (2) survival / AFT models for censored in-flight shipments; (3) GNN-style port-network features for congestion spill-over; (4) drift monitoring on the prediction ledger, with automated conformal re-calibration and champion/challenger bundles.</li>
+<li><b>Synthetic-to-real gap.</b> Plausible mechanisms, not fitted to real data; reports are never late and schedules never revised.</li>
+<li><b>Counterfactuals are associational.</b> The advisor re-runs the predictive model; fidelity vs true interventions is measured (Spearman 0.43), not guaranteed.</li>
+<li><b>Small n and the Q4 shift.</b> 62 test shipments: wide CIs, resampled by shipment, not voyage (seed spread: Table 6); the learned median was switched off (λ = 0.0).</li>
+<li><b>Roadmap.</b> Reporting latency and schedule revisions, an AIS/EDI adapter, survival models, drift monitoring (<code>docs/ImprovementPlan.md</code>).</li>
 </ul>
 </body></html>
