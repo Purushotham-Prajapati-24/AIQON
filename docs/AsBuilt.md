@@ -43,7 +43,7 @@
 The six pages were built as designed (Fleet, Shipment detail with time-travel, What-if & Scenario radar, Alerts, Insights, Data health). Additions: an audience switch (ops / customer / analyst), a copy-ready narrative, and an API "reproduce this prediction" snippet.
 
 **Added later: React dashboard (`dashboard/`).** Not in the original plan. A single-page React UI over the same API (Design.md §10.5, ADR-010). Differences from the Streamlit pages:
-- an entry screen ("What do you need today?") with four roles instead of a home page or login; the role sets the opening section and the default explanation wording;
+- a sign-in screen with four one-click demo accounts (JWT session in an httpOnly cookie, ADR-011); the account sets the opening section and the default explanation wording;
 - an interactive hero replaying SHP-000174 milestone by milestone;
 - plain-language labels throughout (chance late, likely range, hub transfer);
 - what-if switches are disabled for stages that already happened;

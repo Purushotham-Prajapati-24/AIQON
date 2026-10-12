@@ -52,6 +52,27 @@ docker compose -f docker/compose.yaml up --build
 # Ports already taken?  CASCADE_API_PORT=8200 CASCADE_UI_PORT=8701 docker compose -f docker/compose.yaml up --build
 ```
 
+## Sign in
+
+The dashboard opens on a sign-in screen. Click a demo account to go straight in (keys 1–4 work too), or sign in with a username and the demo password `cascade-demo`.
+
+| Demo account | Role | Opens on |
+|---|---|---|
+| `priya` · Priya Raman | Ops planner | the fleet, worst first |
+| `marco` · Marco Bianchi | Customer support | one shipment, explained in customer wording |
+| `lena` · Lena Fischer | Network analyst | the proof: accuracy, ranges, where delay grows |
+| `reviewer` · Aiqon Reviewer | Assessment reviewer | the story of one late shipment |
+
+Sessions are signed JWTs in an httpOnly cookie (8 hours). The API also accepts them as a Bearer token:
+
+```bash
+TOKEN=$(curl -s -X POST localhost:8000/v1/auth/demo-login -H "Content-Type: application/json" \
+  -d '{"user_id":"priya"}' | python -c "import json,sys; print(json.load(sys.stdin)['token'])")
+curl -s localhost:8000/v1/auth/me -H "Authorization: Bearer $TOKEN"
+```
+
+By default data routes stay open (`CASCADE_AUTH=optional`), so the Streamlit UI and TMS integrations keep working. `CASCADE_AUTH=required` makes every `/v1` route need a session. Set `CASCADE_JWT_SECRET` (32+ characters) in any shared deployment; without it, sessions end when the API restarts. `CASCADE_DEMO_LOGIN=0` turns off one-click sign-in.
+
 ## How ETA and delay are defined
 
 A shipment moves through a fixed **stage graph**: gate-in → origin departure → (hub arrival → hub departure) → destination arrival → discharge → customs release → gate-out → delivery. Direct lanes skip the hub. All quantities are in hours, and positive means late.

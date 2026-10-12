@@ -110,12 +110,12 @@ The same story works in `dashboard/` (`npm run dev`, http://localhost:5173), wit
 
 | Scene | React dashboard |
 |---|---|
-| 1 Problem | Entry screen: "What do you need today?". Pick **First look** (key 4). The hero replays SHP-000174 by itself: +2.0 → +7.0 → +8.0 → +10.0 days |
+| 1 Problem | Sign-in screen: click **Aiqon Reviewer** (key 4). The hero replays SHP-000174 by itself: +2.0 → +7.0 → +8.0 → +10.0 days |
 | 2 Fleet | **01 Fleet**: "23 of 48 shipments will be late", the map, then drag the **Fleet on** slider back three weeks and return |
 | 3 Shipment | Click a row in **Worst first**. **02 Shipment** opens it; step through the replay chips and switch **For the customer / For the planner** |
 | 4 Advisor + cost | **What to do** on the same section, and the **Delay cost** split |
 | 5 Disruption | **03 Fix** → **If this happens**; each event shows how many shipments it hits |
 | 6 Insights | **05 Proof**, then the README architecture diagram |
 
-To start on the entry screen again, use the role button in the top bar. To skip it, open a deep link such as `/#fleet`.
+To switch account, sign out with the button at the top right. A deep link such as `/#fleet` opens that section after sign-in.
 
