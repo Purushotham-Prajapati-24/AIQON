@@ -26,8 +26,20 @@ class ArtifactError(RuntimeError):
     pass
 
 
+TEXT_SUFFIXES = {".json", ".csv", ".txt"}
+
+
 def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    """Content hash that ignores line endings for text files.
+
+    Git may check text files out with CRLF (Windows, ``core.autocrlf``) or LF, so a raw-byte hash
+    published on one OS would fail to verify on another. Text files are hashed with CRLF folded to
+    LF; binary files (``.npz``) are hashed as stored.
+    """
+    data = path.read_bytes()
+    if path.suffix.lower() in TEXT_SUFFIXES:
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def git_sha() -> str:
@@ -51,7 +63,7 @@ def save_bundle(model: CascadeModel, out_dir: Path, extra_manifest: dict | None 
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "models").mkdir(exist_ok=True)
     for name, booster in model.boosters.items():
-        (out_dir / "models" / f"{name}.txt").write_text(booster.model_to_string())
+        (out_dir / "models" / f"{name}.txt").write_text(booster.model_to_string(), newline="\n")
     state = {
         "offsets": model.offsets,
         "offsets80": model.offsets80,
@@ -70,7 +82,7 @@ def save_bundle(model: CascadeModel, out_dir: Path, extra_manifest: dict | None 
         "version": model.version,
         "feature_names": list(FEATURE_NAMES),
     }
-    (out_dir / "model.json").write_text(json.dumps(state, indent=1))
+    (out_dir / "model.json").write_text(json.dumps(state, indent=1), newline="\n")
     files = sorted(p for p in out_dir.rglob("*") if p.is_file() and p.name != "manifest.json")
     manifest = {
         "schema_version": SCHEMA_VERSION,
@@ -81,7 +93,9 @@ def save_bundle(model: CascadeModel, out_dir: Path, extra_manifest: dict | None 
         "files": {str(p.relative_to(out_dir)).replace("\\", "/"): _sha256(p) for p in files},
         **(extra_manifest or {}),
     }
-    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=1, default=str))
+    (out_dir / "manifest.json").write_text(
+        json.dumps(manifest, indent=1, default=str), newline="\n"
+    )
     return out_dir
 
 
