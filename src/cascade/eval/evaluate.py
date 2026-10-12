@@ -161,6 +161,8 @@ def accuracy_metrics(ctx: EvalContext) -> dict:
         "B1_carry_forward": cur + b1_carry_forward(te),
         "B2_propagation_prior": cur + m.fallback.predict(te),
         "physics_rulebook": cur + te[list(PHYS_COLS)].sum(axis=1).to_numpy(float),
+        # the carrier's own latest plan (schedule revision known at as_of), vs original commitment
+        "B3_carrier_plan": np.maximum(te.carrier_plan_delay_h.to_numpy(float), cur),
     }
     overall = {k: point(v - D) for k, v in preds.items()}
     cp = te.checkpoint.to_numpy(int)
@@ -204,6 +206,20 @@ def accuracy_metrics(ctx: EvalContext) -> dict:
             "n_voyages": int(pd.unique(vids[mask]).size),
             "ci95_voyage": cluster_rate_ci(vids[mask], inside[mask]),
         }
+
+    # P80 (the customer promise quantile): calibrated q80 vs the old normal approximation
+    from cascade.models.predictor import P80_FROM_P50_P90
+
+    approx80 = pr.delay_p50 + P80_FROM_P50_P90 * np.maximum(pr.delay_p90 - pr.delay_p50, 0.0)
+    p80 = {
+        "calibrated": bool(pr.p80_calibrated),
+        "coverage": float((pr.delay_p80 >= D).mean()),
+        "coverage_normal_approx": float((approx80 >= D).mean()),
+        "by_group": {
+            str(g): float((D[grp == g] <= pr.delay_p80[grp == g]).mean()) for g in np.unique(grp)
+        },
+        "ci95_voyage": cluster_rate_ci(vids, pr.delay_p80 >= D),
+    }
 
     # the heuristic ETA floor: how often it binds and what it does (no retraining needed)
     live = cp < 9
@@ -253,6 +269,7 @@ def accuracy_metrics(ctx: EvalContext) -> dict:
         "coverage_detail": coverage_detail,
         "interval_width_h": width,
         "eta_floor": eta_floor,
+        "p80": p80,
         "classification": cls,
         "reliability": rel,
         "n_test_rows": int(len(te)),
@@ -529,6 +546,7 @@ def decision_metrics(ctx: EvalContext) -> dict:
     eng = ctx.engine
     w = eng.world
     rows = []
+    replay_stats: dict[str, int] = {}
     for sid in ctx.splits.test_ids:
         v = w.views[sid]
         end = w.actual_delivered[sid] - 1 / 60
@@ -537,7 +555,7 @@ def decision_metrics(ctx: EvalContext) -> dict:
         raw_days = [math.floor((r.planned_delivered + r.delay_p50) / 24) for r in res]
         raw_changes = int(sum(1 for a, b in zip(raw_days, raw_days[1:], strict=False) if a != b))
         raw_rev = _reversals(raw_days)
-        promise, alerts = eng.replay_decisions(v, end)
+        promise, alerts = eng.replay_decisions(v, end, stats=replay_stats)
         # promise in effect at each checkpoint: re-fold incrementally
         from cascade.decision.promise import update_promise
 
@@ -547,7 +565,7 @@ def decision_metrics(ctx: EvalContext) -> dict:
                 ps,
                 r.as_of,
                 r.planned_delivered + r.delay_p50,
-                r.planned_delivered + r.delay_p90,
+                r.eta_p80,
                 r.delay_p90 - r.delay_p10,
                 r.risk_tier,
             )
@@ -609,10 +627,12 @@ def decision_metrics(ctx: EvalContext) -> dict:
         "lead_to_planned_h_p10_p50_p90": [float(late.lead_h.quantile(q)) for q in (0.1, 0.5, 0.9)]
         if late.has_late_alert.any()
         else [math.nan] * 3,
+        "duplicates_suppressed": int(replay_stats.get("duplicates_suppressed", 0)),
+        "late_alert_p_threshold": float(eng.model.late_alert_p),
         "n_late": int(len(late)),
         "n_on_time": int((~df.late).sum()),
-        "note": "LATE alert = first TIER_ESCALATION_LATE in a replay from booking; thresholds are "
-        "fixed rules (not tuned on validation).",
+        "note": "LATE alert = first TIER_ESCALATION_LATE (P50 delay > tau and P(late) >= the "
+        "threshold chosen on out-of-fold training predictions) in a replay from booking.",
     }
 
 
@@ -636,7 +656,15 @@ def robustness(ctx: EvalContext, rates=(0.0, 0.1, 0.3, 0.5), seed: int = 0) -> d
         ev.loc[drop, "reported_h"] = np.nan
         if "available_h" in ev.columns:
             ev.loc[drop, "available_h"] = np.nan
-        rows = build_rows(test_s, test_e, sim.ledger, sim.external, seed=1, events_override=ev)
+        rows = build_rows(
+            test_s,
+            test_e,
+            sim.ledger,
+            sim.external,
+            seed=1,
+            events_override=ev,
+            revisions=sim.revisions,
+        )
         rows = apply_priors(rows, m.priors)
         _, pr = _predict_rows(m, rows)
         D = rows.y_total.to_numpy(float)
@@ -748,6 +776,87 @@ def group_importance(ctx: EvalContext) -> dict[str, float]:
     return {g.value: float(np.abs(sums[:, i]).mean()) for i, g in enumerate(StageGroup)}
 
 
+def feed_stats(ctx: EvalContext) -> dict:
+    """What the message feed looked like: latency, duplicates, corrections, schedule versions."""
+    sim = ctx.sim
+    ev = sim.events[sim.events.reported]
+    lat = (ev.available_h - ev.actual_h).to_numpy(float)
+    out = {
+        "reported_milestones": int(len(ev)),
+        "messages": int(len(sim.messages)) if not sim.messages.empty else int(len(ev)),
+        "latency_h_p50_p90": [float(np.quantile(lat, 0.5)), float(np.quantile(lat, 0.9))],
+    }
+    if "n_messages" in ev.columns:
+        out["duplicated_milestones"] = int(((ev.n_messages > 1) & ev.corrected_at.isna()).sum())
+        out["corrected_milestones"] = int(ev.corrected_at.notna().sum())
+        out["correction_size_h_median"] = float(
+            (ev.initial_reported_h - ev.reported_h).abs()[ev.corrected_at.notna()].median()
+        )
+    if not sim.revisions.empty:
+        out["shipments_with_revisions"] = int(sim.revisions.shipment_id.nunique())
+        out["revisions_per_shipment"] = float(
+            sim.revisions.groupby("shipment_id")
+            .revision.max()
+            .reindex(sim.shipments.shipment_id)
+            .fillna(0)
+            .mean()
+        )
+    return out
+
+
+MIN_SLICE_VOYAGES = 5  # smaller slices are reported as suppressed, never as a number
+
+
+def error_slices(ctx: EvalContext) -> dict:
+    """Where does the model work poorly? MAE / coverage / Brier by slice, always with n."""
+    m, te = ctx.result.model, ctx.test_rows
+    _, pr = _predict_rows(m, te)
+    D = te.y_total.to_numpy(float)
+    cur = te.current_delay_h.to_numpy(float)
+    b1 = cur + b1_carry_forward(te)
+    late = (m.late_threshold_h < D).astype(int)
+    horizon = np.maximum(te.planned_delivered.to_numpy(float) - te.as_of.to_numpy(float), 0.0)
+    rho = te.rho_dest_fcst.to_numpy(float)
+    keys = {
+        "horizon": pd.cut(
+            horizon,
+            [-1, 48, 168, 504, np.inf],
+            labels=["<48 h", "48-168 h", "168-504 h", ">504 h"],
+        ).astype(str),
+        "route": np.where(te.has_transshipment.to_numpy(float) > 0.5, "transshipment", "direct"),
+        "edi_tier": np.array([f"tier {int(x)}" for x in te.carrier_edi_tier.to_numpy(float)]),
+        "dest_congestion": np.select(
+            [rho > 0.85, rho > 0.7], ["congested (>85%)", "busy (70-85%)"], "normal (<=70%)"
+        ),
+        "missing_events": np.where(te.n_missing_past.to_numpy(float) > 0, "some missing", "none"),
+        "lane": te.lane_id.to_numpy(),
+    }
+    out: dict[str, dict] = {}
+    for dim, lab in keys.items():
+        out[dim] = {}
+        for g in pd.unique(lab):
+            mask = lab == g
+            n_voy = int(te.voyage_id[mask].nunique())
+            entry: dict[str, float | int | bool | None] = {
+                "n_snapshots": int(mask.sum()),
+                "n_shipments": int(te.shipment_id[mask].nunique()),
+                "n_voyages": n_voy,
+                "suppressed": n_voy < MIN_SLICE_VOYAGES,
+            }
+            if n_voy >= MIN_SLICE_VOYAGES:
+                y = late[mask]
+                entry.update(
+                    mae=float(np.abs(pr.delay_p50[mask] - D[mask]).mean()),
+                    mae_B1=float(np.abs(b1[mask] - D[mask]).mean()),
+                    coverage=float(
+                        ((pr.delay_p10[mask] <= D[mask]) & (pr.delay_p90[mask] >= D[mask])).mean()
+                    ),
+                    brier=float(brier_score_loss(y, pr.p_late[mask])) if 0 < y.mean() < 1 else None,
+                )
+            out[dim][str(g)] = entry
+    return out
+
+
 def run_all(ctx: EvalContext, rows: pd.DataFrame, cfg: TrainConfig, fast: bool = False) -> dict:
     out = {
         "accuracy": accuracy_metrics(ctx),
@@ -759,10 +868,17 @@ def run_all(ctx: EvalContext, rows: pd.DataFrame, cfg: TrainConfig, fast: bool =
         "model_selection": {
             "shrink": ctx.result.model.shrink,
             "late_blend": ctx.result.model.late_blend,
+            "late_alert_p": ctx.result.model.late_alert_p,
             **{k: {str(kk): vv for kk, vv in v.items()} for k, v in ctx.result.selection.items()},
         },
     }
     out["splits"] = split_counts(ctx, rows)
+    out["feed"] = feed_stats(ctx)
+    from cascade.models.drift import psi_table
+
+    X_test = ctx.test_rows[list(FEATURE_NAMES)].to_numpy(float)
+    out["drift"] = psi_table(ctx.result.model.drift_ref, X_test)
+    out["slices"] = error_slices(ctx)
     if not fast:
         out["robustness"] = robustness(ctx)
         out["embargo"] = embargo_check(ctx, rows, cfg)

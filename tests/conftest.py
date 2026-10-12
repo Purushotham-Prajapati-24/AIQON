@@ -24,7 +24,9 @@ def sim():
 
 @pytest.fixture(scope="session")
 def rows(sim):
-    return build_rows(sim.shipments, sim.events, sim.ledger, sim.external, seed=3)
+    return build_rows(
+        sim.shipments, sim.events, sim.ledger, sim.external, seed=3, revisions=sim.revisions
+    )
 
 
 @pytest.fixture(scope="session")
@@ -41,7 +43,8 @@ def trained(rows, sim, splits):
 def world(sim, splits):
     s = sim.shipments[sim.shipments.shipment_id.isin(splits.test_ids)]
     e = sim.events[sim.events.shipment_id.isin(splits.test_ids)]
-    return World.from_frames(s, e)
+    r = sim.revisions[sim.revisions.shipment_id.isin(splits.test_ids)]
+    return World.from_frames(s, e, revisions=r)
 
 
 @pytest.fixture(scope="session")

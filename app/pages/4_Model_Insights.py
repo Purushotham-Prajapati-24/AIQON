@@ -89,6 +89,37 @@ with t1:
         for k, v in acc["overall"].items()
     ]
     st.dataframe(pd.DataFrame(rows).round(1), hide_index=True, use_container_width=True)
+    sl = (ins.get("slices") or {}).get("horizon")
+    if sl:
+        order = ["<48 h", "48-168 h", "168-504 h", ">504 h"]
+        rows_h = [(k, sl[k]) for k in order if k in sl and not sl[k]["suppressed"]]
+        st.markdown(
+            "**Error by forecast horizon** (planned time still to go) — how good is the ETA when "
+            "arrival is still far away?"
+        )
+        fig = go.Figure()
+        for key, name, color in [
+            ("mae", "CASCADE", OK["blue"]),
+            ("mae_B1", "B1 carry-forward", OK["grey"]),
+        ]:
+            fig.add_trace(
+                go.Bar(
+                    x=[k for k, _ in rows_h],
+                    y=[v[key] for _, v in rows_h],
+                    name=name,
+                    marker_color=color,
+                    text=[f"{v[key]:.0f} h" for _, v in rows_h],
+                    textposition="outside",
+                    cliponaxis=False,
+                )
+            )
+        fig.update_layout(height=300, yaxis_title="MAE (h)", margin=dict(t=10), barmode="group")
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption(
+            "n per bucket (voyages / snapshots): "
+            + " · ".join(f"{k}: {v['n_voyages']} / {v['n_snapshots']}" for k, v in rows_h)
+            + ". Slices with < 5 test voyages are not shown."
+        )
     if ins.get("ablations"):
         st.markdown("**Ablations** (test MAE, h) — what each feature family is worth")
         ab = {

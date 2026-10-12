@@ -43,8 +43,11 @@ def test_future_milestones_never_leak(sim, data):
 
 def test_rows_targets_are_consistent(rows):
     inc = rows[[c for c in rows.columns if c.startswith("y_inc_")]].sum(axis=1)
-    # reported timestamps carry up to 0.75 h jitter vs the ledger's true timeline
-    assert (inc - rows.y_remaining).abs().max() < 1.6
+    # the current delay is what was *known*: stated times carry up to 0.75 h jitter, and a first
+    # message can be up to 8 h wrong until its correction arrives (simulated feed corrections)
+    gap = (inc - rows.y_remaining).abs()
+    assert gap.max() < 0.75 * 2 + 8.0 + 0.1
+    assert (gap < 1.6).mean() > 0.95  # only snapshots with a pending correction exceed jitter
     assert (rows.y_total - rows.current_delay_h - rows.y_remaining).abs().max() < 1e-9
 
 

@@ -124,13 +124,34 @@ class ShipmentView:
     # When CASCADE could first know each report (>= the event itself). Missing entry = the
     # report was available as soon as its stated event time (live API payloads).
     available: dict[EventType, float] = field(default_factory=dict)
+    # Feed corrections: the first message's (wrong) time, and when the correction arrived.
+    initial: dict[EventType, float] = field(default_factory=dict)
+    corrected_at: dict[EventType, float] = field(default_factory=dict)
+    # Carrier schedule versions: ((effective_at, {event: planned_h}), ...). `planned` stays the
+    # original commitment that lateness is measured against.
+    revisions: tuple[tuple[float, dict[EventType, float]], ...] = ()
 
     def known_at(self, e: EventType) -> float:
         return self.available.get(e, self.reported[e])
 
     def known_by(self, t: float) -> dict[EventType, float]:
-        """Reported milestones whose message had arrived by time t (the information cut-off)."""
-        return {e: ts for e, ts in self.reported.items() if self.known_at(e) <= t}
+        """Milestones whose message had arrived by t, with the time *as known at t*: the first
+        (possibly wrong) value until its correction arrives."""
+        out = {}
+        for e, ts in self.reported.items():
+            if self.known_at(e) > t:
+                continue
+            fixed = self.corrected_at.get(e)
+            out[e] = (
+                self.initial[e] if fixed is not None and fixed > t and e in self.initial else ts
+            )
+        return out
+
+    def plan_at(self, t: float) -> tuple[dict[EventType, float], int]:
+        """The carrier's plan in force at t and how many revisions were known by then."""
+        from cascade.domain.feed import plan_at
+
+        return plan_at(self.planned, self.revisions, t)
 
 
 @dataclass(frozen=True)

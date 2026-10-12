@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-P80_FROM_P50_P90 = 0.8416 / 1.2816  # normal-quantile ratio: P80 = P50 + 0.657 (P90 - P50)
 MIN_MOVE_H = 12.0
 WIDTH_FRACTION = 0.25
 
@@ -28,12 +27,12 @@ def update_promise(
     prev: PromiseState | None,
     as_of: float,
     eta_p50_h: float,
-    eta_p90_h: float,
+    eta_p80_h: float,
     width_h: float,
     tier: str,
 ) -> PromiseState:
-    p80 = eta_p50_h + P80_FROM_P50_P90 * max(eta_p90_h - eta_p50_h, 0.0)
-    candidate = promise_day_end(p80)
+    """eta_p80_h: the calibrated P80 ETA (the model's one-sided conformal 80% quantile)."""
+    candidate = promise_day_end(eta_p80_h)
     if prev is None:
         return PromiseState(candidate, as_of, eta_p50_h, tier, "initial promise")
     threshold = max(MIN_MOVE_H, WIDTH_FRACTION * width_h)

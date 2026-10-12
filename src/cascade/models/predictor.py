@@ -19,9 +19,11 @@ from cascade.domain.stages import (
 from cascade.features.priors import PriorTable
 from cascade.features.registry import FEATURE_NAMES
 from cascade.models.baselines import PropagationPrior
-from cascade.models.conformal import apply_offsets
+from cascade.models.conformal import apply_offsets, group_offset
 
-QUANTILES = {"q10": 0.1, "q50": 0.5, "q90": 0.9}
+QUANTILES = {"q10": 0.1, "q50": 0.5, "q80": 0.8, "q90": 0.9}
+BAND = ("q10", "q50", "q90")  # the published P10-P50-P90 range
+P80_FROM_P50_P90 = 0.8416 / 1.2816  # normal approximation, used only without a q80 model
 PHYS_COLS = (
     "proj_inc_origin_h",
     "proj_inc_ocean_h",
@@ -72,6 +74,8 @@ class PredictionArrays:
     ordering_adjust: np.ndarray | None = None  # effect of sorting the three quantiles
     floor_adjust: np.ndarray | None = None  # effect of the heuristic ETA floor
     delivered_adjust: np.ndarray | None = None  # delivered: replaced by the realised delay
+    delay_p80: np.ndarray | None = None  # calibrated P80 (the customer promise quantile)
+    p80_calibrated: bool = False  # False = normal approximation from P50/P90 (no q80 model)
 
 
 @dataclass
@@ -88,6 +92,9 @@ class CascadeModel:
     shrink: float = 1.0  # trust in the learned correction, chosen on temporal validation
     late_blend: float = 0.5  # weight of the classifier vs the quantile-implied P(late)
     eta_floor_frac: float = 0.5  # heuristic: remaining stages take >= this share of planned time
+    offsets80: dict[str, float] = field(default_factory=dict)  # one-sided conformal for P80
+    late_alert_p: float = 0.0  # LATE alert needs P(late) >= this (chosen out-of-fold on training)
+    drift_ref: dict[str, dict] = field(default_factory=dict)  # training reference for PSI
     version: str = "dev"
 
     # ---- core ---------------------------------------------------------------------------
@@ -99,9 +106,9 @@ class CascadeModel:
     def raw_quantiles(self, X: np.ndarray) -> dict[str, np.ndarray]:
         """Remaining-delay quantiles before conformal widening and guardrails."""
         base = self._base(X)
-        g = {k: self.boosters[k].predict(X, num_threads=1) for k in QUANTILES}
+        g = {k: self.boosters[k].predict(X, num_threads=1) for k in QUANTILES if k in self.boosters}
         center = self.shrink * g["q50"]
-        return {k: base + center + (g[k] - g["q50"]) for k in QUANTILES}
+        return {k: base + center + (v - g["q50"]) for k, v in g.items()}
 
     def min_remaining_h(self, plan_remaining: np.ndarray, elapsed: np.ndarray) -> np.ndarray:
         """Heuristic floor on the time still needed (not a physical bound; see AsBuilt §1)."""
@@ -135,6 +142,16 @@ class CascadeModel:
         q = np.maximum(q, floor)
         floored_p50 = q[1].copy()
         q[:, delivered] = cur[delivered]  # delivered: the realised delay, no uncertainty
+        # P80 for the customer promise: a trained q80 with its own one-sided conformal offset,
+        # kept inside [P50, P90] so the published quantiles stay ordered
+        if "q80" in r and self.offsets80:
+            p80 = r["q80"] + group_offset(cp, self.offsets80) + cur
+            calibrated = True
+        else:
+            p80 = q[1] + P80_FROM_P50_P90 * np.maximum(q[2] - q[1], 0.0)
+            calibrated = False
+        p80 = np.clip(p80, q[1], q[2])
+        p80[delivered] = cur[delivered]
         raw = self.boosters["clf"].predict(X, num_threads=1)
         p_clf = np.interp(raw, self.iso_x, self.iso_y) if self.iso_x else raw
         p_q = quantile_implied_exceedance(q[0], q[1], q[2], self.late_threshold_h)
@@ -152,6 +169,8 @@ class CascadeModel:
             ordering_adjust=ordered_p50 - raw_p50,
             floor_adjust=floored_p50 - ordered_p50,
             delivered_adjust=q[1] - floored_p50,
+            delay_p80=p80,
+            p80_calibrated=calibrated,
         )
 
     def _stage_forecast(

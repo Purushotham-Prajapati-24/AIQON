@@ -14,8 +14,15 @@ from cascade.domain.stages import PHYSICAL_GROUPS
 from cascade.features.priors import apply_priors, fit_priors
 from cascade.features.registry import CATEGORICAL, FEATURE_NAMES, monotone_vector
 from cascade.models.baselines import PropagationPrior
-from cascade.models.conformal import cqr_offsets
-from cascade.models.predictor import PHYS_COLS, QUANTILES, CascadeModel, quantile_implied_exceedance
+from cascade.models.conformal import cqr_offsets, upper_offsets
+from cascade.models.drift import reference as drift_reference
+from cascade.models.predictor import (
+    BAND,
+    PHYS_COLS,
+    QUANTILES,
+    CascadeModel,
+    quantile_implied_exceedance,
+)
 
 
 @dataclass
@@ -185,9 +192,8 @@ def select_on_temporal_validation(
     grid = SHRINK_GRID if cfg.target_mode == "residual" else (1.0,)
     curve = {lam: float(np.abs(base + lam * g["q50"] - y).mean()) for lam in grid}
     shrink = min(curve, key=lambda k: (round(curve[k], 6), -k))
-    q = np.sort(
-        np.vstack([base + shrink * g["q50"] + (g[k] - g["q50"]) for k in QUANTILES]), axis=0
-    )
+    q = np.sort(np.vstack([base + shrink * g["q50"] + (g[k] - g["q50"]) for k in BAND]), axis=0)
+    q80 = base + shrink * g["q50"] + (g["q80"] - g["q50"])
     p_q = quantile_implied_exceedance(q[0], q[1], q[2], cfg.late_threshold_h)
     brier = {w: float(np.mean((w * clf + (1 - w) * p_q - y_late) ** 2)) for w in (0.0, 0.5, 1.0)}
     blend = min(brier, key=lambda k: brier[k])
@@ -196,11 +202,59 @@ def select_on_temporal_validation(
     temporal_offsets = cqr_offsets(
         rem, q[0] - cur, q[2] - cur, va.checkpoint.to_numpy(), cfg.alpha, min_group=25
     )
+    temporal_offsets80 = upper_offsets(
+        rem, q80 - cur, va.checkpoint.to_numpy(), 1.0 - cfg.alpha / 2.0, min_group=25
+    )
     return (
         shrink,
         blend,
-        {"shrink_mae": curve, "late_blend_brier": brier, "temporal_offsets": temporal_offsets},
+        {
+            "shrink_mae": curve,
+            "late_blend_brier": brier,
+            "temporal_offsets": temporal_offsets,
+            "temporal_offsets80": temporal_offsets80,
+        },
     )
+
+
+ALERT_P_GRID = (0.0, 0.5, 0.6, 0.7, 0.8, 0.9)
+
+
+def select_late_alert_threshold(
+    rows: pd.DataFrame, oof: pd.DataFrame, iso, late_blend: float, cfg: TrainConfig
+) -> tuple[float, dict]:
+    """Pick the P(late) threshold for the LATE alert on voyage-grouped out-of-fold predictions.
+
+    Replays the rule "first snapshot with P50 delay > tau and P(late) >= theta" per training
+    shipment and maximises shipment-level F1 for 'eventually late'. Test data is never used.
+    """
+    cur = rows.current_delay_h.to_numpy(float)
+    q = np.sort(np.vstack([oof[k].to_numpy(float) for k in BAND]), axis=0) + cur
+    p_clf = iso.predict(oof.clf_raw.to_numpy(float))
+    p_q = quantile_implied_exceedance(q[0], q[1], q[2], cfg.late_threshold_h)
+    p_late = late_blend * p_clf + (1.0 - late_blend) * p_q
+    df = pd.DataFrame(
+        {
+            "sid": rows.shipment_id.to_numpy(),
+            "t": rows.as_of.to_numpy(float),
+            "tier_late": q[1] > cfg.late_threshold_h,
+            "p": p_late,
+            "late": rows.y_late.to_numpy(int),
+        }
+    ).sort_values(["sid", "t"])
+    truth = df.groupby("sid").late.max()
+    curve: dict[str, dict[str, float]] = {}
+    for th in ALERT_P_GRID:
+        fired = df[df.tier_late & (df.p >= th)].groupby("sid").size().reindex(truth.index).fillna(0)
+        alerted = fired > 0
+        tp = int((alerted & (truth == 1)).sum())
+        prec = tp / max(int(alerted.sum()), 1)
+        rec = tp / max(int((truth == 1).sum()), 1)
+        f1 = 2 * prec * rec / max(prec + rec, 1e-9)
+        fpr = int((alerted & (truth == 0)).sum()) / max(int((truth == 0).sum()), 1)
+        curve[str(th)] = {"precision": prec, "recall": rec, "f1": f1, "fpr": fpr}
+    best = max(ALERT_P_GRID, key=lambda th: (round(curve[str(th)]["f1"], 4), th))
+    return float(best), curve
 
 
 def train(
@@ -247,9 +301,16 @@ def train(
     tmp = curve.get("temporal_offsets", {})
     offsets = {g: max(v, tmp.get(g, tmp.get("__global__", v))) for g, v in oof_offsets.items()}
     curve["oof_offsets"] = oof_offsets
+    # calibrated P80 (customer promise): one-sided, drift-aware the same way
+    oof80 = upper_offsets(y, oof.q80.to_numpy(), rows.checkpoint.to_numpy(), 1.0 - cfg.alpha / 2.0)
+    tmp80 = curve.get("temporal_offsets80", {})
+    offsets80 = {g: max(v, tmp80.get(g, tmp80.get("__global__", v))) for g, v in oof80.items()}
+    curve["oof_offsets80"] = oof80
     iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(
         oof.clf_raw, rows.y_late
     )
+    late_alert_p, alert_curve = select_late_alert_threshold(rows, oof, iso, late_blend, cfg)
+    curve["late_alert_threshold"] = alert_curve
     stage_w = {}
     if cfg.stage_models:
         for grp in PHYSICAL_GROUPS:
@@ -272,6 +333,9 @@ def train(
         shrink=shrink,
         late_blend=late_blend,
         eta_floor_frac=cfg.eta_floor_min_remaining_frac,
+        offsets80=offsets80,
+        late_alert_p=late_alert_p,
+        drift_ref=drift_reference(_X(train_rows, cfg)),
         version=version,
     )
     oof["y_remaining"] = y

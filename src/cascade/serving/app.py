@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
 
+import numpy as np
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +28,8 @@ from cascade.domain.delay import to_datetime, to_hours
 from cascade.domain.network import NETWORK
 from cascade.domain.stages import EventType, event_sequence
 from cascade.models.artifacts import ArtifactError, latest_bundle_dir, load_bundle
+from cascade.models.drift import DRIFT_FEATURES, psi
+from cascade.models.drift import status as drift_status
 from cascade.serving.schemas import BatchRequest, PredictRequest, ScenarioRequest, WhatIfRequest
 from cascade.sim.external import ExternalSeries
 
@@ -115,6 +118,9 @@ def _log_prediction(ledger: Ledger | None, r) -> None:
             "delay_p90": r.delay_p90,
             "p_late": r.p_late,
             "degraded": int(r.flags.get("degraded", False)),
+            "features": {k: r.snapshot.features.get(k) for k in DRIFT_FEATURES}
+            if r.snapshot
+            else None,
         },
     )
 
@@ -433,6 +439,10 @@ def payload(sid: str, as_of: str | None = None):
             "planned": {e.value: _iso(h) for e, h in v.planned.items()},
             "observed": {e.value: _iso(h) for e, h in v.reported.items()},
             "reported_at": {e.value: _iso(v.known_at(e)) for e in v.reported},
+            "schedule_revisions": [
+                {"effective_at": _iso(eff), "planned": {e.value: _iso(h) for e, h in upd.items()}}
+                for eff, upd in v.revisions
+            ],
         },
         "as_of": _iso(t),
     }
@@ -553,6 +563,32 @@ def monitoring():
             "durable": S.ledger.path != ":memory:",
             "mode": "best-effort telemetry (bounded queue; overflow dropped and counted)",
         },
+    }
+
+
+@app.get("/v1/monitoring/drift", tags=["monitor"])
+def monitoring_drift():
+    """Live feature drift: PSI of logged predictions vs the training reference in the bundle."""
+    if S.ledger is None or S.engine is None:
+        raise HTTPException(503, "ledger unavailable")
+    S.ledger.flush(1.0)
+    ref = S.engine.model.drift_ref
+    feats = S.ledger.logged_features()
+    if not ref or not feats:
+        return {
+            "n": len(feats),
+            "features": {},
+            "note": "no reference or no logged predictions yet",
+        }
+    out = {}
+    for name, r in ref.items():
+        vals = np.array([f.get(name) if f.get(name) is not None else np.nan for f in feats], float)
+        v = psi(r, vals)
+        out[name] = {"psi": round(v, 4), "status": drift_status(v)}
+    return {
+        "n": len(feats),
+        "features": out,
+        "rule": "PSI < 0.1 stable · 0.1-0.2 watch · > 0.2 drift",
     }
 
 

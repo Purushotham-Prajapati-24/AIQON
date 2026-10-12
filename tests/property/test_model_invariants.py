@@ -34,6 +34,11 @@ def test_quantiles_ordered_and_eta_not_in_past(trained, rows, splits):
     live = te.checkpoint.to_numpy() < 9
     assert np.all(eta[live] >= te.as_of.to_numpy(float)[live] - 1e-6)
     assert np.all((pr.p_late >= 0) & (pr.p_late <= 1))
+    # the promise quantile is a trained, conformal-calibrated P80 kept inside [P50, P90]
+    assert pr.p80_calibrated and trained.model.offsets80
+    assert np.all(pr.delay_p50 <= pr.delay_p80 + 1e-9) and np.all(
+        pr.delay_p80 <= pr.delay_p90 + 1e-9
+    )
 
 
 def test_stage_forecast_reconciles_to_p50(trained, rows, splits):
@@ -179,3 +184,37 @@ def test_fallback_on_model_failure(engine, world, monkeypatch):
     assert r.delay_p10 <= r.delay_p50 <= r.delay_p90
     assert r.p50_parts is None  # no model decomposition on the fallback path
     assert r.planned_delivered + r.delay_p10 >= r.as_of - 1e-6  # ETA never in the past
+
+
+def test_one_bad_row_degrades_alone(engine, world, monkeypatch):
+    """A batch with one unscoreable row: that row falls back, the others keep the model."""
+    sids = sorted(world.views)[:4]
+    items = [(world.views[s], world.checkpoints(s)[1]["as_of"]) for s in sids]
+    real = engine._arrays
+
+    def flaky(snaps):
+        if len(snaps) > 1 or snaps[0].context.get("_poison"):
+            raise RuntimeError("corrupt row")
+        return real(snaps)
+
+    snaps = engine.snapshots(items)
+    snaps[2].context["_poison"] = 1.0
+    monkeypatch.setattr(engine, "snapshots", lambda *a, **k: snaps)
+    monkeypatch.setattr(engine, "_arrays", flaky)
+    res = engine.predict_many(items, explain=True)
+    assert [r.flags["degraded"] for r in res] == [False, False, True, False]
+    assert res[0].explanation is not None and res[2].explanation is None
+
+
+def test_carry_forward_fallback_is_reachable(engine, world, monkeypatch):
+    sid = next(iter(world.views))
+
+    def boom(*a, **k):
+        raise RuntimeError("model down")
+
+    monkeypatch.setattr(engine.model, "predict", boom)
+    monkeypatch.setattr(engine.model.fallback, "predict_one", boom)
+    r = engine.predict(world.views[sid], world.checkpoints(sid)[1]["as_of"], explain=True)
+    assert r.flags["degraded"] and "carry_forward" in r.flags["reason"]
+    assert r.data_quality["mode"] == "carry_forward"
+    assert r.planned_delivered + r.delay_p10 >= r.as_of - 1e-6  # the ETA floor applies here too
