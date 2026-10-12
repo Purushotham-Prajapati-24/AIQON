@@ -60,7 +60,7 @@ export function Shipment() {
               {!options.some((o) => o.shipment_id === selected) && <option value={selected}>{selected}</option>}
               {options.map((o) => (
                 <option key={o.shipment_id} value={o.shipment_id}>
-                  {o.shipment_id} · {TIER[o.risk_tier].label} · {pct(Math.min(o.p_late, 0.99))}
+                  {o.shipment_id} · {pct(Math.min(o.p_late, 0.99))} late
                 </option>
               ))}
             </select>
