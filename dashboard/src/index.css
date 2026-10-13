@@ -54,7 +54,7 @@
 /* Sidebar rail. --rail is its width; --rail-offset is how much room the page gives it (none below lg,
    where it becomes a drawer). --cw is 1% of the content column, the sidebar-aware stand-in for 1vw. */
 :root {
-  --rail: 16.5rem;
+  --rail: 14rem;
   --rail-offset: 0px;
   --cw: calc((100vw - var(--rail-offset)) / 100);
 }

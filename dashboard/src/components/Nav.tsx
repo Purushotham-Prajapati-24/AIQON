@@ -2,7 +2,6 @@ import { AnimatePresence, motion, useScroll } from "motion/react";
 import {
   Bell,
   CirclePlay,
-  Flag,
   Globe,
   Lightbulb,
   LogOut,
@@ -146,19 +145,12 @@ function SidebarBody({
       </div>
 
       <nav aria-label="Sections" className="flex-1 overflow-y-auto overscroll-contain py-4">
-        <YourTask compact={compact} onNavigate={onNavigate} />
-        {!compact && <p className="eyebrow mb-2 mt-6 px-5 text-[0.75rem]">Overview</p>}
-        <ul className={compact ? "px-2" : "px-3"}>
-          <NavItem id="top" label="Replay" icon={CirclePlay} active={active === "top"} compact={compact} markerId={markerId} onNavigate={onNavigate} />
-        </ul>
-        {!compact ? <p className="eyebrow mb-2 mt-5 px-5 text-[0.75rem]">Sections</p> : <div className="mx-4 my-4 border-t border-line" />}
         <ul className={`space-y-0.5 ${compact ? "px-2" : "px-3"}`}>
-          {SECTIONS.map((s, k) => (
+          {[{ id: "top", label: "Replay", icon: CirclePlay }, ...SECTIONS].map((s) => (
             <NavItem
               key={s.id}
               id={s.id}
               label={s.label}
-              index={k + 1}
               icon={s.icon}
               active={active === s.id}
               compact={compact}
@@ -177,7 +169,6 @@ function SidebarBody({
 function NavItem({
   id,
   label,
-  index,
   icon: Icon,
   active,
   compact,
@@ -186,7 +177,6 @@ function NavItem({
 }: {
   id: string;
   label: string;
-  index?: number;
   icon: LucideIcon;
   active: boolean;
   compact: boolean;
@@ -194,17 +184,17 @@ function NavItem({
   onNavigate?: () => void;
 }) {
   const { role } = useStore();
-  const question = GUIDE[id]?.question;
   const start = role?.opens === id;
+  const hint = [GUIDE[id]?.question, start && role ? `Start here: ${role.task}` : null].filter(Boolean).join(" · ");
   return (
     <li>
       <a
         href={`#${id}`}
         onClick={onNavigate}
         aria-current={active ? "location" : undefined}
-        title={compact ? `${label}: ${question}${start ? " (start here)" : ""}` : undefined}
-        className={`group relative flex items-center rounded-[4px] transition-colors ${
-          compact ? "h-10 justify-center" : "min-h-10 gap-3 px-3 py-1.5"
+        title={compact ? `${label} · ${hint}` : hint}
+        className={`relative flex h-10 items-center rounded-[4px] font-mono text-[0.78rem] uppercase tracking-[0.14em] transition-colors ${
+          compact ? "justify-center" : "gap-3 px-3"
         } ${active ? "bg-bg-3 text-fg" : "text-fg-3 hover:bg-bg-3/60 hover:text-fg"}`}
       >
         {active && (
@@ -214,105 +204,34 @@ function NavItem({
             transition={{ duration: 0.35, ease: EASE }}
           />
         )}
-        <Icon size={16} aria-hidden className={`shrink-0 self-start ${compact ? "self-center" : "mt-0.5"} ${active ? "text-late" : ""}`} />
+        <Icon size={16} aria-hidden className={`shrink-0 ${active ? "text-late" : ""}`} />
         {compact && start && <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-late" aria-hidden />}
-        {compact ? (
-          <span className="sr-only">
-            {label}: {question}
-            {start && " (start here)"}
-          </span>
-        ) : (
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-2 font-mono text-[0.78rem] uppercase tracking-[0.14em]">
-              <span className="truncate">{label}</span>
-              {start && (
-                <span className="rounded-[3px] bg-late-wash px-1.5 py-px text-[0.75rem] tracking-[0.12em] text-late">Start</span>
-              )}
-              {index && <span className={`ml-auto text-[0.75rem] ${active ? "text-late" : "text-fg-3"}`}>0{index}</span>}
-            </span>
-            {question && (
-              <span className={`mt-0.5 block text-[0.8rem] leading-snug ${active ? "text-fg-2" : "text-fg-3 group-hover:text-fg-2"}`}>
-                {question}
-              </span>
-            )}
-          </span>
-        )}
+        <span className={compact ? "sr-only" : "truncate"}>{label}</span>
+        {start &&
+          (compact ? (
+            <span className="sr-only">, start here</span>
+          ) : (
+            <span className="ml-auto rounded-[3px] border border-late/50 px-1.5 text-[0.75rem] leading-[1.15rem] tracking-[0.12em] text-late">Start</span>
+          ))}
       </a>
     </li>
   );
 }
 
-/** The signed-in role's job and where to begin, so nobody lands on the page without a next step. */
-function YourTask({ compact, onNavigate }: { compact: boolean; onNavigate?: () => void }) {
-  const { role } = useStore();
-  if (!role) return null;
-  const k = SECTIONS.findIndex((s) => s.id === role.opens);
-  const where = k < 0 ? "Replay" : `0${k + 1} ${SECTIONS[k].label}`;
-
-  if (compact)
-    return (
-      <div className="px-2 pb-1">
-        <a
-          href={`#${role.opens}`}
-          onClick={onNavigate}
-          title={`Your task: ${role.task} Start at ${where}.`}
-          className="grid h-10 place-items-center rounded-[4px] text-late transition-colors hover:bg-late-wash"
-        >
-          <Flag size={16} aria-hidden />
-          <span className="sr-only">
-            Your task: {role.task} Start at {where}.
-          </span>
-        </a>
-      </div>
-    );
-
-  return (
-    <section aria-labelledby="your-task" className="mx-3 rounded-[4px] border border-line bg-bg px-3.5 py-3">
-      <p id="your-task" className="eyebrow flex items-center gap-2 text-[0.75rem]">
-        <Flag size={12} aria-hidden className="text-late" />
-        Your task
-      </p>
-      <p className="mt-2 text-[0.88rem] leading-snug text-fg">{role.task}</p>
-      <a
-        href={`#${role.opens}`}
-        onClick={onNavigate}
-        className="-my-1 mt-2 inline-flex items-center gap-1.5 py-2.5 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-late underline-offset-4 hover:underline"
-      >
-        Start at {where} →
-      </a>
-    </section>
-  );
-}
-
 function SidebarFooter({ compact }: { compact: boolean }) {
-  const { mode, theme, toggleTheme, tips, toggleTips, auth, signOut } = useStore();
+  const { theme, toggleTheme, tips, toggleTips, auth, signOut } = useStore();
   const user = auth.session?.user;
   const [signOutFailed, setSignOutFailed] = useState(false);
   const initials = user?.name.split(" ").map((p) => p[0]).join("").slice(0, 2);
-  const modeLabel = mode === "live" ? "Live model" : "Recorded run";
-  const modeTitle = mode === "live" ? "Connected to the CASCADE API" : "Showing a recorded run of the real model";
 
   const iconBtn = "grid size-9 shrink-0 place-items-center rounded-[4px] text-fg-2 transition-colors hover:bg-bg-3 hover:text-fg";
 
   return (
-    <div className={`shrink-0 border-t border-line py-3 ${compact ? "space-y-1 px-2" : "space-y-2 px-3"}`}>
-      <div className={compact ? "flex flex-col items-center gap-1" : "flex items-center gap-1"}>
-        {mode && (
-          <div
-            className={`flex h-9 items-center gap-2.5 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-2 ${compact ? "justify-center" : "mr-auto px-3"}`}
-            title={modeTitle}
-          >
-            <span className="relative flex size-2 shrink-0">
-              {mode === "live" && <span className="absolute inset-0 animate-ping rounded-full bg-ok opacity-60" />}
-              <span className={`relative size-2 rounded-full ${mode === "live" ? "bg-ok" : "bg-fg-3"}`} />
-            </span>
-            <span className={compact ? "sr-only" : ""}>{modeLabel}</span>
-          </div>
-        )}
+    <div className={`flex shrink-0 gap-1 border-t border-line py-3 ${compact ? "flex-col items-center px-2" : "items-center px-3"}`}>
         <button
           onClick={toggleTips}
           aria-pressed={tips}
-          className={`${iconBtn} ${tips ? "text-[var(--risk-ink)]" : ""} ${!mode && !compact ? "ml-auto" : ""}`}
+          className={`${iconBtn} ${tips ? "text-[var(--risk-ink)]" : ""}`}
           aria-label="How-to tips"
           title={tips ? "Hide the how-to tips in each section" : "Show what you can do in each section"}
         >
@@ -326,7 +245,6 @@ function SidebarFooter({ compact }: { compact: boolean }) {
         >
           {theme === "dark" ? <Sun size={16} aria-hidden /> : <Moon size={16} aria-hidden />}
         </button>
-      </div>
 
       {user && (
         <button
@@ -335,9 +253,9 @@ function SidebarFooter({ compact }: { compact: boolean }) {
             setSignOutFailed(!ok);
             if (ok) scrollTo({ top: 0 });
           }}
-          className={`group flex w-full items-center gap-3 rounded-[4px] border p-1.5 text-left transition-colors hover:text-fg ${
-            signOutFailed ? "border-late text-late" : "border-line text-fg-2 hover:border-fg-2"
-          } ${compact ? "justify-center" : ""}`}
+          className={`group flex items-center gap-2.5 rounded-[4px] border p-1 text-left transition-colors hover:text-fg ${
+            signOutFailed ? "border-late text-late" : "border-transparent text-fg-2 hover:border-line-2"
+          } ${compact ? "order-last mt-1" : "order-first mr-auto min-w-0 flex-1 pr-2"}`}
           title={
             signOutFailed
               ? "Couldn't reach the server to end your session. Click to try again."
@@ -348,9 +266,8 @@ function SidebarFooter({ compact }: { compact: boolean }) {
             {initials}
           </span>
           {!compact && (
-            <span className="min-w-0 flex-1" aria-hidden>
-              <span className="block truncate text-[0.85rem] leading-tight text-fg">{signOutFailed ? "Retry sign-out" : user.name}</span>
-              <span className="block truncate font-mono text-[0.75rem] uppercase tracking-[0.12em] text-fg-3">{user.title}</span>
+            <span className="min-w-0 flex-1 truncate text-[0.9rem] text-fg" aria-hidden>
+              {signOutFailed ? "Retry" : user.name.split(" ")[0]}
             </span>
           )}
           {!compact && <LogOut size={14} aria-hidden className="mr-1.5 shrink-0" />}
