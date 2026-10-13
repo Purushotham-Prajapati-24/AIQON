@@ -517,7 +517,7 @@ A reload keeps the session (the dashboard asks `/v1/auth/me`); the top-bar butto
 **Page order** (same story as the demo script: problem → fleet → one shipment → act → prove):
 
 ```
-Entry   What do you need today?         4 roles, each with a live number
+Sign in Sign in to the delay desk.      4 one-click demo accounts (keys 1–4) or username + password
 Hero    46 hours late at the hub.       Replay of SHP-000174: the delay "cascades" below the plan line
         10 days late at the door.       stage by stage; solid = happened, hatched = predicted;
                                         main-cause band; vessel marker; autoplay + scrub (mouse / ← →)

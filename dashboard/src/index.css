@@ -16,7 +16,7 @@
   --line-2: rgb(196 216 224 / 0.2);
   --fg: #eaf0ee;
   --fg-2: #a6b3b8;
-  --fg-3: #6f8088;
+  --fg-3: #7a8b93; /* ≥ 4.5:1 on every dark surface (was 4.0:1 on raised panels) */
   --late: #ff5a1f;
   --risk: #f2b33d;
   --ok: #3cc99f;
@@ -38,15 +38,15 @@
   --line-2: rgb(14 20 24 / 0.2);
   --fg: #0e1418;
   --fg-2: #47545a;
-  --fg-3: #77838a;
-  --late: #d6430e;
-  --risk: #c08f00;
-  --ok: #0f805b;
+  --fg-3: #59656b; /* ≥ 4.6:1 on every light surface (was 3.0–3.7:1) */
+  --late: #b5380b; /* text-safe ≥ 4.6:1 on every light surface (was 3.5–4.2:1) */
+  --risk: #a77a00; /* marks ≥ 3:1 (was 2.6:1) */
+  --ok: #0b7050; /* 5.4:1 (was 4.3:1) */
   --sea: #1d6a9e;
-  --late-ink: #b8380b;
-  --risk-ink: #845a00;
-  --ok-ink: #0b6b4c;
-  --late-wash: rgb(214 67 14 / 0.1);
+  --late-ink: #a1300a; /* ≥ 5.4:1 on its tinted badge */
+  --risk-ink: #6e4b00; /* ≥ 5.8:1 on its tinted badge */
+  --ok-ink: #095a40; /* ≥ 5.9:1 on its tinted badge */
+  --late-wash: rgb(181 56 11 / 0.1);
   --sea-wash: rgb(29 106 158 / 0.1);
   --contour: rgb(29 106 158 / 0.09);
 }
@@ -100,6 +100,9 @@
   button {
     cursor: pointer;
   }
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 
 @layer components {
@@ -122,11 +125,20 @@
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-[4px] border border-line-2 px-2.5 py-1 font-mono text-[0.78rem] uppercase tracking-wider text-fg-2 transition-colors;
   }
-  .chip[aria-pressed="true"] {
+  .chip[aria-pressed="true"],
+  .chip[aria-checked="true"] {
     @apply border-fg bg-fg text-bg;
   }
-  .chip:hover:not([aria-pressed="true"]) {
+  .chip:hover:not([aria-pressed="true"]):not([aria-checked="true"]) {
     @apply border-fg-2 text-fg;
+  }
+  /* Secondary figure inside a chip (counts, dates): a real token, never opacity (contrast-safe). */
+  .chip-count {
+    color: var(--fg-3);
+  }
+  .chip[aria-pressed="true"] .chip-count,
+  .chip[aria-checked="true"] .chip-count {
+    color: color-mix(in oklab, var(--bg) 72%, var(--fg));
   }
   .hatch {
     background-image: repeating-linear-gradient(
@@ -185,6 +197,52 @@ input[type="range"].scrub::-moz-range-thumb {
   100% {
     transform: scale(2.6);
     opacity: 0;
+  }
+}
+
+/* Native select styled as a chip: add a chevron so it reads as a dropdown. */
+select.chip,
+select.select {
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 1.9rem;
+}
+
+/* Print: a clean, static, light report of what is on screen. */
+@media print {
+  :root,
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #fff;
+    --bg-2: #fff;
+    --bg-3: #f1f1f1;
+    --fg: #000;
+    --fg-2: #333;
+    --fg-3: #555;
+    --line: #ccc;
+    --line-2: #999;
+  }
+  header.fixed,
+  nav,
+  [data-noprint],
+  a[href="#fleet"].sr-only {
+    display: none !important;
+  }
+  /* reveal-on-scroll content must print even if it was never scrolled into view */
+  [style*="opacity"],
+  [style*="translate"] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  section {
+    break-inside: avoid-page;
+  }
+  .shell {
+    max-width: none;
+    padding-inline: 0;
   }
 }
 

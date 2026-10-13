@@ -1,12 +1,16 @@
 import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransform } from "motion/react";
-import { AlertTriangle, CircleCheck, Clock3 } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { AlertTriangle, CircleCheck, Clock3, RotateCw } from "lucide-react";
+import { Component, useEffect, useRef, type ErrorInfo, type ReactNode } from "react";
 import { TIER } from "../lib/format";
 import type { Tier } from "../lib/types";
 
-const EASE = [0.16, 1, 0.3, 1] as const;
+export const EASE = [0.16, 1, 0.3, 1] as const;
 
-/** Number that rolls to its new value (counts on first view, then tweens on change). */
+/**
+ * Number that rolls to its new value (counts on first view, then tweens on change).
+ * Assistive tech, print and text extraction always get the final value: the animated digits are
+ * aria-hidden and a visually-hidden copy carries the real number.
+ */
 export function Ticker({
   value,
   format = (v) => v.toFixed(0),
@@ -29,10 +33,17 @@ export function Ticker({
     const c = animate(mv, value, { duration, ease: EASE });
     return () => c.stop();
   }, [value, inView, reduce, duration, mv]);
+  // Printing never shows a half-counted (or zero) number.
+  useEffect(() => {
+    const done = () => mv.set(value);
+    addEventListener("beforeprint", done);
+    return () => removeEventListener("beforeprint", done);
+  }, [value, mv]);
   return (
-    <motion.span ref={ref} className={className} aria-label={format(value)}>
-      {text}
-    </motion.span>
+    <span ref={ref} className={className}>
+      <motion.span aria-hidden>{text}</motion.span>
+      <span className="sr-only">{format(value)}</span>
+    </span>
   );
 }
 
@@ -178,15 +189,70 @@ export function SectionHead({
   );
 }
 
-export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-[4px] bg-bg-3 ${className}`} />;
+export function Skeleton({ className = "", label = "Loading" }: { className?: string; label?: string }) {
+  return (
+    <div role="status" aria-label={label} className={`animate-pulse rounded-[4px] bg-bg-3 ${className}`}>
+      <span className="sr-only">{label}…</span>
+    </div>
+  );
 }
 
-export function ErrorNote({ error }: { error: Error }) {
+export function ErrorNote({ error, onRetry, className = "" }: { error: Error; onRetry?: () => void; className?: string }) {
   return (
-    <p role="alert" className="font-mono text-sm text-late">
-      Could not load data · {error.message}
-    </p>
+    <div
+      role="alert"
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[4px] border border-line-2 bg-bg-2 px-4 py-3 text-[0.95rem] ${className}`}
+    >
+      <AlertTriangle size={16} className="shrink-0 text-late" aria-hidden />
+      <span className="text-fg-2">
+        <span className="text-fg">Couldn&rsquo;t load this part.</span> {error.message}
+      </span>
+      {onRetry && (
+        <button onClick={onRetry} className="chip ml-auto">
+          <RotateCw size={13} aria-hidden /> Try again
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Contains a crash to one section: the rest of the page keeps working. */
+export class SectionBoundary extends Component<{ name: string; children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error(`[${this.props.name}]`, error, info.componentStack);
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <section className="shell py-24" aria-label={`${this.props.name} (unavailable)`}>
+        <p className="eyebrow mb-4">{this.props.name}</p>
+        <ErrorNote error={this.state.error} onRetry={() => this.setState({ error: null })} />
+      </section>
+    );
+  }
+}
+
+/** Legend shared by every journey chart. */
+export function ChartLegend() {
+  return (
+    <ul className="mt-10 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+      <li className="flex items-center gap-2">
+        <span className="h-3 w-5 rounded-[2px] bg-late/60" aria-hidden /> Happened
+      </li>
+      <li className="flex items-center gap-2">
+        <span className="hatch h-3 w-5 rounded-[2px] text-late/60" aria-hidden /> Predicted
+      </li>
+      <li className="flex items-center gap-2">
+        <span className="w-5 border-t border-dashed border-fg-3" aria-hidden /> Earlier forecast
+      </li>
+      <li className="flex items-center gap-2">
+        <span className="h-3 w-5 rounded-[2px] bg-late-wash" aria-hidden /> Main cause
+      </li>
+    </ul>
   );
 }
 

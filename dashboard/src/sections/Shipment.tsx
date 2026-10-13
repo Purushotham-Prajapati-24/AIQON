@@ -1,34 +1,34 @@
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, Check, Copy, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CascadeChart } from "../components/CascadeChart";
 import { Gauge } from "../components/Gauge";
-import { ErrorNote, SectionHead, Skeleton, Ticker, TierBadge } from "../components/ui";
+import { ChartLegend, EASE, ErrorNote, SectionHead, Skeleton, Ticker, TierBadge } from "../components/ui";
 import { Waterfall } from "../components/Waterfall";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../lib/api";
-import { TIER, checkpointLabel, day, delay, delayParts, groupName, pct, port, usd } from "../lib/format";
+import { TIER, ago, checkpointLabel, day, delay, delayParts, groupName, pct, port, usd } from "../lib/format";
 import { useStore } from "../lib/store";
 import type { Moment, Recommendation } from "../lib/types";
-import { ChartLegend } from "./Hero";
-
-const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function Shipment() {
   const { world, selected, select } = useStore();
   const list = useAsync(() => (world ? api.fleet(0, world.now) : null), [world?.now]);
   const data = useAsync(async () => {
     if (!world) return null;
-    const { checkpoints, stops } = await api.stops(selected, world.now);
-    const moments = await Promise.all(stops.map((s) => api.moment(selected, s)));
+    const { checkpoints, moments } = await api.replay(selected, world.now);
     return { sid: selected, labels: [...checkpoints.map((c) => checkpointLabel(c.label)), "Now"], moments };
   }, [world?.now, selected]);
   const [at, setAt] = useState<number | null>(null);
   useEffect(() => setAt(null), [selected]);
 
-  const d = data.data?.sid === selected ? data.data : undefined;
-  const idx = d ? (at ?? d.moments.length - 1) : 0;
+  // While the next shipment loads, keep showing the previous one (dimmed) instead of a skeleton,
+  // so picking from the list never makes the page jump.
+  const d = data.data;
+  const stale = !!d && d.sid !== selected;
+  const idx = d ? Math.min(stale ? d.moments.length - 1 : (at ?? d.moments.length - 1), d.moments.length - 1) : 0;
   const m = d?.moments[idx];
+  const shownId = d?.sid ?? selected;
   const options = useMemo(
     () => [...(list.data?.fleet.active ?? [])].sort((a, b) => b.p_late - a.p_late),
     [list.data],
@@ -41,7 +41,7 @@ export function Shipment() {
         index="02"
         kicker="Shipment"
         title={[
-          <span key={selected}>{selected}</span>,
+          <span key={shownId}>{shownId}</span>,
           <span className="text-fg-3">
             {m ? `${port(m.ops.shipment.origin)} → ${port(m.ops.shipment.dest)}` : "…"}
           </span>,
@@ -55,7 +55,7 @@ export function Shipment() {
               id="pick"
               value={selected}
               onChange={(e) => select(e.target.value)}
-              className="mt-3 w-full appearance-none rounded-[4px] border border-line-2 bg-bg-2 px-4 py-3 font-mono text-[0.95rem] text-fg hover:border-fg-2"
+              className="select mt-3 w-full appearance-none rounded-[4px] border border-line-2 bg-bg-2 px-4 py-3 font-mono text-[0.95rem] text-fg hover:border-fg-2"
             >
               {!options.some((o) => o.shipment_id === selected) && <option value={selected}>{selected}</option>}
               {options.map((o) => (
@@ -68,11 +68,13 @@ export function Shipment() {
         }
       />
 
-      {data.error && <ErrorNote error={data.error} />}
+      {data.error && <ErrorNote error={data.error} onRetry={data.retry} className="mb-6" />}
       {!d || !m ? (
-        <Skeleton className="h-[640px] w-full" />
+        data.error ? null : <Skeleton className="h-[640px] w-full" label="Loading shipment" />
       ) : (
-        <Detail key={selected} m={m} moments={d.moments} labels={d.labels} idx={idx} setAt={setAt} />
+        <div aria-busy={stale} className={`transition-opacity duration-300 ${stale ? "pointer-events-none opacity-45" : ""}`}>
+          <Detail key={d.sid} m={m} moments={d.moments} labels={d.labels} idx={idx} setAt={setAt} />
+        </div>
       )}
     </section>
   );
@@ -96,32 +98,54 @@ function Detail({
   const parts = delayParts(delivered ? (v.actual_total_delay_h ?? v.delay_hours.p50) : v.delay_hours.p50);
   const yMax = Math.max(...moments.map((x) => x.ops.delay_hours.p90));
   const tier = TIER[v.risk_tier];
+  const chips = useRef<(HTMLButtonElement | null)[]>([]);
+  const dq = v.data_quality;
 
   return (
     <div className="border-t border-line">
       {/* Time travel */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-line py-5">
         <span className="eyebrow">Replay</span>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Milestones">
+        <div
+          className="flex flex-wrap gap-2"
+          role="radiogroup"
+          aria-label="Replay the shipment at a milestone"
+          onKeyDown={(e) => {
+            const to = { ArrowRight: idx + 1, ArrowDown: idx + 1, ArrowLeft: idx - 1, ArrowUp: idx - 1, Home: 0, End: moments.length - 1 }[e.key];
+            if (to === undefined) return;
+            e.preventDefault();
+            const k = Math.max(0, Math.min(moments.length - 1, to));
+            setAt(k);
+            chips.current[k]?.focus();
+          }}
+        >
           {moments.map((x, k) => (
             <button
               key={k}
-              role="tab"
-              aria-selected={k === idx}
-              aria-pressed={k === idx}
+              ref={(el) => {
+                chips.current[k] = el;
+              }}
+              role="radio"
+              aria-checked={k === idx}
+              tabIndex={k === idx ? 0 : -1}
               onClick={() => setAt(k)}
               className="chip"
             >
               {labels[k]}
-              <span className="opacity-60">{k === moments.length - 1 ? "today" : day(x.ops.as_of)}</span>
+              <span className="chip-count">{k === moments.length - 1 ? "today" : day(x.ops.as_of)}</span>
             </button>
           ))}
         </div>
-        <span className="ml-auto flex items-center gap-3">
+        <span className="ml-auto flex flex-wrap items-center gap-3">
           <TierBadge tier={v.risk_tier} />
           {v.flags.missing_events.length > 0 && (
             <span className="font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
               {v.flags.missing_events.length} milestone{v.flags.missing_events.length > 1 ? "s" : ""} not reported
+            </span>
+          )}
+          {dq?.last_milestone_age_h != null && !delivered && (
+            <span className="font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+              last update {ago(dq.last_milestone_age_h)}
             </span>
           )}
         </span>
@@ -166,7 +190,14 @@ function Detail({
             </motion.div>
           </AnimatePresence>
           <p className="mt-2 font-mono text-[0.82rem] text-fg-3">
-            {v.promise ? <>promise to customer: {day(v.promise.promise_date)}</> : <>planned {day(v.planned_delivery)}</>}
+            {v.promise ? (
+              <span title={v.delay_hours.p80 != null ? "The promise uses the calibrated P80: about 4 in 5 shipments arrive by it." : undefined}>
+                promise to customer: {day(v.promise.promise_date)}
+                {v.delay_hours.p80 != null && <span className="text-fg-3"> · P80</span>}
+              </span>
+            ) : (
+              <>planned {day(v.planned_delivery)}</>
+            )}
           </p>
         </Figure>
         <Figure label="Delay cost" className="border-l border-line max-lg:border-t">
@@ -176,6 +207,9 @@ function Detail({
           <CostSplit v={v.cost_usd} />
         </Figure>
       </div>
+
+      {/* Commitments: what was promised, what the carrier says now, what CASCADE expects */}
+      {v.schedule && !delivered && <PlanStrip v={v} />}
 
       {/* Journey */}
       <div className="pt-4">
@@ -203,6 +237,34 @@ function Detail({
         </div>
       </div>
     </div>
+  );
+}
+
+// 2 columns on phones, 4 from md: left rules and top rules per position (static class names).
+const CELL = ["", "border-l pl-5", "max-md:border-t md:border-l md:pl-5", "border-l pl-5 max-md:border-t"];
+
+function PlanStrip({ v }: { v: Moment["ops"] }) {
+  const s = v.schedule!;
+  const items = [
+    { k: "Original commitment", d: s.original_planned_delivery, note: "lateness is measured against this" },
+    {
+      k: s.revisions_known ? `Carrier's current plan · ${s.revisions_known} revision${s.revisions_known > 1 ? "s" : ""}` : "Carrier's plan",
+      d: s.current_plan_delivery,
+      note: s.revisions_known ? `${delay(s.carrier_plan_delay_h, { short: true })} vs commitment` : "unchanged",
+    },
+    { k: "CASCADE expects (P50)", d: v.eta.p50, note: `${delay(s.delay_vs_current_plan_h, { short: true })} vs carrier's plan` },
+    ...(v.promise ? [{ k: "Promise to customer", d: v.promise.promise_date, note: "calibrated P80" }] : []),
+  ];
+  return (
+    <dl className="grid grid-cols-2 border-b border-line md:grid-cols-4" aria-label="Delivery dates compared">
+      {items.map((it, k) => (
+        <div key={it.k} className={`border-line py-5 ${CELL[k]}`}>
+          <dt className="eyebrow">{it.k}</dt>
+          <dd className="mt-2 font-display text-[1.7rem] font-bold uppercase leading-none">{day(it.d)}</dd>
+          <dd className="mt-1 font-mono text-[0.78rem] text-fg-3">{it.note}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -272,9 +334,9 @@ function Narrative({ m }: { m: Moment }) {
         <button className="chip" aria-pressed={who === "ops"} onClick={() => setWho("ops")}>
           For the planner
         </button>
-        <button onClick={copy} className="chip ml-auto" aria-label="Copy explanation">
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Copied" : "Copy"}
+        <button onClick={copy} className="chip ml-auto">
+          {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+          <span aria-live="polite">{copied ? "Copied" : "Copy text"}</span>
         </button>
       </div>
       <AnimatePresence mode="wait">
@@ -326,7 +388,15 @@ function Actions({ recs, pLate }: { recs: Recommendation[]; pLate: number }) {
                 <p className="mt-1 text-[0.95rem] text-fg-3">{r.feasible_reason}</p>
               </div>
               <div className="text-right">
-                <p className="num text-[2.2rem] text-ok">−{delay(r.hours_saved, { sign: false, short: true })}</p>
+                {r.hours_saved >= 0.5 ? (
+                  <p className="num text-[2.2rem] text-ok" aria-label={`Arrives ${delay(r.hours_saved, { sign: false })} sooner`}>
+                    −{delay(r.hours_saved, { sign: false, short: true })}
+                  </p>
+                ) : (
+                  <p className="num text-[2.2rem] text-fg-3" aria-label={r.hours_saved <= -0.5 ? `Adds ${delay(-r.hours_saved, { sign: false })}` : "No time saved"}>
+                    {r.hours_saved <= -0.5 ? `+${delay(-r.hours_saved, { sign: false, short: true })}` : "0 h"}
+                  </p>
+                )}
                 <p className={`font-mono text-[0.8rem] ${r.net_value_usd >= 0 ? "text-fg-2" : "text-fg-3"}`}>
                   {r.net_value_usd >= 0 ? "saves" : "costs"} {usd(Math.abs(r.net_value_usd))} net
                 </p>

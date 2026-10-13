@@ -65,7 +65,7 @@ export const TIER: Record<Tier, { label: string; color: string; ink: string; was
   LATE: { label: "Late", color: "var(--late)", ink: "var(--late-ink)", wash: "var(--late-wash)" },
 };
 
-/** Hours → "+10.0 days" / "+18 h" / "on time". */
+/** Hours → "+10.0 days" / "+18 h" / "on time". Values that round to zero never carry a sign. */
 export function delay(h: number, opts: { sign?: boolean; short?: boolean } = {}) {
   const { sign = true, short = false } = opts;
   const a = Math.abs(h);
@@ -73,11 +73,19 @@ export function delay(h: number, opts: { sign?: boolean; short?: boolean } = {})
   const s = a >= 48 ? `${(a / 24).toFixed(1)}${short ? " d" : " days"}` : `${Math.round(a)} h`;
   return (sign ? (h > 0 ? "+" : "−") : "") + s;
 }
-/** Split for display: value + unit, e.g. { v: "10.0", u: "days" }. */
+/** Split for display: value + unit + sign, e.g. { v: "10.0", u: "days", sign: "+" }. */
 export function delayParts(h: number) {
   const a = Math.abs(h);
-  if (a >= 48) return { v: (a / 24).toFixed(1), u: "days", sign: h < 0 ? "−" : "+" };
-  return { v: String(Math.round(a)), u: "hours", sign: h < 0 ? "−" : a < 0.5 ? "" : "+" };
+  if (a < 0.5) return { v: "0", u: "hours", sign: "" };
+  const sign = h < 0 ? "−" : "+";
+  if (a >= 48) return { v: (a / 24).toFixed(1), u: "days", sign };
+  return { v: String(Math.round(a)), u: "hours", sign };
+}
+/** Signed number with a true minus sign and no "−0" / "+0.0": signed(-0.04, 1) → "0.0". */
+export function signed(x: number, digits = 0) {
+  const r = Number(x.toFixed(digits));
+  const body = Math.abs(r).toFixed(digits);
+  return r > 0 ? `+${body}` : r < 0 ? `−${body}` : body;
 }
 
 export const pct = (x: number, digits = 0) => `${(x * 100).toFixed(digits)}%`;
@@ -89,13 +97,21 @@ export function usd(x: number, signed = false) {
   return v < 0 ? `−${s}` : signed ? `+${s}` : s;
 }
 
+// All model times are UTC (the simulator's clock). Dates are shown in UTC and labelled as such
+// wherever a time of day appears, so a viewer in another zone never sees a shifted day.
 const tz = { timeZone: "UTC" } as const;
 export const day = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { ...tz, day: "numeric", month: "short" });
-export const dayLong = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { ...tz, weekday: "short", day: "numeric", month: "short" });
+export const dayLong = (iso: string, withYear = false) =>
+  new Date(iso).toLocaleDateString("en-GB", {
+    ...tz,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    ...(withYear ? { year: "numeric" } : {}),
+  });
 export const dateTime = (iso: string) =>
-  new Date(iso).toLocaleString("en-GB", { ...tz, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  `${new Date(iso).toLocaleString("en-GB", { ...tz, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} UTC`;
 
 export function ago(hours: number) {
   if (hours < 1) return "just now";

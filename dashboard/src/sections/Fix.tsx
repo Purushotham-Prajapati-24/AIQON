@@ -1,18 +1,18 @@
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, CloudLightning, Waves } from "lucide-react";
-import { useEffect, useState } from "react";
-import { ErrorNote, Reveal, SectionHead, Skeleton, Ticker, TierBadge } from "../components/ui";
+import { useState } from "react";
+import { EASE, ErrorNote, Reveal, SectionHead, Skeleton, Ticker, TierBadge } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../lib/api";
-import { day, delay, pct, port, route, usd } from "../lib/format";
+import { day, delay, pct, port, route, signed, usd } from "../lib/format";
 import { useStore } from "../lib/store";
 import type { WhatIfParams } from "../lib/types";
 
-const EASE = [0.16, 1, 0.3, 1] as const;
 const RHO: (number | null)[] = [null, 0.5, 0.6, 0.7, 0.8, 0.9];
 const BASE: WhatIfParams = { rho: null, hub: false, customs: false, docs: false };
 
 export function Fix() {
+  const { selected } = useStore();
   return (
     <section id="fix" className="shell">
       <SectionHead
@@ -22,16 +22,16 @@ export function Fix() {
         title={["Try a fix", <span className="text-fg-3">before you pay for it.</span>]}
         aside="Change one thing. See the new arrival, chance late and cost."
       />
-      <WhatIf />
+      {/* Keyed by shipment: switching resets the fixes and never shows the last shipment's numbers. */}
+      <WhatIf key={selected} />
       <Disruption />
     </section>
   );
 }
 
 function WhatIf() {
-  const { world, selected } = useStore();
+  const { world, selected, mode } = useStore();
   const [p, setP] = useState<WhatIfParams>(BASE);
-  useEffect(() => setP(BASE), [selected]);
   const now = useAsync(() => (world ? api.moment(selected, world.now) : null), [world?.now, selected]);
   const res = useAsync(() => api.whatIf(selected, p), [selected, p.rho, p.hub, p.customs, p.docs]);
   const base = useAsync(() => api.whatIf(selected, BASE), [selected]);
@@ -82,14 +82,33 @@ function WhatIf() {
         )}
       </div>
 
-      <div className="lg:col-span-7" aria-live="polite">
-        {now.error && <ErrorNote error={now.error} />}
+      <div className="lg:col-span-7">
+        {now.error && <ErrorNote error={now.error} onRetry={now.retry} />}
+        {r && b && active && (
+          <p className="sr-only" aria-live="polite">
+            {changed
+              ? `With this fix: ${delay(r.d.p50)} versus plan, ${pct(Math.min(r.pl, 0.99))} chance late, delay cost ${usd(r.cost)}.`
+              : `Now: ${delay(b.d.p50)} versus plan.`}
+          </p>
+        )}
         {!v ? (
           <Skeleton className="h-80 w-full" />
         ) : !active ? (
           <Empty text="This shipment is already delivered. Pick one still on the way." />
         ) : !r || !b ? (
-          res.loading || base.loading ? <Skeleton className="h-80 w-full" /> : <Empty text="No what-if recorded for this shipment. Start the API for live answers." />
+          res.loading || base.loading ? (
+            <Skeleton className="h-80 w-full" label="Computing the what-if" />
+          ) : res.error || base.error ? (
+            <ErrorNote error={(res.error ?? base.error)!} onRetry={() => (res.retry(), base.retry())} />
+          ) : (
+            <Empty
+              text={
+                mode === "live"
+                  ? "No what-if is available for this combination."
+                  : "This combination wasn't recorded. Start the API for live answers to any fix."
+              }
+            />
+          )
         ) : (
           <div>
             <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-4">
@@ -125,7 +144,7 @@ function Side({ label, delayH, eta, accent }: { label: string; delayH: number; e
     <div>
       <p className="eyebrow">{label}</p>
       <div className={`num mt-3 text-[clamp(3rem,5.5vw,5.25rem)] ${accent ? "text-fg" : "text-fg-2"}`}>
-        <Ticker value={delayH / 24} format={(x) => `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(1)}`} duration={0.7} />
+        <Ticker value={delayH / 24} format={(x) => signed(x, 1)} duration={0.7} />
         <span className="ml-1 text-[0.4em] uppercase">days</span>
       </div>
       <p className="mt-2 font-mono text-[0.85rem] text-fg-3">arrives {day(eta)}</p>
@@ -193,7 +212,10 @@ function Disruption() {
   const all = useAsync(async () => {
     const presets = await api.presets();
     const impacts = await Promise.all(presets.map((p) => api.scenario(p.scenario_id)));
-    return presets.map((p, k) => ({ p, impact: impacts[k] }));
+    return presets.flatMap((p, k) => {
+      const impact = impacts[k];
+      return impact ? [{ p, impact }] : []; // a preset with no recorded impact is simply not offered
+    });
   }, []);
   const [id, setId] = useState<string | null>(null);
   const items = all.data ?? [];
@@ -209,7 +231,7 @@ function Disruption() {
         <h3 className="font-display text-[2.4rem] font-extrabold uppercase leading-none md:col-span-5">If this happens</h3>
         <p className="text-[1.05rem] text-fg-2 md:col-span-7 md:text-right">Pick an event. See which shipments it hits.</p>
       </div>
-      {presets.error && <ErrorNote error={presets.error} />}
+      {presets.error && <ErrorNote error={presets.error} onRetry={all.retry} className="mt-6" />}
       <div className="grid gap-10 pt-8 lg:grid-cols-12">
         <ul className="space-y-2 lg:col-span-5">
           {(presets.data ?? []).map((p) => {
@@ -236,7 +258,7 @@ function Disruption() {
         </ul>
         <div className="lg:col-span-7" aria-live="polite">
           {!x ? (
-            <Skeleton className="h-72 w-full" />
+            all.loading ? <Skeleton className="h-72 w-full" label="Running the disruption presets" /> : null
           ) : (
             <AnimatePresence mode="wait">
               <motion.div key={x.scenario.scenario_id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.45, ease: EASE }}>

@@ -4,7 +4,7 @@
 
 > Technical report (3 pages): [`report/CASCADE_Technical_Report.pdf`](report/CASCADE_Technical_Report.pdf) · Docs index: [`docs/`](docs/README.md) · As-built deviations: [`docs/AsBuilt.md`](docs/AsBuilt.md)
 
-![Control tower: fleet ranked by risk](docs/screenshots/01_fleet_overview.png)
+![CASCADE dashboard: one shipment's delay cascading stage by stage](docs/screenshots/00_dashboard_hero.png)
 
 ## Key results
 
@@ -35,12 +35,12 @@ A trained model bundle (`artifacts/v1.2.0`) is committed, so you can run the API
 ```bash
 uv venv --python 3.12 && uv pip install -e ".[ui,dev]"   # 1. install, then activate: source .venv/bin/activate (Windows: .venv\Scripts\activate)
 cascade serve                                            # 2. API on http://127.0.0.1:8000/docs
-streamlit run app/Home.py                                # 3. control tower on http://localhost:8501 (second terminal)
+cd dashboard && npm install && npm run dev               # 3. dashboard on http://localhost:5173 (second terminal)
 ```
 
-If your machine blocks the `cascade` launcher, `python -m cascade.cli serve` does the same thing.
+**Two front-ends, one API.** The **React dashboard** (`dashboard/`) is the product: replay, fleet map, what-if, alerts and the evidence. It also works without the API, from a recorded run of the real model, and it switches to that recording by itself if the API goes away. See [`dashboard/README.md`](dashboard/README.md). The **Streamlit control tower** (`streamlit run app/Home.py` → http://localhost:8501) is the analyst console: model internals, monitoring and data-feed health.
 
-**React dashboard** (alternative UI): `cd dashboard && npm install && npm run dev` → http://localhost:5173. It uses the live API when it's running and a recorded run of the real model otherwise. See [`dashboard/README.md`](dashboard/README.md).
+If your machine blocks the `cascade` launcher, `python -m cascade.cli serve` does the same thing.
 
 To rebuild everything from scratch (simulate → train → evaluate → gate → publish, about 1 minute), run `cascade all --force`. This overwrites `data/`, `reports/` and `artifacts/v1.2.0`. `cascade seeds` reruns the 5-seed stability study, and `cascade sensitivity` reruns the wrong-assumption study (the baseline plus 6 worlds with changed simulator mechanics → `reports/sensitivity.json`).
 

@@ -79,7 +79,7 @@ jobs:
       - run: pytest -q -m perf
 
   dashboard:
-    name: dashboard (typecheck + build)
+    name: dashboard (typecheck + build + e2e)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -101,3 +101,13 @@ jobs:
           pub=$(ls ../artifacts | sort -V | tail -1 | sed 's/^v//')
           echo "snapshot $snap, published $pub"
           test "$snap" = "$pub"
+      - run: npx playwright install --with-deps chromium
+      - name: End-to-end + accessibility (sign-in, recorded run, outage fallback, mobile, axe dark/light)
+        run: npm run test:e2e
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: dashboard/test-results/
+          if-no-files-found: ignore

@@ -3,11 +3,11 @@
 // came from the model; nothing here is invented.
 //
 //   cascade serve            # or: python -m uvicorn cascade.serving.app:app --port 8000
-//   npm run snapshot         # CASCADE_API_URL=http://127.0.0.1:8000 by default
+//   npm run snapshot         # API at VITE_API_URL or CASCADE_API_URL (default http://127.0.0.1:8000)
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const API = process.env.CASCADE_API_URL ?? "http://127.0.0.1:8000";
+const API = process.env.VITE_API_URL ?? process.env.CASCADE_API_URL ?? "http://127.0.0.1:8000";
 const OUT = join(import.meta.dirname, "..", "public", "snapshot");
 const DAYS = 21; // fleet replay window: now − 21 d … now
 const RHO = [null, 0.5, 0.6, 0.7, 0.8, 0.9];
@@ -60,6 +60,7 @@ async function main() {
   await save("insights.json", await get("/v1/insights"));
   await save("monitoring.json", await get("/v1/monitoring/accuracy"));
   await save("data-health.json", await get("/v1/data-health"));
+  await save("drift.json", await get("/v1/monitoring/drift"));
   const presets = await get("/v1/scenarios/presets");
   await save("presets.json", presets);
 
