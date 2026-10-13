@@ -256,6 +256,13 @@ export class SectionBoundary extends Component<{ name: string; children: ReactNo
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
+  /** React.lazy keeps a failed import, so re-rendering would throw the same error. A section whose code
+   *  could not load (typically a redeploy replaced the chunk) needs a fresh page instead. */
+  retry = () => {
+    if (/dynamically imported module|Importing a module script failed|Loading chunk/i.test(this.state.error?.message ?? ""))
+      location.reload();
+    else this.setState({ error: null });
+  };
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(`[${this.props.name}]`, error, info.componentStack);
   }
@@ -264,7 +271,7 @@ export class SectionBoundary extends Component<{ name: string; children: ReactNo
     return (
       <section className="shell py-24" aria-label={`${this.props.name} (unavailable)`}>
         <p className="eyebrow mb-4">{this.props.name}</p>
-        <ErrorNote error={this.state.error} onRetry={() => this.setState({ error: null })} />
+        <ErrorNote error={this.state.error} onRetry={this.retry} />
       </section>
     );
   }

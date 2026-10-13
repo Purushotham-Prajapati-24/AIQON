@@ -33,7 +33,7 @@ export const API = (import.meta.env.VITE_API_URL as string | undefined) ?? `${im
 const SNAP = `${import.meta.env.BASE_URL}snapshot`;
 /** Static deployments can pin the source: VITE_SOURCE=snapshot never probes a local API. */
 const PINNED = import.meta.env.VITE_SOURCE as Mode | undefined;
-const LIVE_TIMEOUT_MS = 20_000;
+export const LIVE_TIMEOUT_MS = 20_000;
 
 let mode: Promise<Mode> | null = null;
 let degradedReason: string | null = null;
@@ -60,7 +60,8 @@ export function detectMode(): Promise<Mode> {
     for (;;) {
       try {
         const r = await fetch(`${API}/ready`, { signal: AbortSignal.timeout(1500), credentials: "include" });
-        if (r.ok) return "live";
+        // Require the API's own answer: a static host that rewrites every path to index.html also says 200.
+        if (r.ok) return ((await r.json().catch(() => null)) as { ready?: unknown } | null)?.ready === true ? "live" : "snapshot";
         if (r.status !== 503 || Date.now() > until) return "snapshot";
       } catch {
         return "snapshot";
@@ -80,10 +81,10 @@ class HttpError extends Error {
   }
 }
 
-const isOutage = (e: unknown) =>
-  e instanceof TypeError || // network failure / CORS
-  (e instanceof DOMException && (e.name === "TimeoutError" || e.name === "AbortError")) ||
-  (e instanceof HttpError && e.status >= 500);
+/** The live API could not be reached or did not answer properly (as opposed to a bug in our own mapping code). */
+class OutageError extends Error {}
+
+const isOutage = (e: unknown) => e instanceof OutageError || (e instanceof HttpError && e.status >= 500);
 
 function degrade(reason: string) {
   if (degradedReason) return;
@@ -100,15 +101,28 @@ function json<T>(url: string, init?: RequestInit): Promise<T> {
   if (!cache.has(key)) {
     const live = url.startsWith(API);
     const signal = init?.signal ?? (live ? AbortSignal.timeout(LIVE_TIMEOUT_MS) : undefined);
-    const p = fetch(url, { credentials: "include", ...init, signal }).then(async (r) => {
-      if (r.status === 401) {
-        // The session ended (expired, signed out elsewhere, or the API now requires sign-in).
-        cache.clear();
-        dispatchEvent(new CustomEvent("cascade:signed-out", { detail: "expired" }));
-      }
-      if (!r.ok) throw new HttpError(r.status, url);
-      return r.json();
-    });
+    const p = fetch(url, { credentials: "include", ...init, signal }).then(
+      async (r) => {
+        if (r.status === 401) {
+          // The session ended (expired, signed out elsewhere, or the API now requires sign-in).
+          cache.clear();
+          dispatchEvent(new CustomEvent("cascade:signed-out", { detail: "expired" }));
+        }
+        if (!r.ok) throw new HttpError(r.status, url);
+        try {
+          return await r.json();
+        } catch {
+          // e.g. an HTML error page from a proxy in front of the API.
+          throw new OutageError("The model service sent an unreadable response.");
+        }
+      },
+      (e: unknown) => {
+        // Network failure / CORS (TypeError) or our own timeout. A caller's own cancel (AbortError) is not an outage.
+        if (e instanceof TypeError || (e instanceof DOMException && e.name === "TimeoutError"))
+          throw new OutageError("The live model stopped answering.");
+        throw e;
+      },
+    );
     p.catch(() => cache.delete(key));
     cache.set(key, p);
   }
@@ -122,7 +136,7 @@ async function pick<T>(liveFn: () => Promise<T>, snapFn: () => Promise<T>): Prom
     return await liveFn();
   } catch (e) {
     if (!isOutage(e)) throw e;
-    degrade(e instanceof HttpError ? e.message : "The live model stopped answering.");
+    degrade((e as Error).message);
     return snapFn();
   }
 }

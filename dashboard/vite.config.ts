@@ -13,16 +13,20 @@ function preloadCriticalFonts(): Plugin {
     /big-shoulders-display-latin-700-normal-[\w-]+\.woff2$/,
     /ibm-plex-sans-latin-400-normal-[\w-]+\.woff2$/,
   ];
+  let base = "/";
   return {
     name: "preload-critical-fonts",
     apply: "build",
+    configResolved(c) {
+      base = c.base; // honour --base / BASE_URL like the rest of the app
+    },
     transformIndexHtml(html, ctx) {
       const files = Object.keys(ctx.bundle ?? {}).filter((f) => critical.some((re) => re.test(f)));
       return {
         html,
         tags: files.map((f) => ({
           tag: "link",
-          attrs: { rel: "preload", as: "font", type: "font/woff2", href: `/${f}`, crossorigin: "" },
+          attrs: { rel: "preload", as: "font", type: "font/woff2", href: `${base}${f}`, crossorigin: "" },
           injectTo: "head-prepend" as const,
         })),
       };

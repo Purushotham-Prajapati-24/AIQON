@@ -22,7 +22,7 @@ npm run dev                         # http://localhost:5173
 | `npm run typecheck` | TypeScript only (`tsc -b`) |
 | `npm run build` | Type-check + production build → `dist/` (sections are code-split; critical fonts are preloaded) |
 | `npm run preview` | Serve the production build on http://localhost:4173 |
-| `npm run test:e2e` | Playwright + axe end-to-end tests against the recorded run (desktop and mobile) |
+| `npm run test:e2e` | Builds, then runs the Playwright + axe end-to-end tests against the recorded run (desktop and mobile). First time: `npx playwright install chromium`, or reuse an installed browser with `PW_CHANNEL=msedge` (or `chrome`) |
 | `npm run snapshot` | Re-record `public/snapshot/` from a running API (after retraining) |
 
 ## Where the numbers come from

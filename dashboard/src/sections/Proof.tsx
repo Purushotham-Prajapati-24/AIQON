@@ -6,6 +6,7 @@ import { EASE, ErrorNote, Reveal, SectionHead, Skeleton, Ticker } from "../compo
 import { useAsync } from "../hooks/useAsync";
 import { useSize } from "../hooks/useSize";
 import { api } from "../lib/api";
+import { useStore } from "../lib/store";
 import type { Drift as DriftT, Insights } from "../lib/types";
 
 export function Proof() {
@@ -425,7 +426,8 @@ const DRIFT_TONE = { stable: "var(--ok-ink)", watch: "var(--risk-ink)", drift: "
 
 /** Live inputs vs the training data (PSI). Shown openly: drift is why the ranges are drift-calibrated. */
 function Drift() {
-  const data = useAsync(() => api.drift(), []);
+  const { mode } = useStore();
+  const data = useAsync(() => api.drift(), [mode]);
   const d: DriftT | null | undefined = data.data;
   if (!d) return null;
   const feats = Object.entries(d.features).sort((a, b) => b[1].psi - a[1].psi);
@@ -433,7 +435,7 @@ function Drift() {
   return (
     <Reveal className="grid gap-6 border-b border-line py-14 md:grid-cols-12">
       <div className="md:col-span-3">
-        <h3 className="eyebrow">Live drift check</h3>
+        <h3 className="eyebrow">{mode === "live" ? "Live drift check" : "Drift check · recorded run"}</h3>
         <p className="mt-3 text-fg-2">
           {shifted} of {feats.length} inputs have shifted since training. Expected here: the test season is the Q4 peak, which is why
           the ranges are calibrated on later data.

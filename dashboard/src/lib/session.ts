@@ -1,6 +1,6 @@
 // Sign-in against the CASCADE API (JWT in an httpOnly cookie). When the API is not reachable
 // (static preview of the recorded run) sign-in is simulated in this browser and labelled offline.
-import { API, detectMode } from "./api";
+import { API, LIVE_TIMEOUT_MS, detectMode } from "./api";
 import type { RoleId } from "./roles";
 
 export interface User {
@@ -43,6 +43,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(`${API}${path}`, {
     credentials: "include",
     headers: { "content-type": "application/json" },
+    // A hung API must not leave the app on "Checking your session" forever.
+    signal: AbortSignal.timeout(LIVE_TIMEOUT_MS),
     ...init,
   });
   if (!r.ok) {
@@ -121,13 +123,15 @@ export const session = {
   },
 
   /** Ends the session. Throws if the API could not clear the cookie, so the caller keeps the
-   *  user signed in (a reload would restore the session) and can offer a retry. */
-  async signOut(): Promise<void> {
+   *  user signed in (a reload would restore the session) and can offer a retry. A server session is
+   *  ended on the server even after the app fell back to the recorded run mid-session: otherwise the
+   *  httpOnly cookie would survive and sign the user back in once the API returns. */
+  async signOut(kind?: Session["kind"]): Promise<void> {
     try {
       sessionStorage.removeItem(OFFLINE_KEY);
     } catch {
       /* storage blocked */
     }
-    if ((await detectMode()) === "live") await call<void>("/v1/auth/logout", { method: "POST" });
+    if (kind === "server" || (await detectMode()) === "live") await call<void>("/v1/auth/logout", { method: "POST" });
   },
 };
