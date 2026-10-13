@@ -225,6 +225,12 @@
     @apply inline-flex h-5 min-w-5 items-center justify-center rounded-[3px] border border-line-2 px-1 font-mono text-[0.75rem] leading-none text-fg-3;
     box-shadow: inset 0 -1px 0 var(--line-2);
   }
+  /* Keyboard-shortcut hints mean nothing on a touch screen. */
+  @media (pointer: coarse) {
+    .kbd-hint {
+      display: none;
+    }
+  }
   /* Pointer spotlight on interactive rows and cards. The position is written to --mx/--my by one delegated
      listener (no React re-renders); touch and keyboard users get the normal hover/focus states instead. */
   @media (hover: hover) and (pointer: fine) {

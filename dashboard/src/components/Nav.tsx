@@ -243,7 +243,7 @@ function SearchButton({ compact, onOpen }: { compact: boolean; onOpen?: () => vo
       ) : (
         <>
           <span className="text-[0.92rem]">Search</span>
-          <span className="kbd ml-auto">{PALETTE_SHORTCUT}</span>
+          <span className="kbd kbd-hint ml-auto">{PALETTE_SHORTCUT}</span>
         </>
       )}
     </button>
