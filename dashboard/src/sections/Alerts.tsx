@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { AlertOctagon, ArrowUpRight, CalendarClock, Link2Off, TrendingUp, VolumeX } from "lucide-react";
+import { AlertOctagon, ArrowUpRight, CalendarClock, ChevronDown, Link2Off, TrendingUp, VolumeX } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SectionHead, Skeleton, Ticker } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
@@ -59,6 +59,7 @@ export function Alerts() {
   const { world, days, select } = useStore();
   const data = useAsync(() => (world ? api.fleet(days, world.now) : null), [world?.now, days]);
   const [sev, setSev] = useState<"all" | "critical" | "warn">("all");
+  const [all, setAll] = useState(false);
   const alerts = data.data?.alerts.alerts ?? [];
   const view = useMemo(() => alerts.filter((a) => sev === "all" || a.severity === sev), [alerts, sev]);
   const urgent = alerts.filter((a) => a.severity === "critical").length;
@@ -87,7 +88,7 @@ export function Alerts() {
         {(["all", "critical", "warn"] as const).map((k) => (
           <button key={k} className="chip" aria-pressed={sev === k} onClick={() => setSev(k)}>
             {k === "all" ? "All" : SEV[k].label}
-            <span className="opacity-60">{k === "all" ? alerts.length : alerts.filter((a) => a.severity === k).length}</span>
+            <span className="chip-count">{k === "all" ? alerts.length : alerts.filter((a) => a.severity === k).length}</span>
           </button>
         ))}
       </div>
@@ -95,11 +96,11 @@ export function Alerts() {
       {data.loading && !alerts.length ? (
         <Skeleton className="mt-6 h-96 w-full" />
       ) : !view.length ? (
-        <p className="py-16 text-center text-fg-2">All quiet.</p>
+        <p className="py-16 text-center text-fg-2">All quiet{sev === "all" ? "" : ` at this level. ${alerts.length} alert${alerts.length === 1 ? "" : "s"} in total`}.</p>
       ) : (
         <ol className="mt-6 grid gap-x-10 md:grid-cols-2">
           <AnimatePresence initial={false}>
-            {view.slice(0, 12).map((a, k) => {
+            {(all ? view : view.slice(0, 12)).map((a, k) => {
               const e = explain(a);
               const Icon = e.icon;
               return (
@@ -113,7 +114,7 @@ export function Alerts() {
                   transition={{ duration: 0.5, ease: EASE, delay: (k % 6) * 0.04 }}
                 >
                   <button
-                    onClick={() => select(a.shipment_id, true)}
+                    onClick={(ev) => select(a.shipment_id, true, { label: "Alerts", section: "alerts", el: ev.currentTarget })}
                     className="group grid w-full grid-cols-[2.25rem_minmax(0,1fr)_auto] items-start gap-4 border-b border-line py-5 text-left transition-colors hover:bg-bg-2"
                   >
                     <span className="mt-0.5 grid size-9 place-items-center rounded-full" style={{ color: SEV[a.severity].color, background: `color-mix(in oklab, ${SEV[a.severity].color} 14%, transparent)` }}>
@@ -126,10 +127,14 @@ export function Alerts() {
                       </span>
                       <span className="mt-1 block text-fg-2">{e.detail}</span>
                     </span>
-                    <span className="flex items-center gap-2 font-mono text-[0.78rem] text-fg-3">
-                      <span className="sr-only">{SEV[a.severity].label},</span>
+                    <span className="flex flex-col items-end gap-1.5 font-mono text-[0.78rem] text-fg-3">
+                      <span className="uppercase tracking-[0.14em]" style={{ color: a.severity === "info" ? undefined : `var(--${a.severity === "critical" ? "late" : "risk"}-ink)` }}>
+                        {SEV[a.severity].label}
+                      </span>
+                      <span className="flex items-center gap-2">
                       {ago(a.age_h)}
-                      <ArrowUpRight size={15} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-late" />
+                      <ArrowUpRight size={15} aria-hidden className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-late" />
+                      </span>
                     </span>
                   </button>
                 </motion.li>
@@ -138,7 +143,16 @@ export function Alerts() {
           </AnimatePresence>
         </ol>
       )}
-      {view.length > 12 && <p className="mt-6 text-center font-mono text-xs uppercase tracking-[0.16em] text-fg-3">+ {view.length - 12} more</p>}
+      {view.length > 12 && (
+        <button
+          onClick={() => setAll((v) => !v)}
+          aria-expanded={all}
+          className="mx-auto mt-5 flex items-center gap-2 px-4 py-3.5 font-mono text-xs uppercase tracking-[0.18em] text-fg-2 hover:text-fg"
+        >
+          {all ? "Show the latest 12" : `Show all ${view.length}`}
+          <ChevronDown size={14} aria-hidden className={`transition-transform ${all ? "rotate-180" : ""}`} />
+        </button>
+      )}
     </section>
   );
 }

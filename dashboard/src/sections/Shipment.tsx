@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Check, Copy, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Copy, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CascadeChart } from "../components/CascadeChart";
 import { Gauge } from "../components/Gauge";
@@ -15,7 +15,7 @@ import { ChartLegend } from "./Hero";
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function Shipment() {
-  const { world, selected, select } = useStore();
+  const { world, selected, select, origin, goBack } = useStore();
   const list = useAsync(() => (world ? api.fleet(0, world.now) : null), [world?.now]);
   const data = useAsync(async () => {
     if (!world) return null;
@@ -68,6 +68,15 @@ export function Shipment() {
         }
       />
 
+      {origin && (
+        <button
+          onClick={goBack}
+          className="-mt-4 mb-6 inline-flex items-center gap-2 rounded-[4px] border border-line-2 px-3.5 py-2.5 font-mono text-[0.78rem] uppercase tracking-[0.14em] text-fg-2 transition-colors hover:border-fg hover:text-fg"
+        >
+          <ArrowLeft size={14} aria-hidden />
+          Back to {origin.label}
+        </button>
+      )}
       {data.error && <ErrorNote error={data.error} />}
       {!d || !m ? (
         <Skeleton className="h-[640px] w-full" />
@@ -102,25 +111,23 @@ function Detail({
       {/* Time travel */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-line py-5">
         <span className="eyebrow">Replay</span>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Milestones">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Show the forecast as it stood at">
           {moments.map((x, k) => (
             <button
               key={k}
-              role="tab"
-              aria-selected={k === idx}
               aria-pressed={k === idx}
               onClick={() => setAt(k)}
               className="chip"
             >
               {labels[k]}
-              <span className="opacity-60">{k === moments.length - 1 ? "today" : day(x.ops.as_of)}</span>
+              <span className="chip-count">{k === moments.length - 1 ? "today" : day(x.ops.as_of)}</span>
             </button>
           ))}
         </div>
         <span className="ml-auto flex items-center gap-3">
           <TierBadge tier={v.risk_tier} />
           {v.flags.missing_events.length > 0 && (
-            <span className="font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+            <span className="font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
               {v.flags.missing_events.length} milestone{v.flags.missing_events.length > 1 ? "s" : ""} not reported
             </span>
           )}
@@ -246,7 +253,7 @@ function CostSplit({ v }: { v: Moment["ops"]["cost_usd"] }) {
 function Narrative({ m }: { m: Moment }) {
   const { role } = useStore();
   const [who, setWho] = useState<"ops" | "customer">(role?.audience ?? "customer");
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"ok" | "failed" | null>(null);
   const v = m.ops;
   const main = v.drivers[0];
   const action = v.narrative.match(/Suggested action: ([^.]+\.)/)?.[1];
@@ -257,11 +264,11 @@ function Narrative({ m }: { m: Moment }) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
+      setCopied("ok");
     } catch {
-      /* clipboard blocked */
+      setCopied("failed");
     }
+    setTimeout(() => setCopied(null), 2400);
   };
   return (
     <div className="mt-6">
@@ -272,11 +279,15 @@ function Narrative({ m }: { m: Moment }) {
         <button className="chip" aria-pressed={who === "ops"} onClick={() => setWho("ops")}>
           For the planner
         </button>
-        <button onClick={copy} className="chip ml-auto" aria-label="Copy explanation">
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Copied" : "Copy"}
+        <button onClick={copy} className="chip ml-auto">
+          {copied === "ok" ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+          {copied === "ok" ? "Copied" : "Copy"}
+          <span className="sr-only"> explanation</span>
         </button>
       </div>
+      <p className="mt-2 min-h-5 text-right font-mono text-[0.78rem] text-fg-3" aria-live="polite">
+        {copied === "failed" ? "Couldn't reach the clipboard. Select the text below to copy it." : copied === "ok" ? <span className="sr-only">Explanation copied</span> : null}
+      </p>
       <AnimatePresence mode="wait">
         <motion.blockquote
           key={who + v.as_of}
@@ -318,7 +329,7 @@ function Actions({ recs, pLate }: { recs: Recommendation[]; pLate: number }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 {top && (
-                  <p className="mb-2 flex items-center gap-1.5 font-mono text-[0.72rem] uppercase tracking-[0.16em] text-ok">
+                  <p className="mb-2 flex items-center gap-1.5 font-mono text-[0.75rem] uppercase tracking-[0.16em] text-ok">
                     <Sparkles size={13} /> Best move
                   </p>
                 )}

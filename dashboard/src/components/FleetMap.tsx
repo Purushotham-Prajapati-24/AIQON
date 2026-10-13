@@ -70,7 +70,7 @@ const LABEL: Record<string, [number, number, "start" | "middle" | "end"]> = {
 
 const land = feature(land110 as unknown as Topology, (land110 as unknown as Topology).objects.land);
 
-export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selected: string; onSelect: (sid: string) => void }) {
+export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selected: string; onSelect: (sid: string, el: Element) => void }) {
   const [ref, { width }] = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<FleetRow | null>(null);
   const W = Math.max(width, 320);
@@ -141,7 +141,7 @@ export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selec
   const hd = hover ? dots.find((d) => d.r.shipment_id === hover.shipment_id) : null;
 
   return (
-    <div ref={ref} className="relative w-full">
+    <div ref={ref} className="relative aspect-[2/1] w-full">
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label="Map of active shipments by lane, coloured by chance of being late">
         <path d={geo.path(geoGraticule10()) ?? ""} fill="none" stroke="var(--line)" strokeWidth={0.6} />
         <path d={geo.path(land) ?? ""} fill="var(--bg-3)" stroke="var(--line-2)" strokeWidth={0.5} />
@@ -188,7 +188,7 @@ export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selec
               className="cursor-pointer"
               onPointerEnter={() => setHover(r)}
               onPointerLeave={() => setHover(null)}
-              onClick={() => onSelect(r.shipment_id)}
+              onClick={(e) => onSelect(r.shipment_id, e.currentTarget)}
             >
               <circle r={11} fill="transparent" />
               {sel && <circle r={9} fill="none" stroke="var(--fg)" strokeWidth={1.4} />}

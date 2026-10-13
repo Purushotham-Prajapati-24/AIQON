@@ -34,6 +34,13 @@ export function Fleet() {
     return c;
   }, [rows]);
   const cost = rows.reduce((a, r) => a + (r.cost_usd.p50 ?? 0), 0);
+  const [filter, setFilter] = useState<Tier | "ALL">("ALL");
+  const open = (sid: string, label: string, el: Element | null) => select(sid, true, { label, section: "fleet", el });
+  /** The tier counts double as shortcuts into the list below. */
+  const showTier = (t: Tier) => {
+    setFilter((f) => (f === t ? "ALL" : t));
+    document.getElementById("fleet-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <section id="fleet" className="shell">
@@ -58,18 +65,27 @@ export function Fleet() {
       <div className="grid gap-10 border-t border-line pt-10 lg:grid-cols-12">
         {/* Mix of risk */}
         <Reveal className="lg:col-span-4">
-          <dl className="space-y-7">
+          <ul className="space-y-2">
             {(["LATE", "AT_RISK", "ON_TRACK"] as Tier[]).map((t) => (
-              <div key={t} className="flex items-end justify-between gap-4 border-b border-line pb-5">
-                <dt>
-                  <TierBadge tier={t} />
-                </dt>
-                <dd className="num text-[3.6rem]" style={{ color: TIER[t].ink }}>
-                  <Ticker value={counts[t]} />
-                </dd>
-              </div>
+              <li key={t}>
+                <button
+                  onClick={() => showTier(t)}
+                  aria-pressed={filter === t}
+                  className={`group flex w-full items-end justify-between gap-4 border-b border-line pb-5 pt-3 text-left transition-colors hover:border-fg-2 ${filter === t ? "border-fg-2" : ""}`}
+                >
+                  <span className="flex flex-col items-start gap-2">
+                    <TierBadge tier={t} />
+                    <span className="font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3 transition-colors group-hover:text-fg-2">
+                      {filter === t ? "Showing in list · clear" : "Show in list ↓"}
+                    </span>
+                  </span>
+                  <span className="num text-[3.6rem]" style={{ color: TIER[t].ink }}>
+                    <Ticker value={counts[t]} />
+                  </span>
+                </button>
+              </li>
             ))}
-          </dl>
+          </ul>
           <div className="mt-6 flex h-2.5 w-full overflow-hidden rounded-full bg-bg-3" aria-hidden>
             {(["LATE", "AT_RISK", "ON_TRACK"] as Tier[]).map((t) => (
               <motion.div
@@ -100,16 +116,23 @@ export function Fleet() {
 
         {/* Map */}
         <Reveal delay={0.1} className="lg:col-span-8">
-          {rows.length ? <FleetMap rows={rows} selected={selected} onSelect={(s) => select(s, true)} /> : <Skeleton className="aspect-[2/1] w-full" />}
-          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+          {rows.length ? <FleetMap rows={rows} selected={selected} onSelect={(s, el) => open(s, "Fleet map", el)} /> : <Skeleton className="aspect-[2/1] w-full" />}
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
             <li className="flex items-center gap-2"><span className="size-2 rounded-full bg-fg-2" /> Port</li>
             <li className="flex items-center gap-2"><span className="size-2 rotate-45 border border-fg-2" /> Hub</li>
-            <li>Dot = one shipment · click to open</li>
+            <li>Dot = one shipment · click to open · the list below has every dot</li>
           </ul>
         </Reveal>
       </div>
 
-      <ShipmentList rows={rows} selected={selected} onSelect={(s) => select(s, true)} loading={data.loading && !rows.length} />
+      <ShipmentList
+        rows={rows}
+        selected={selected}
+        onSelect={(s, el) => open(s, "Worst first list", el)}
+        loading={data.loading && !rows.length}
+        filter={filter}
+        setFilter={setFilter}
+      />
     </section>
   );
 }
@@ -135,7 +158,7 @@ function TimeControl({ days, setDays, asOf }: { days: number; setDays: (d: numbe
         onChange={(e) => setDays(+e.target.value)}
         aria-valuetext={days === 0 ? "Today" : `${-days} days ago`}
       />
-      <div className="flex justify-between font-mono text-[0.7rem] uppercase tracking-[0.14em] text-fg-3">
+      <div className="flex justify-between font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
         <span>3 weeks ago</span>
         <span>Today</span>
       </div>
@@ -148,13 +171,16 @@ function ShipmentList({
   selected,
   onSelect,
   loading,
+  filter,
+  setFilter,
 }: {
   rows: FleetRow[];
   selected: string;
-  onSelect: (sid: string) => void;
+  onSelect: (sid: string, el: Element) => void;
   loading: boolean;
+  filter: Tier | "ALL";
+  setFilter: (f: Tier | "ALL") => void;
 }) {
-  const [filter, setFilter] = useState<Tier | "ALL">("ALL");
   const [sort, setSort] = useState<keyof typeof SORTS>("risk");
   const [all, setAll] = useState(false);
   const view = useMemo(
@@ -169,14 +195,14 @@ function ShipmentList({
   }, [rows]);
 
   return (
-    <div className="mt-20">
+    <div className="mt-20 scroll-mt-24 lg:scroll-mt-6" id="fleet-list">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5">
         <h3 className="font-display text-[2.4rem] font-extrabold uppercase leading-none">Worst first</h3>
         <div className="flex flex-wrap items-center gap-2">
           {FILTERS.map((f) => (
             <button key={f.id} className="chip" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
               {f.label}
-              <span className="opacity-60">{f.id === "ALL" ? rows.length : rows.filter((r) => r.risk_tier === f.id).length}</span>
+              <span className="chip-count">{f.id === "ALL" ? rows.length : rows.filter((r) => r.risk_tier === f.id).length}</span>
             </button>
           ))}
           <span className="mx-2 hidden h-5 w-px bg-line-2 sm:block" />
@@ -197,7 +223,7 @@ function ShipmentList({
       </div>
 
       {/* column heads */}
-      <div className="hidden grid-cols-[3rem_minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1.2fr)_6rem_2rem] gap-5 py-3 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-fg-3 lg:grid">
+      <div className="hidden grid-cols-[3rem_minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1.2fr)_6rem_2rem] gap-5 py-3 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3 lg:grid">
         <span>#</span>
         <span>Shipment</span>
         <span>Chance late</span>
@@ -208,7 +234,14 @@ function ShipmentList({
       </div>
 
       {loading && <Skeleton className="h-96 w-full" />}
-      {!loading && !view.length && <p className="py-16 text-center text-fg-2">Nothing here at this time.</p>}
+      {!loading && !view.length && (
+        <p className="py-16 text-center text-fg-2">
+          No {FILTERS.find((f) => f.id === filter)?.label.toLowerCase()} shipments on this day.{" "}
+          <button onClick={() => setFilter("ALL")} className="underline underline-offset-4 hover:text-fg">
+            Show all
+          </button>
+        </p>
+      )}
 
       <LayoutGroup>
         <ol>
@@ -223,7 +256,7 @@ function ShipmentList({
                 transition={{ duration: 0.45, ease: EASE }}
               >
                 <button
-                  onClick={() => onSelect(r.shipment_id)}
+                  onClick={(e) => onSelect(r.shipment_id, e.currentTarget)}
                   className={`group grid w-full grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 border-b border-line py-5 text-left transition-colors hover:bg-bg-2 lg:grid-cols-[3rem_minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1.2fr)_6rem_2rem] lg:gap-5 ${
                     r.shipment_id === selected ? "bg-bg-2" : ""
                   }`}
@@ -264,7 +297,8 @@ function ShipmentList({
       {view.length > 10 && (
         <button
           onClick={() => setAll((a) => !a)}
-          className="mx-auto mt-8 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-fg-2 hover:text-fg"
+          className="mx-auto mt-5 flex items-center gap-2 px-4 py-3.5 font-mono text-xs uppercase tracking-[0.18em] text-fg-2 hover:text-fg"
+          aria-expanded={all}
         >
           {all ? "Show top 10" : `Show all ${view.length}`}
           <ChevronDown size={14} className={`transition-transform ${all ? "rotate-180" : ""}`} />

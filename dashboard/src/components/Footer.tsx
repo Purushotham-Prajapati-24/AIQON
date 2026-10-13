@@ -32,9 +32,9 @@ export function Footer() {
           </div>
         </dl>
       </div>
-      <div className="shell flex flex-wrap justify-between gap-4 border-t border-line py-6 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+      <div className="shell flex flex-wrap justify-between gap-4 border-t border-line py-6 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
         <span>Aiqon assessment · simulated shipments</span>
-        <a href="#top" className="hover:text-fg">Back to top ↑</a>
+        <a href="#top" className="-my-3.5 py-3.5 hover:text-fg">Back to top ↑</a>
       </div>
     </footer>
   );

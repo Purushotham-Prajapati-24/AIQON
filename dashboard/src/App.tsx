@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect } from "react";
 import { Footer } from "./components/Footer";
 import { Logo, Nav } from "./components/Nav";
+import { focusSection } from "./lib/focus";
 import { useStore } from "./lib/store";
 import { Alerts } from "./sections/Alerts";
 import { Login } from "./sections/Login";
@@ -61,6 +62,9 @@ function OpenAt({ target }: { target: string }) {
       else document.getElementById(target)?.scrollIntoView();
     };
     const timers = [0, 300, 800, 1500].map((ms) => setTimeout(go, ms));
+    // Keyboard and screen-reader users continue from the section the page opened on, not wherever the
+    // sign-in button used to be.
+    timers.push(setTimeout(() => focusSection(target), 50));
     const evs = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
     evs.forEach((e) => addEventListener(e, quit, { passive: true }));
     return () => {

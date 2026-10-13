@@ -15,7 +15,7 @@ export const GUIDE: Record<string, Guide> = {
   },
   fleet: {
     question: "Which shipments will be late?",
-    steps: ["Drag the clock to replay the last 3 weeks", "Filter “Worst first” by risk, or change the sort", "Click a map dot or a row to open that shipment"],
+    steps: ["Drag the clock to replay the last 3 weeks", "Click a count, or the chips above the list, to filter by risk", "Click a map dot or a row to open that shipment"],
   },
   shipment: {
     question: "When will it arrive, and why?",

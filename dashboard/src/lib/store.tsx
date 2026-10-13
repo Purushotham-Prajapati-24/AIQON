@@ -2,7 +2,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { api, detectMode, type Mode } from "./api";
 import { roleById, type Role } from "./roles";
 import { session as auth, type Session } from "./session";
+import { focusSection } from "./focus";
 import type { World } from "./types";
+
+/** Where a shipment was opened from, so the Shipment section can offer a way back. */
+export interface Origin {
+  label: string;
+  section: string;
+  el: Element | null;
+}
 
 interface Store {
   mode: Mode | null;
@@ -11,8 +19,11 @@ interface Store {
   days: number;
   setDays: (d: number) => void;
   selected: string;
-  /** Select a shipment and, optionally, bring its detail into view. */
-  select: (sid: string, scroll?: boolean) => void;
+  /** Select a shipment and, optionally, bring its detail into view (remembering `from` for the way back). */
+  select: (sid: string, scroll?: boolean, from?: Origin) => void;
+  origin: Origin | null;
+  /** Return to where the current shipment was opened from. */
+  goBack: () => void;
   theme: "dark" | "light";
   toggleTheme: () => void;
   /** Show the "what you can do here" strip under each section heading. */
@@ -55,6 +66,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState(HERO_SHIPMENT);
   const [theme, setTheme] = useState(initialTheme);
   const [tips, setTips] = useState(initialTips);
+  const [origin, setOrigin] = useState<Origin | null>(null);
   const [authState, setAuth] = useState<Store["auth"]>({ status: "checking", session: null, notice: null });
 
   useEffect(() => {
@@ -88,10 +100,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [tips]);
 
-  const select = useCallback((sid: string, scroll = false) => {
+  const select = useCallback((sid: string, scroll = false, from?: Origin) => {
     setSelected(sid);
-    if (scroll) document.getElementById("shipment")?.scrollIntoView({ behavior: "smooth" });
+    setOrigin(scroll && from ? from : null);
+    if (scroll) {
+      document.getElementById("shipment")?.scrollIntoView({ behavior: "smooth" });
+      focusSection("shipment");
+    }
   }, []);
+  const goBack = useCallback(() => {
+    if (!origin) return;
+    const el = (origin.el?.isConnected ? origin.el : document.getElementById(origin.section)) as HTMLElement | null;
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el && el.tabIndex >= 0) el.focus({ preventScroll: true });
+    else focusSection(origin.section);
+    setOrigin(null);
+  }, [origin]);
   const signedIn = useCallback((s: Session) => setAuth({ status: "in", session: s, notice: null }), []);
   const signOut = useCallback(async (notice?: string) => {
     try {
@@ -107,8 +131,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const toggleTips = useCallback(() => setTips((t) => !t), []);
 
   const value = useMemo(
-    () => ({ mode, world, days, setDays, selected, select, theme, toggleTheme, tips, toggleTips, auth: authState, role, signedIn, signOut }),
-    [mode, world, days, selected, select, theme, toggleTheme, tips, toggleTips, authState, role, signedIn, signOut],
+    () => ({ mode, world, days, setDays, selected, select, origin, goBack, theme, toggleTheme, tips, toggleTips, auth: authState, role, signedIn, signOut }),
+    [mode, world, days, selected, select, origin, goBack, theme, toggleTheme, tips, toggleTips, authState, role, signedIn, signOut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

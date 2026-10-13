@@ -16,7 +16,7 @@
   --line-2: rgb(196 216 224 / 0.2);
   --fg: #eaf0ee;
   --fg-2: #a6b3b8;
-  --fg-3: #6f8088;
+  --fg-3: #7d8e96;
   --late: #ff5a1f;
   --risk: #f2b33d;
   --ok: #3cc99f;
@@ -38,15 +38,15 @@
   --line-2: rgb(14 20 24 / 0.2);
   --fg: #0e1418;
   --fg-2: #47545a;
-  --fg-3: #77838a;
-  --late: #d6430e;
+  --fg-3: #5a666c;
+  --late: #b23608;
   --risk: #c08f00;
-  --ok: #0f805b;
+  --ok: #0b6b4c;
   --sea: #1d6a9e;
-  --late-ink: #b8380b;
+  --late-ink: #b23608;
   --risk-ink: #845a00;
   --ok-ink: #0b6b4c;
-  --late-wash: rgb(214 67 14 / 0.1);
+  --late-wash: rgb(178 54 8 / 0.1);
   --sea-wash: rgb(29 106 158 / 0.1);
   --contour: rgb(29 106 158 / 0.09);
 }
@@ -121,6 +121,11 @@
   button {
     cursor: pointer;
   }
+  /* Headings that receive focus after a jump (sign-in, opening a shipment). Focus moves there so keyboard and
+     screen-reader users continue from the right place; the ring would only frame a whole heading. */
+  [data-focus-target]:focus {
+    outline: none;
+  }
 }
 
 @layer components {
@@ -143,8 +148,21 @@
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-[4px] border border-line-2 px-2.5 py-1 font-mono text-[0.78rem] uppercase tracking-wider text-fg-2 transition-colors;
   }
+  /* Touch screens get 44px chips; mouse users keep the compact size. */
+  @media (pointer: coarse) {
+    .chip {
+      min-height: 44px;
+    }
+  }
   .chip[aria-pressed="true"] {
     @apply border-fg bg-fg text-bg;
+  }
+  /* Secondary text inside a chip (counts, dates): quieter than the label, still 4.5:1 in both states. */
+  .chip-count {
+    color: var(--fg-3);
+  }
+  .chip[aria-pressed="true"] .chip-count {
+    color: color-mix(in oklab, var(--bg) 72%, var(--fg));
   }
   .chip:hover:not([aria-pressed="true"]) {
     @apply border-fg-2 text-fg;
@@ -165,6 +183,11 @@ input[type="range"].scrub {
   background: transparent;
   width: 100%;
   height: 28px;
+}
+@media (pointer: coarse) {
+  input[type="range"].scrub {
+    height: 44px;
+  }
 }
 input[type="range"].scrub::-webkit-slider-runnable-track {
   height: 2px;

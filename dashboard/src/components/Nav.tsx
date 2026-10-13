@@ -147,11 +147,11 @@ function SidebarBody({
 
       <nav aria-label="Sections" className="flex-1 overflow-y-auto overscroll-contain py-4">
         <YourTask compact={compact} onNavigate={onNavigate} />
-        {!compact && <p className="eyebrow mb-2 mt-6 px-5 text-[0.68rem]">Overview</p>}
+        {!compact && <p className="eyebrow mb-2 mt-6 px-5 text-[0.75rem]">Overview</p>}
         <ul className={compact ? "px-2" : "px-3"}>
           <NavItem id="top" label="Replay" icon={CirclePlay} active={active === "top"} compact={compact} markerId={markerId} onNavigate={onNavigate} />
         </ul>
-        {!compact ? <p className="eyebrow mb-2 mt-5 px-5 text-[0.68rem]">Sections</p> : <div className="mx-4 my-4 border-t border-line" />}
+        {!compact ? <p className="eyebrow mb-2 mt-5 px-5 text-[0.75rem]">Sections</p> : <div className="mx-4 my-4 border-t border-line" />}
         <ul className={`space-y-0.5 ${compact ? "px-2" : "px-3"}`}>
           {SECTIONS.map((s, k) => (
             <NavItem
@@ -226,9 +226,9 @@ function NavItem({
             <span className="flex items-center gap-2 font-mono text-[0.78rem] uppercase tracking-[0.14em]">
               <span className="truncate">{label}</span>
               {start && (
-                <span className="rounded-[3px] bg-late-wash px-1.5 py-px text-[0.6rem] tracking-[0.12em] text-late">Start</span>
+                <span className="rounded-[3px] bg-late-wash px-1.5 py-px text-[0.75rem] tracking-[0.12em] text-late">Start</span>
               )}
-              {index && <span className={`ml-auto text-[0.68rem] ${active ? "text-late" : "text-fg-3"}`}>0{index}</span>}
+              {index && <span className={`ml-auto text-[0.75rem] ${active ? "text-late" : "text-fg-3"}`}>0{index}</span>}
             </span>
             {question && (
               <span className={`mt-0.5 block text-[0.8rem] leading-snug ${active ? "text-fg-2" : "text-fg-3 group-hover:text-fg-2"}`}>
@@ -268,7 +268,7 @@ function YourTask({ compact, onNavigate }: { compact: boolean; onNavigate?: () =
 
   return (
     <section aria-labelledby="your-task" className="mx-3 rounded-[4px] border border-line bg-bg px-3.5 py-3">
-      <p id="your-task" className="eyebrow flex items-center gap-2 text-[0.66rem]">
+      <p id="your-task" className="eyebrow flex items-center gap-2 text-[0.75rem]">
         <Flag size={12} aria-hidden className="text-late" />
         Your task
       </p>
@@ -276,7 +276,7 @@ function YourTask({ compact, onNavigate }: { compact: boolean; onNavigate?: () =
       <a
         href={`#${role.opens}`}
         onClick={onNavigate}
-        className="mt-3 inline-flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-late underline-offset-4 hover:underline"
+        className="-my-1 mt-2 inline-flex items-center gap-1.5 py-2.5 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-late underline-offset-4 hover:underline"
       >
         Start at {where} →
       </a>
@@ -299,7 +299,7 @@ function SidebarFooter({ compact }: { compact: boolean }) {
       <div className={compact ? "flex flex-col items-center gap-1" : "flex items-center gap-1"}>
         {mode && (
           <div
-            className={`flex h-9 items-center gap-2.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-fg-2 ${compact ? "justify-center" : "mr-auto px-3"}`}
+            className={`flex h-9 items-center gap-2.5 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-2 ${compact ? "justify-center" : "mr-auto px-3"}`}
             title={modeTitle}
           >
             <span className="relative flex size-2 shrink-0">
@@ -312,7 +312,7 @@ function SidebarFooter({ compact }: { compact: boolean }) {
         <button
           onClick={toggleTips}
           aria-pressed={tips}
-          className={`${iconBtn} ${tips ? "text-risk" : ""} ${!mode && !compact ? "ml-auto" : ""}`}
+          className={`${iconBtn} ${tips ? "text-[var(--risk-ink)]" : ""} ${!mode && !compact ? "ml-auto" : ""}`}
           aria-label="How-to tips"
           title={tips ? "Hide the how-to tips in each section" : "Show what you can do in each section"}
         >
@@ -344,13 +344,13 @@ function SidebarFooter({ compact }: { compact: boolean }) {
               : `Signed in as ${user.name} (${user.title}). Session ends ${new Date((auth.session?.expiresAt ?? 0) * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`
           }
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-bg-3 font-mono text-[0.7rem] text-fg" aria-hidden>
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-bg-3 font-mono text-[0.75rem] text-fg" aria-hidden>
             {initials}
           </span>
           {!compact && (
             <span className="min-w-0 flex-1" aria-hidden>
               <span className="block truncate text-[0.85rem] leading-tight text-fg">{signOutFailed ? "Retry sign-out" : user.name}</span>
-              <span className="block truncate font-mono text-[0.66rem] uppercase tracking-[0.12em] text-fg-3">{user.title}</span>
+              <span className="block truncate font-mono text-[0.75rem] uppercase tracking-[0.12em] text-fg-3">{user.title}</span>
             </span>
           )}
           {!compact && <LogOut size={14} aria-hidden className="mr-1.5 shrink-0" />}
@@ -377,13 +377,13 @@ function MobileBar({ onOpen }: { onOpen: () => void }) {
       <div className="shell flex h-16 items-center gap-3 md:h-[4.5rem]">
         <button
           onClick={onOpen}
-          className="-ml-2 grid size-10 place-items-center rounded-[4px] text-fg-2 transition-colors hover:bg-bg-3 hover:text-fg"
+          className="-ml-2.5 grid size-11 place-items-center rounded-[4px] text-fg-2 transition-colors hover:bg-bg-3 hover:text-fg"
           aria-label="Open navigation"
           aria-haspopup="dialog"
         >
           <Menu size={20} />
         </button>
-        <a href="#top" className="flex items-center gap-2.5" aria-label="CASCADE, back to top">
+        <a href="#top" className="flex h-11 items-center gap-2.5" aria-label="CASCADE, back to top">
           <Logo className="size-7" />
           <span className="font-display text-[1.55rem] font-extrabold uppercase tracking-[0.04em]">Cascade</span>
         </a>

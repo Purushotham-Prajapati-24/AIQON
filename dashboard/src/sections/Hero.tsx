@@ -139,8 +139,12 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
             className="relative grid flex-1"
             style={{ gridTemplateColumns: `repeat(${moments.length}, minmax(0,1fr))` }}
             onKeyDown={(e) => {
-              if (e.key === "ArrowRight") go(i + 1);
-              if (e.key === "ArrowLeft") go(i - 1);
+              const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: last }[e.key];
+              if (to === undefined) return;
+              e.preventDefault();
+              const n = Math.max(0, Math.min(last, to));
+              go(n);
+              (e.currentTarget.querySelectorAll<HTMLElement>("[role=tab]")[n])?.focus();
             }}
           >
             <div className="absolute inset-x-0 top-0 h-px bg-line-2" />
@@ -159,7 +163,7 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
                 onClick={() => go(k)}
                 className={`group pt-4 text-left transition-colors ${k === i ? "text-fg" : k < i ? "text-fg-2" : "text-fg-3 hover:text-fg-2"}`}
               >
-                <span className="block font-mono text-[0.72rem] uppercase tracking-[0.16em]">
+                <span className="block font-mono text-[0.75rem] uppercase tracking-[0.16em]">
                   {k === last ? "Today" : day(m.ops.as_of)}
                 </span>
                 <span className="mt-1 block font-display text-[1.35rem] font-bold uppercase leading-none md:text-[1.6rem]">
@@ -269,7 +273,14 @@ function Proof() {
           <p className="mt-2 max-w-[16rem] text-[0.98rem] text-fg-2">{it.l}</p>
         </motion.div>
       ))}
-      {!m && <Skeleton className="col-span-4 h-28" />}
+      {/* Same cells as the loaded state, so the row doesn't grow (and push the page) when the numbers arrive. */}
+      {!m &&
+        [0, 1, 2, 3].map((k) => (
+          <div key={k} className={`py-8 pr-4 ${k > 0 ? "md:border-l md:border-line md:pl-6" : ""} ${k % 2 === 1 ? "border-l border-line pl-4 md:pl-6" : ""}`} aria-hidden>
+            <Skeleton className="h-[clamp(2.6rem,calc(4.6*var(--cw)),4.2rem)] w-24" />
+            <Skeleton className="mt-2 h-[3.1rem] w-full max-w-[16rem]" />
+          </div>
+        ))}
     </div>
   );
 }
@@ -286,7 +297,7 @@ function HeroSkeleton() {
 
 export function ChartLegend() {
   return (
-    <ul className="mt-10 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+    <ul className="mt-10 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
       <li className="flex items-center gap-2">
         <span className="h-3 w-5 rounded-[2px] bg-late/60" /> Happened
       </li>

@@ -44,6 +44,8 @@ Sections live in a left sidebar: a fixed rail from 1024 px wide (collapse it to 
 
 Every section opens with a **How to use** strip listing what you can do there. Hide them with **Hide tips** or the lightbulb in the sidebar. The copy for both lives in `src/lib/guide.ts`.
 
+Opening a shipment from the Fleet list, the map, Alerts or "If this happens" moves focus to the Shipment section and shows a **Back to …** button that returns you (and keyboard focus) to the row you came from. The Late / At risk / On time counts filter the Worst first list.
+
 ## What's on the page
 
 | Section | Question it answers |

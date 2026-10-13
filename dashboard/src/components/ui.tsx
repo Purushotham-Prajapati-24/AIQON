@@ -102,7 +102,7 @@ export function TierBadge({ tier, size = "md" }: { tier: Tier; size?: "sm" | "md
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-[4px] font-mono uppercase tracking-wider ${
-        size === "sm" ? "px-1.5 py-0.5 text-[0.7rem]" : "px-2.5 py-1 text-[0.78rem]"
+        size === "sm" ? "px-1.5 py-0.5 text-[0.75rem]" : "px-2.5 py-1 text-[0.78rem]"
       }`}
       style={{ color: t.ink, background: t.wash }}
     >
@@ -188,7 +188,7 @@ export function HowTo({ id, className = "" }: { id: string; className?: string }
   if (!tips || !guide) return null;
   return (
     <div className={`flex flex-col gap-3 rounded-[4px] border border-dashed border-line-2 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-6 ${className}`}>
-      <p className="eyebrow shrink-0 text-[0.7rem]" id={`${id}-howto`}>
+      <p className="eyebrow shrink-0 text-[0.75rem]" id={`${id}-howto`}>
         How to use
       </p>
       <ol aria-labelledby={`${id}-howto`} className="flex flex-col gap-x-7 gap-y-1.5 text-[0.95rem] text-fg-2 md:flex-row md:flex-wrap">
@@ -203,7 +203,7 @@ export function HowTo({ id, className = "" }: { id: string; className?: string }
       </ol>
       <button
         onClick={toggleTips}
-        className="shrink-0 self-start font-mono text-[0.68rem] uppercase tracking-[0.14em] text-fg-3 underline-offset-4 hover:text-fg hover:underline sm:ml-auto"
+        className="-mx-2 -my-3.5 shrink-0 self-start px-2 py-3.5 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3 underline-offset-4 hover:text-fg hover:underline sm:ml-auto"
         title="Hide these tips everywhere. Turn them back on with the lightbulb in the sidebar."
       >
         Hide tips

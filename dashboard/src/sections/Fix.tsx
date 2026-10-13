@@ -76,13 +76,13 @@ function WhatIf() {
           <Toggle on={p.docs} set={(docs) => setP({ ...p, docs })} label="Customs papers filed early" disabled={!active || customsDone} note={customsDone ? "already cleared" : undefined} />
         </div>
         {changed && (
-          <button onClick={() => setP(BASE)} className="mt-6 font-mono text-xs uppercase tracking-[0.16em] text-fg-3 underline-offset-4 hover:text-fg hover:underline">
+          <button onClick={() => setP(BASE)} className="-mx-2 mt-3 px-2 py-3 font-mono text-xs uppercase tracking-[0.16em] text-fg-3 underline-offset-4 hover:text-fg hover:underline">
             Reset
           </button>
         )}
       </div>
 
-      <div className="lg:col-span-7" aria-live="polite">
+      <div className="lg:col-span-7">
         {now.error && <ErrorNote error={now.error} />}
         {!v ? (
           <Skeleton className="h-80 w-full" />
@@ -105,7 +105,7 @@ function WhatIf() {
             </div>
             <div className="mt-6 flex items-center gap-3">
               <TierBadge tier={r.tier} />
-              <span className="text-fg-2">
+              <span className="text-fg-2" aria-live="polite">
                 {changed
                   ? r.dd < -0.5
                     ? `Arrives ${delay(-r.dd, { sign: false })} sooner.`
@@ -234,7 +234,10 @@ function Disruption() {
             );
           })}
         </ul>
-        <div className="lg:col-span-7" aria-live="polite">
+        <div className="lg:col-span-7">
+          <p className="sr-only" aria-live="polite">
+            {x ? `${x.scenario.label}: ${x.n_affected} of ${x.n_shipments} shipments hit, ${x.delta_late_count} more late.` : ""}
+          </p>
           {!x ? (
             <Skeleton className="h-72 w-full" />
           ) : (
@@ -250,7 +253,7 @@ function Disruption() {
                     {x.affected.slice(0, 6).map((a) => (
                       <li key={a.shipment_id}>
                         <button
-                          onClick={() => select(a.shipment_id, true)}
+                          onClick={(ev) => select(a.shipment_id, true, { label: "If this happens", section: "fix", el: ev.currentTarget })}
                           className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-line py-4 text-left transition-colors hover:bg-bg-2 sm:grid-cols-[8rem_minmax(0,1fr)_auto_auto]"
                         >
                           <span className="font-mono">{a.shipment_id}</span>
