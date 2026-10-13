@@ -5,8 +5,8 @@ import { useStore } from "../lib/store";
 import { Logo } from "./Nav";
 
 export function Footer() {
-  const { world, mode } = useStore();
-  const model = useAsync(() => api.model(), []);
+  const { world, mode, fallback } = useStore();
+  const model = useAsync(() => api.model(), [mode]);
   return (
     <footer className="mt-24 border-t border-line">
       <div className="shell grid gap-10 py-14 md:grid-cols-12">
@@ -24,17 +24,19 @@ export function Footer() {
           </div>
           <div>
             <dt className="uppercase tracking-[0.14em] text-fg-3">Data as of</dt>
-            <dd className="mt-1">{world ? dayLong(world.now) + " 2025" : "…"}</dd>
+            <dd className="mt-1">{world ? `${dayLong(world.now, true)} · UTC` : "…"}</dd>
           </div>
           <div>
             <dt className="uppercase tracking-[0.14em] text-fg-3">Source</dt>
-            <dd className="mt-1">{mode === "live" ? "Live API" : "Recorded run"}</dd>
+            <dd className="mt-1">{mode === "live" ? "Live API" : fallback ? "Recorded run (API offline)" : "Recorded run"}</dd>
           </div>
         </dl>
       </div>
       <div className="shell flex flex-wrap justify-between gap-4 border-t border-line py-6 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
         <span>Aiqon assessment · simulated shipments</span>
-        <a href="#top" className="hover:text-fg">Back to top ↑</a>
+        <a href="#top" className="hover:text-fg">
+          Back to top ↑
+        </a>
       </div>
     </footer>
   );

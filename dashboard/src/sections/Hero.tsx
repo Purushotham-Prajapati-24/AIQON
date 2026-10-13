@@ -3,30 +3,30 @@ import { ArrowDown, Pause, Play } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CascadeChart } from "../components/CascadeChart";
 import { Contours } from "../components/Contours";
-import { Skeleton, Ticker } from "../components/ui";
+import { ChartLegend, EASE, ErrorNote, Skeleton, Ticker } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../lib/api";
-import { GROUP, checkpointLabel, day, dayLong, port } from "../lib/format";
+import { GROUP, checkpointLabel, day, dayLong, port, signed } from "../lib/format";
 import { HERO_SHIPMENT, useStore } from "../lib/store";
 import type { Group, Moment } from "../lib/types";
 
-const EASE = [0.16, 1, 0.3, 1] as const;
 const DWELL = 2800;
 
 export function Hero() {
   const { world } = useStore();
-  const data = useAsync(async () => {
-    if (!world) return null;
-    const { checkpoints, stops } = await api.stops(HERO_SHIPMENT, world.now);
-    const moments = await Promise.all(stops.map((s) => api.moment(HERO_SHIPMENT, s)));
-    return { checkpoints, stops, moments };
-  }, [world?.now]);
+  const data = useAsync(() => (world ? api.replay(HERO_SHIPMENT, world.now) : null), [world?.now]);
 
   return (
     <section id="top" className="relative isolate min-h-[100svh] overflow-hidden pt-28 md:pt-32">
       <Contours />
       <div className="shell relative">
-        {data.data ? <Story moments={data.data.moments} labels={[...data.data.checkpoints.map((c) => c.label), "Today"]} /> : <HeroSkeleton />}
+        {data.data ? (
+          <Story moments={data.data.moments} labels={[...data.data.checkpoints.map((c) => c.label), "Today"]} />
+        ) : data.error ? (
+          <ErrorNote error={data.error} onRetry={data.retry} className="mt-10" />
+        ) : (
+          <HeroSkeleton />
+        )}
       </div>
     </section>
   );
@@ -37,6 +37,7 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(!reduce);
   const stage = useRef<HTMLDivElement>(null);
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const inView = useInView(stage, { margin: "-20% 0px" });
   const last = moments.length - 1;
 
@@ -55,9 +56,11 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
   const yMax = Math.max(...moments.map((m) => m.ops.delay_hours.p90));
   const ghosts = useMemo(() => moments.slice(0, i).map((m) => m.ops), [moments, i]);
 
-  const go = (n: number) => {
+  const go = (n: number, focus = false) => {
+    const k = Math.max(0, Math.min(last, n));
     setPlaying(false);
-    setI(Math.max(0, Math.min(last, n)));
+    setI(k);
+    if (focus) tabs.current[k]?.focus();
   };
 
   return (
@@ -72,8 +75,8 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
             className="eyebrow mb-6 flex flex-wrap items-center gap-x-3 gap-y-1"
           >
             <span className="text-fg">{v.shipment_id}</span>
-            <span className="h-px w-6 bg-line-2" />
-            {[v.shipment.origin, v.shipment.hub, v.shipment.dest].filter(Boolean).map(port).join(" → ")}
+            <span className="h-px w-6 bg-line-2" aria-hidden />
+            <span className="min-w-0">{[v.shipment.origin, v.shipment.hub, v.shipment.dest].filter(Boolean).map(port).join(" → ")}</span>
           </motion.p>
           <h1 className="font-display text-[clamp(2.9rem,7.1vw,6.75rem)] md:whitespace-nowrap font-extrabold uppercase leading-[0.86] tracking-[-0.015em]">
             {[
@@ -138,8 +141,10 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
             className="relative grid flex-1"
             style={{ gridTemplateColumns: `repeat(${moments.length}, minmax(0,1fr))` }}
             onKeyDown={(e) => {
-              if (e.key === "ArrowRight") go(i + 1);
-              if (e.key === "ArrowLeft") go(i - 1);
+              const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: last }[e.key];
+              if (to === undefined) return;
+              e.preventDefault();
+              go(to, true);
             }}
           >
             <div className="absolute inset-x-0 top-0 h-px bg-line-2" />
@@ -152,8 +157,12 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
             {moments.map((m, k) => (
               <button
                 key={k}
+                ref={(el) => {
+                  tabs.current[k] = el;
+                }}
                 role="tab"
                 aria-selected={k === i}
+                aria-controls="hero-readout"
                 tabIndex={k === i ? 0 : -1}
                 onClick={() => go(k)}
                 className={`group pt-4 text-left transition-colors ${k === i ? "text-fg" : k < i ? "text-fg-2" : "text-fg-3 hover:text-fg-2"}`}
@@ -187,12 +196,12 @@ function Readout({ m }: { m: Moment }) {
   const v = m.ops;
   const cause = v.root_cause_group ? GROUP[v.root_cause_group as Group] : "—";
   return (
-    <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-12">
+    <div id="hero-readout" role="tabpanel" className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-12">
       <div className="lg:col-span-3">
         <p className="eyebrow">Expected delay</p>
         <div className="mt-3 flex items-baseline gap-2 text-late">
           <span className="num text-[clamp(3.5rem,6vw,5.5rem)]">
-            +<Ticker value={v.delay_hours.p50 / 24} format={(x) => x.toFixed(1)} duration={0.9} />
+            <Ticker value={v.delay_hours.p50 / 24} format={(x) => signed(x, 1)} duration={0.9} />
           </span>
           <span className="font-display text-2xl font-bold uppercase">days</span>
         </div>
@@ -268,7 +277,7 @@ function Proof() {
           <p className="mt-2 max-w-[16rem] text-[0.98rem] text-fg-2">{it.l}</p>
         </motion.div>
       ))}
-      {!m && <Skeleton className="col-span-4 h-28" />}
+      {!m && !data.error && <Skeleton className="col-span-4 h-28" />}
     </div>
   );
 }
@@ -280,24 +289,5 @@ function HeroSkeleton() {
       <Skeleton className="h-40 w-full max-w-4xl" />
       <Skeleton className="mt-16 h-[430px] w-full" />
     </div>
-  );
-}
-
-export function ChartLegend() {
-  return (
-    <ul className="mt-10 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
-      <li className="flex items-center gap-2">
-        <span className="h-3 w-5 rounded-[2px] bg-late/60" /> Happened
-      </li>
-      <li className="flex items-center gap-2">
-        <span className="hatch h-3 w-5 rounded-[2px] text-late/60" /> Predicted
-      </li>
-      <li className="flex items-center gap-2">
-        <span className="w-5 border-t border-dashed border-fg-3" /> Earlier forecast
-      </li>
-      <li className="flex items-center gap-2">
-        <span className="h-3 w-5 rounded-[2px] bg-late-wash" /> Main cause
-      </li>
-    </ul>
   );
 }

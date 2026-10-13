@@ -1,6 +1,6 @@
 // Sign-in against the CASCADE API (JWT in an httpOnly cookie). When the API is not reachable
 // (static preview of the recorded run) sign-in is simulated in this browser and labelled offline.
-import { API, detectMode } from "./api";
+import { API, LIVE_TIMEOUT_MS, detectMode } from "./api";
 import type { RoleId } from "./roles";
 
 export interface User {
@@ -43,6 +43,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(`${API}${path}`, {
     credentials: "include",
     headers: { "content-type": "application/json" },
+    // A hung API must not leave the app on "Checking your session" forever.
+    signal: AbortSignal.timeout(LIVE_TIMEOUT_MS),
     ...init,
   });
   if (!r.ok) {
@@ -58,6 +60,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 type ServerSession = { user: User; expires_at: number };
+/** `/v1/auth/me` answers `user: null` (HTTP 200) when nobody is signed in. */
+type MaybeSession = { user: User | null; expires_at: number | null };
 const fromServer = (s: ServerSession): Session => ({ user: s.user, expiresAt: s.expires_at, kind: "server" });
 
 function readOffline(): Session | null {
@@ -83,7 +87,8 @@ export const session = {
   async current(): Promise<Session | null> {
     if ((await detectMode()) === "snapshot") return readOffline();
     try {
-      return fromServer(await call<ServerSession>("/v1/auth/me"));
+      const s = await call<MaybeSession>("/v1/auth/me");
+      return s.user && s.expires_at ? fromServer({ user: s.user, expires_at: s.expires_at }) : null;
     } catch {
       return null;
     }
@@ -118,13 +123,15 @@ export const session = {
   },
 
   /** Ends the session. Throws if the API could not clear the cookie, so the caller keeps the
-   *  user signed in (a reload would restore the session) and can offer a retry. */
-  async signOut(): Promise<void> {
+   *  user signed in (a reload would restore the session) and can offer a retry. A server session is
+   *  ended on the server even after the app fell back to the recorded run mid-session: otherwise the
+   *  httpOnly cookie would survive and sign the user back in once the API returns. */
+  async signOut(kind?: Session["kind"]): Promise<void> {
     try {
       sessionStorage.removeItem(OFFLINE_KEY);
     } catch {
       /* storage blocked */
     }
-    if ((await detectMode()) === "live") await call<void>("/v1/auth/logout", { method: "POST" });
+    if (kind === "server" || (await detectMode()) === "live") await call<void>("/v1/auth/logout", { method: "POST" });
   },
 };

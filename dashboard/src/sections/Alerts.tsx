@@ -1,36 +1,37 @@
 import { AnimatePresence, motion } from "motion/react";
-import { AlertOctagon, ArrowUpRight, CalendarClock, Link2Off, TrendingUp, VolumeX } from "lucide-react";
+import { AlertOctagon, ArrowUpRight, CalendarClock, ChevronDown, Link2Off, TrendingUp, VolumeX } from "lucide-react";
 import { useMemo, useState } from "react";
-import { SectionHead, Skeleton, Ticker } from "../components/ui";
+import { EASE, ErrorNote, SectionHead, Skeleton, Ticker } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../lib/api";
 import { ago } from "../lib/format";
 import { useStore } from "../lib/store";
 import type { Alert } from "../lib/types";
 
-const EASE = [0.16, 1, 0.3, 1] as const;
+/** A model probability as a whole percent, never shown as certain (0% or 100%). */
+const pctOf = (p: number) => Math.min(99, Math.max(1, Math.round(p * 100)));
 
 /** Alert rules in plain words. */
 function explain(a: Alert): { title: string; detail: string; icon: typeof AlertOctagon } {
   // Only the API's own sentence is parsed; any narrative appended after it is ignored.
   const head = a.message.split(/(?<=\.)\s/)[0];
   const n = head.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
-  const pct = a.new_p_late != null ? Math.round(a.new_p_late * 100) : null;
+  const pl = a.new_p_late != null ? pctOf(a.new_p_late) : null;
   switch (a.rule) {
     case "TIER_ESCALATION_LATE":
-      return { title: "Now late", detail: pct != null ? `${pct}% chance of arriving more than a day late.` : "Expected more than a day late.", icon: AlertOctagon };
+      return { title: "Now late", detail: pl != null ? `${pl}% chance of arriving more than a day late.` : "Expected more than a day late.", icon: AlertOctagon };
     case "TIER_ESCALATION_AT_RISK":
-      return { title: "Now at risk", detail: pct != null ? `${pct}% chance of arriving more than a day late.` : "Could slip past the delivery window.", icon: AlertOctagon };
+      return { title: "Now at risk", detail: pl != null ? `${pl}% chance of arriving more than a day late.` : "Could slip past the delivery window.", icon: AlertOctagon };
     case "MISSED_CONNECTION_LIKELY":
-      return { title: "May miss its connection", detail: `${n[0] ?? "High"}% chance of missing the next vessel at the hub.`, icon: Link2Off };
+      return { title: "May miss its connection", detail: n.length ? `${pctOf(n[0] / 100)}% chance of missing the next vessel at the hub.` : "High chance of missing the next vessel at the hub.", icon: Link2Off };
     case "P_LATE_JUMP":
       return {
         title: "Chance late jumped",
         detail:
           a.previous_p_late != null && a.new_p_late != null
-            ? `${Math.round(a.previous_p_late * 100)}% → ${Math.round(a.new_p_late * 100)}%`
+            ? `${pctOf(a.previous_p_late)}% → ${pctOf(a.new_p_late)}%`
             : n.length >= 2
-              ? `${n[0]}% → ${n[1]}%`
+              ? `${pctOf(n[0] / 100)}% → ${pctOf(n[1] / 100)}%`
               : head,
         icon: TrendingUp,
       };
@@ -59,6 +60,8 @@ export function Alerts() {
   const { world, days, select } = useStore();
   const data = useAsync(() => (world ? api.fleet(days, world.now) : null), [world?.now, days]);
   const [sev, setSev] = useState<"all" | "critical" | "warn">("all");
+  const [all, setAll] = useState(false);
+  const ready = !!data.data;
   const alerts = data.data?.alerts.alerts ?? [];
   const view = useMemo(() => alerts.filter((a) => sev === "all" || a.severity === sev), [alerts, sev]);
   const urgent = alerts.filter((a) => a.severity === "critical").length;
@@ -69,17 +72,21 @@ export function Alerts() {
         id="alerts"
         index="04"
         kicker="Alerts"
-        title={[
-          <>
-            <span className="text-late">
-              <Ticker value={urgent} />
-            </span>{" "}
-            urgent
-          </>,
-          <span className="text-fg-3">
-            of <Ticker value={alerts.length} /> this week.
-          </span>,
-        ]}
+        title={
+          ready
+            ? [
+                <>
+                  <span className="text-late">
+                    <Ticker value={urgent} />
+                  </span>{" "}
+                  urgent
+                </>,
+                <span className="text-fg-3">
+                  of <Ticker value={alerts.length} /> this week.
+                </span>,
+              ]
+            : ["Alerts,", <span className="text-fg-3">loading…</span>]
+        }
         aside="Raised the moment a forecast changes, so nobody has to keep checking."
       />
 
@@ -87,19 +94,21 @@ export function Alerts() {
         {(["all", "critical", "warn"] as const).map((k) => (
           <button key={k} className="chip" aria-pressed={sev === k} onClick={() => setSev(k)}>
             {k === "all" ? "All" : SEV[k].label}
-            <span className="opacity-60">{k === "all" ? alerts.length : alerts.filter((a) => a.severity === k).length}</span>
+            <span className="chip-count">{k === "all" ? alerts.length : alerts.filter((a) => a.severity === k).length}</span>
           </button>
         ))}
       </div>
 
-      {data.loading && !alerts.length ? (
-        <Skeleton className="mt-6 h-96 w-full" />
+      {data.error && !ready ? (
+        <ErrorNote error={data.error} onRetry={data.retry} className="mt-6" />
+      ) : !ready ? (
+        <Skeleton className="mt-6 h-96 w-full" label="Loading alerts" />
       ) : !view.length ? (
         <p className="py-16 text-center text-fg-2">All quiet.</p>
       ) : (
         <ol className="mt-6 grid gap-x-10 md:grid-cols-2">
           <AnimatePresence initial={false}>
-            {view.slice(0, 12).map((a, k) => {
+            {(all ? view : view.slice(0, 12)).map((a, k) => {
               const e = explain(a);
               const Icon = e.icon;
               return (
@@ -125,6 +134,12 @@ export function Alerts() {
                         <span className="font-mono text-[0.85rem] text-fg-3">{a.shipment_id}</span>
                       </span>
                       <span className="mt-1 block text-fg-2">{e.detail}</span>
+                      {a.recommended_next_step && (
+                        <span className="mt-1.5 block text-[0.9rem] text-fg-3">
+                          <span className="font-mono text-[0.72rem] uppercase tracking-[0.14em]">Next · </span>
+                          {a.recommended_next_step}
+                        </span>
+                      )}
                     </span>
                     <span className="flex items-center gap-2 font-mono text-[0.78rem] text-fg-3">
                       <span className="sr-only">{SEV[a.severity].label},</span>
@@ -138,7 +153,16 @@ export function Alerts() {
           </AnimatePresence>
         </ol>
       )}
-      {view.length > 12 && <p className="mt-6 text-center font-mono text-xs uppercase tracking-[0.16em] text-fg-3">+ {view.length - 12} more</p>}
+      {view.length > 12 && (
+        <button
+          onClick={() => setAll((x) => !x)}
+          aria-expanded={all}
+          className="mx-auto mt-8 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-fg-2 hover:text-fg"
+        >
+          {all ? "Show the latest 12" : `Show all ${view.length}`}
+          <ChevronDown size={14} className={`transition-transform ${all ? "rotate-180" : ""}`} aria-hidden />
+        </button>
+      )}
     </section>
   );
 }

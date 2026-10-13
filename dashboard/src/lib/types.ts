@@ -12,6 +12,8 @@ export interface DelayHours {
   observed: number;
   p10: number;
   p50: number;
+  /** v1.2: trained, conformal-calibrated P80 (the customer promise is built from it). */
+  p80?: number;
   p90: number;
 }
 export interface Cost {
@@ -62,10 +64,14 @@ export interface Alert {
   created_at: string;
   message: string;
   age_h: number;
-  /** Structured evidence (API v1.1+); absent in older recordings. */
+  /** Structured alert contract (API v1.1+); absent in older recordings. */
+  reason_code?: string;
+  previous_risk?: Tier;
+  new_risk?: Tier;
   previous_p_late?: number | null;
   new_p_late?: number | null;
   recommended_next_step?: string;
+  data_quality_flags?: string[];
 }
 export interface Alerts {
   as_of: string;
@@ -121,6 +127,15 @@ export interface ShipmentView {
     source_tier: number;
     mode: string;
     confidence_reason: string;
+  };
+  /** v1.2: the carrier's revised plan next to the original commitment (lateness is always vs the original). */
+  schedule?: {
+    original_planned_delivery: string;
+    current_plan_delivery: string;
+    revisions_known: number;
+    carrier_plan_delay_h: number;
+    delay_vs_original_commitment_h: number;
+    delay_vs_current_plan_h: number;
   };
   timing_ms: { total: number };
   narrative: string;
@@ -230,6 +245,12 @@ export interface Insights {
   decision: Record<string, number>;
   robustness: Record<string, { mae: number; mae_B1: number; coverage: number }>;
   meta: { n_shipments: number; version: string; late_rate: number };
+}
+
+export interface Drift {
+  n: number;
+  features: Record<string, { psi: number; status: "stable" | "watch" | "drift" }>;
+  rule: string;
 }
 
 export interface ModelInfo {

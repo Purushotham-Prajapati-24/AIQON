@@ -1,12 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { api, detectMode, type Mode } from "./api";
+import { api, detectMode, fallbackReason, onModeChange, type Mode } from "./api";
 import { roleById, type Role } from "./roles";
 import { session as auth, type Session } from "./session";
 import type { World } from "./types";
 
 interface Store {
   mode: Mode | null;
+  /** Set when the live API went away mid-session and the app switched to the recorded run. */
+  fallback: string | null;
   world: World | null;
+  worldError: Error | null;
+  retryWorld: () => void;
   /** Fleet clock, in days relative to the world's "now" (−21 … 0). */
   days: number;
   setDays: (d: number) => void;
@@ -27,19 +31,21 @@ interface Store {
 const Ctx = createContext<Store | null>(null);
 export const HERO_SHIPMENT = "SHP-000174";
 
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 function initialTheme(): "dark" | "light" {
-  try {
-    const t = localStorage.getItem("cascade-theme");
-    if (t === "dark" || t === "light") return t;
-  } catch {
-    /* storage blocked */
-  }
+  // index.html sets data-theme before first paint (no flash); read it back so React agrees.
+  const t = document.documentElement.dataset.theme;
+  if (t === "dark" || t === "light") return t;
   return matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode | null>(null);
+  const [fallback, setFallback] = useState<string | null>(null);
   const [world, setWorld] = useState<World | null>(null);
+  const [worldError, setWorldError] = useState<Error | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [days, setDays] = useState(0);
   const [selected, setSelected] = useState(HERO_SHIPMENT);
   const [theme, setTheme] = useState(initialTheme);
@@ -51,16 +57,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const onSignedOut = () =>
       setAuth({ status: "out", session: null, notice: "Your session ended. Sign in again to continue." });
     addEventListener("cascade:signed-out", onSignedOut);
-    return () => removeEventListener("cascade:signed-out", onSignedOut);
+    const offMode = onModeChange((m) => {
+      setMode(m);
+      setFallback(fallbackReason());
+    });
+    return () => {
+      removeEventListener("cascade:signed-out", onSignedOut);
+      offMode();
+    };
   }, []);
 
   // Data loads only for a signed-in user (in CASCADE_AUTH=required mode it would be refused).
+  // Re-runs on retry and when the source changes (e.g. live -> recorded after an outage).
   useEffect(() => {
-    if (authState.status === "in") api.world().then(setWorld, () => undefined);
-  }, [authState.status]);
+    if (authState.status !== "in") return;
+    let alive = true;
+    setWorldError(null);
+    api.world().then(
+      (w) => alive && setWorld(w),
+      (e: Error) => alive && setWorldError(e),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [attempt, mode, authState.status]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]:not([media])')?.setAttribute("content", theme === "light" ? "#f3f0e8" : "#0a0f12");
     try {
       localStorage.setItem("cascade-theme", theme);
     } catch {
@@ -70,24 +94,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const select = useCallback((sid: string, scroll = false) => {
     setSelected(sid);
-    if (scroll) document.getElementById("shipment")?.scrollIntoView({ behavior: "smooth" });
+    if (scroll)
+      document.getElementById("shipment")?.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth" });
   }, []);
+  const retryWorld = useCallback(() => setAttempt((a) => a + 1), []);
   const signedIn = useCallback((s: Session) => setAuth({ status: "in", session: s, notice: null }), []);
-  const signOut = useCallback(async (notice?: string) => {
-    try {
-      await auth.signOut();
-    } catch {
-      return false;
-    }
-    setAuth({ status: "out", session: null, notice: notice ?? null });
-    return true;
-  }, []);
+  const sessionKind = authState.session?.kind;
+  const signOut = useCallback(
+    async (notice?: string) => {
+      try {
+        await auth.signOut(sessionKind);
+      } catch {
+        return false;
+      }
+      setAuth({ status: "out", session: null, notice: notice ?? null });
+      return true;
+    },
+    [sessionKind],
+  );
   const role = useMemo(() => roleById(authState.session?.user.role ?? null), [authState.session]);
   const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
 
   const value = useMemo(
-    () => ({ mode, world, days, setDays, selected, select, theme, toggleTheme, auth: authState, role, signedIn, signOut }),
-    [mode, world, days, selected, select, theme, toggleTheme, authState, role, signedIn, signOut],
+    () => ({
+      mode, fallback, world, worldError, retryWorld, days, setDays, selected, select, theme, toggleTheme,
+      auth: authState, role, signedIn, signOut,
+    }),
+    [mode, fallback, world, worldError, retryWorld, days, selected, select, theme, toggleTheme, authState, role, signedIn, signOut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

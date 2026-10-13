@@ -8,7 +8,7 @@ React 19 · Vite 8 · Tailwind CSS 4 (`@tailwindcss/vite`) · Motion · d3 (geo,
 
 ```bash
 # 1. Start the model API (repo root)
-cascade serve                       # or: python -m uvicorn cascade.serving.app:app --port 8000
+python -m cascade.cli serve         # or: python -m uvicorn cascade.serving.app:app --port 8000
 
 # 2. Start the dashboard
 cd dashboard
@@ -16,14 +16,30 @@ npm install
 npm run dev                         # http://localhost:5173
 ```
 
+| Script | What it does |
+|---|---|
+| `npm run dev` | Dev server with hot reload on http://localhost:5173 (proxies `/api` to the API) |
+| `npm run typecheck` | TypeScript only (`tsc -b`) |
+| `npm run build` | Type-check + production build → `dist/` (sections are code-split; critical fonts are preloaded) |
+| `npm run preview` | Serve the production build on http://localhost:4173 |
+| `npm run test:e2e` | Builds, then runs the Playwright + axe end-to-end tests against the recorded run (desktop and mobile). First time: `npx playwright install chromium`, or reuse an installed browser with `PW_CHANNEL=msedge` (or `chrome`) |
+| `npm run snapshot` | Re-record `public/snapshot/` from a running API (after retraining) |
+
+## Where the numbers come from
+
 The dashboard talks to the API through `/api`, which Vite proxies to `http://127.0.0.1:8000` (set `CASCADE_API_TARGET` to change it). Same origin means the session cookie is first-party. At startup it checks `/api/ready`:
 
-- **Live model:** if the API answers, every number comes from it.
+- **Live model:** if the API answers, every number comes from it. A server that is still warming up (HTTP 503) is given a few seconds.
 - **Recorded run:** if the API is down, it reads `public/snapshot/`. These are real API responses recorded from model v1.2.0, so it still runs as a static site.
+- **API lost mid-session:** if the live API stops answering (network error, timeout or 5xx), the dashboard switches to the recorded run for the rest of the session. The badge then reads *Recorded run · API offline*, and the footer says the same. A client error (4xx) is shown as an error and never hidden by the fallback; a 401 ends the session and returns to sign-in.
 
-To call another API origin directly, build with `VITE_API_URL=http://host:port` and add the dashboard's origin to the API's `CASCADE_CORS_ORIGINS`. Force a source with `?source=live` or `?source=snapshot`.
+To call another API origin directly, build with `VITE_API_URL=http://host:port` and add the dashboard's origin to the API's `CASCADE_CORS_ORIGINS`. Force a source with `?source=live` or `?source=snapshot`, or pin a static deployment with `VITE_SOURCE=snapshot`.
 
-To re-record the snapshot after retraining (with the API running): `npm run snapshot`.
+| Setting | Effect |
+|---|---|
+| `VITE_API_URL=http://host:port` | API address used by the app and by `npm run snapshot` (`CASCADE_API_URL` also works for the script) |
+| `VITE_SOURCE=snapshot` | Build a static deployment that never probes for an API |
+| `?source=live` / `?source=snapshot` | Force a source for one visit |
 
 ## Sign in
 
@@ -42,23 +58,39 @@ The API sets the session as a signed JWT in an httpOnly cookie, so a reload keep
 
 | Section | Question it answers |
 |---|---|
-| Hero | Replay of SHP-000174: 46 h late at the hub, 10 days late at the door. Drag or play through milestones and watch the delay cascade stage by stage. |
+| Hero | Replay of SHP-000174: late at the hub, much later at the door. Play or step through milestones and watch the delay cascade stage by stage. |
 | 01 Fleet | How many shipments will be late, where they are, and which to look at first. The clock replays the last 3 weeks. |
 | 02 Shipment | Expected delay, chance late, arrival, cost, the delay by stage, the reason in plain words, and the best action. |
 | 03 Fix | What-if for one shipment, and which shipments a storm or port surge would hit. |
-| 04 Alerts | What changed this week, in plain words. |
+| 04 Alerts | What changed this week, in plain words, with the recommended next step. |
 | 05 Proof | Error vs simple rules, ranges that held, right-cause rate, where delay grows, and honest limits. |
+
+## Quality bar
+
+- **Resilience.** Each section sits behind its own error boundary, so one failure never blanks the page. Every fetch has a loading, an empty and an error state, and the error state has *Try again*. Stale responses never overwrite newer ones.
+- **Accessibility (WCAG 2.2 AA intent).**
+  - Status always uses an icon or shape plus a label: map markers are circles, triangles and squares, never colour alone.
+  - Text tokens meet 4.5:1 contrast in both themes.
+  - There is a skip link, and every control has a visible focus ring.
+  - The replay tabs and milestone pickers work with the arrow keys and Home/End.
+  - Animated counters expose their final value to screen readers and print.
+  - Charts have data-driven text alternatives, and `prefers-reduced-motion` is respected.
+- **Performance.**
+  - Sections below the hero load as separate chunks.
+  - The world atlas is a lazily fetched asset, not part of the JS bundle.
+  - Only the Latin and Greek font subsets ship, and the critical faces are preloaded.
+  - The fleet clock is debounced.
+  - The hero and shipment replays share one request cache, which keeps first load to about 25 API calls.
+- **Polish.**
+  - Dark and light themes are applied before first paint, so there's no flash of the wrong theme.
+  - There's a mobile section menu, plus Open Graph and Twitter cards, a web manifest, an apple-touch-icon and print styles.
+  - Times are UTC and labelled as such.
 
 ## Design notes
 
-- One signal colour, orange, means *late* and nothing else. Status always shows an icon and a label, never colour alone. Status colours were checked for colour-blind separation.
+- One signal colour, orange, means *late* and nothing else.
 - Solid areas mean *already happened*; hatched areas mean *predicted*.
 - Type: Big Shoulders Display (port-signage headlines and numbers) with IBM Plex Sans and Mono. Fonts are self-hosted via Fontsource.
 - Dark and light themes, `prefers-reduced-motion` respected, keyboard navigable (arrow keys scrub the replay).
 
-```bash
-npm run build      # type-check + production build → dist/
-npm run preview    # serve the build
-```
-
-In Docker, `docker/Dockerfile.dashboard` builds the app and serves it with nginx on port 8080, proxying `/api` to the API (`docker compose -f docker/compose.yaml up --build`, from the repo root). CI type-checks and builds the dashboard on every push and checks that the recorded snapshot matches the published model version.
+In Docker, `docker/Dockerfile.dashboard` builds the app and serves it with nginx on port 8080, proxying `/api` to the API (`docker compose -f docker/compose.yaml up --build`, from the repo root). CI type-checks and builds the dashboard and runs the Playwright + axe suite on every push and checks that the recorded snapshot matches the published model version.

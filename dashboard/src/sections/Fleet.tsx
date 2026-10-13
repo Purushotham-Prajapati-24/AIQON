@@ -1,15 +1,14 @@
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FleetMap } from "../components/FleetMap";
-import { ErrorNote, RangeStrip, Reveal, SectionHead, Skeleton, Ticker, TierBadge } from "../components/ui";
+import { EASE, ErrorNote, RangeStrip, Reveal, SectionHead, Skeleton, Ticker, TierBadge } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../lib/api";
 import { TIER, dayLong, delay, groupName, pct, route, usd } from "../lib/format";
 import { useStore } from "../lib/store";
 import type { FleetRow, Tier } from "../lib/types";
 
-const EASE = [0.16, 1, 0.3, 1] as const;
 const FILTERS: { id: Tier | "ALL"; label: string }[] = [
   { id: "ALL", label: "All" },
   { id: "LATE", label: "Late" },
@@ -26,6 +25,7 @@ export function Fleet() {
   const { world, days, setDays, selected, select } = useStore();
   const data = useAsync(() => (world ? api.fleet(days, world.now) : null), [world?.now, days]);
   const rows = data.data?.fleet.active ?? [];
+  const ready = !!data.data;
   const asOf = data.data?.fleet.as_of ?? world?.now;
 
   const counts = useMemo(() => {
@@ -41,19 +41,23 @@ export function Fleet() {
         id="fleet"
         index="01"
         kicker="Fleet"
-        title={[
-          <>
-            <span className="text-late">
-              <Ticker value={counts.LATE} />
-            </span>{" "}
-            of <Ticker value={rows.length} /> shipments
-          </>,
-          <span className="text-fg-3">will be late.</span>,
-        ]}
+        title={
+          ready
+            ? [
+                <>
+                  <span className="text-late">
+                    <Ticker value={counts.LATE} />
+                  </span>{" "}
+                  of <Ticker value={rows.length} /> shipments
+                </>,
+                <span className="text-fg-3">will be late.</span>,
+              ]
+            : ["The fleet,", <span className="text-fg-3">loading…</span>]
+        }
         aside={<TimeControl days={days} setDays={setDays} asOf={asOf} />}
       />
 
-      {data.error && <ErrorNote error={data.error} />}
+      {data.error && <ErrorNote error={data.error} onRetry={data.retry} className="mb-8" />}
 
       <div className="grid gap-10 border-t border-line pt-10 lg:grid-cols-12">
         {/* Mix of risk */}
@@ -100,11 +104,22 @@ export function Fleet() {
 
         {/* Map */}
         <Reveal delay={0.1} className="lg:col-span-8">
-          {rows.length ? <FleetMap rows={rows} selected={selected} onSelect={(s) => select(s, true)} /> : <Skeleton className="aspect-[2/1] w-full" />}
+          {rows.length ? (
+            <FleetMap rows={rows} selected={selected} onSelect={(s) => select(s, true)} />
+          ) : ready ? (
+            <div className="grid aspect-[2/1] w-full place-items-center border border-dashed border-line-2 text-fg-2">
+              No shipments at sea on this day.
+            </div>
+          ) : (
+            <Skeleton className="aspect-[2/1] w-full" label="Loading the fleet map" />
+          )}
           <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
-            <li className="flex items-center gap-2"><span className="size-2 rounded-full bg-fg-2" /> Port</li>
-            <li className="flex items-center gap-2"><span className="size-2 rotate-45 border border-fg-2" /> Hub</li>
-            <li>Dot = one shipment · click to open</li>
+            <li className="flex items-center gap-2"><span className="size-2 rounded-full bg-fg-2" aria-hidden /> Port</li>
+            <li className="flex items-center gap-2"><span className="size-2 rotate-45 border border-fg-2" aria-hidden /> Hub</li>
+            <li className="flex items-center gap-2"><span className="size-2 rounded-full bg-ok" aria-hidden /> On time</li>
+            <li className="flex items-center gap-2"><span className="size-0 border-x-[5px] border-b-[8px] border-x-transparent border-b-risk" aria-hidden /> At risk</li>
+            <li className="flex items-center gap-2"><span className="size-2 bg-late" aria-hidden /> Late</li>
+            <li>Click a shipment to open it</li>
           </ul>
         </Reveal>
       </div>
@@ -115,12 +130,21 @@ export function Fleet() {
 }
 
 function TimeControl({ days, setDays, asOf }: { days: number; setDays: (d: number) => void; asOf?: string }) {
+  // The thumb moves instantly; the (expensive) fleet + alerts reload waits until the hand rests.
+  const [local, setLocal] = useState(days);
+  useEffect(() => setLocal(days), [days]);
+  useEffect(() => {
+    if (local === days) return;
+    const t = setTimeout(() => setDays(local), 220);
+    return () => clearTimeout(t);
+  }, [local, days, setDays]);
+  const label = local === 0 ? "Today" : `${-local} day${local === -1 ? "" : "s"} ago`;
   return (
     <div>
       <label htmlFor="fleet-clock" className="eyebrow block">
         Fleet on
       </label>
-      <div className="mt-2 font-display text-[2.2rem] font-bold uppercase leading-none">
+      <div className="mt-2 font-display text-[2.2rem] font-bold uppercase leading-none" aria-live="polite">
         {asOf ? dayLong(asOf) : "—"}
         {days === 0 && <span className="ml-3 align-middle font-mono text-xs tracking-[0.16em] text-ok">● TODAY</span>}
       </div>
@@ -131,13 +155,15 @@ function TimeControl({ days, setDays, asOf }: { days: number; setDays: (d: numbe
         min={-21}
         max={0}
         step={1}
-        value={days}
-        onChange={(e) => setDays(+e.target.value)}
-        aria-valuetext={days === 0 ? "Today" : `${-days} days ago`}
+        value={local}
+        onChange={(e) => setLocal(+e.target.value)}
+        onPointerUp={() => setDays(local)}
+        onKeyUp={() => setDays(local)}
+        aria-valuetext={label}
       />
-      <div className="flex justify-between font-mono text-[0.7rem] uppercase tracking-[0.14em] text-fg-3">
+      <div className="flex justify-between font-mono text-[0.7rem] uppercase tracking-[0.14em] text-fg-3" aria-hidden>
         <span>3 weeks ago</span>
-        <span>Today</span>
+        <span>{local === 0 ? "Today" : label}</span>
       </div>
     </div>
   );
@@ -176,7 +202,7 @@ function ShipmentList({
           {FILTERS.map((f) => (
             <button key={f.id} className="chip" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
               {f.label}
-              <span className="opacity-60">{f.id === "ALL" ? rows.length : rows.filter((r) => r.risk_tier === f.id).length}</span>
+              <span className="chip-count">{f.id === "ALL" ? rows.length : rows.filter((r) => r.risk_tier === f.id).length}</span>
             </button>
           ))}
           <span className="mx-2 hidden h-5 w-px bg-line-2 sm:block" />
@@ -185,7 +211,7 @@ function ShipmentList({
             id="sort"
             value={sort}
             onChange={(e) => setSort(e.target.value as keyof typeof SORTS)}
-            className="chip appearance-none bg-transparent pr-3"
+            className="chip appearance-none bg-transparent"
           >
             {Object.entries(SORTS).map(([k, s]) => (
               <option key={k} value={k} className="bg-bg-2 text-fg">
@@ -207,7 +233,7 @@ function ShipmentList({
         <span />
       </div>
 
-      {loading && <Skeleton className="h-96 w-full" />}
+      {loading && <Skeleton className="h-96 w-full" label="Loading shipments" />}
       {!loading && !view.length && <p className="py-16 text-center text-fg-2">Nothing here at this time.</p>}
 
       <LayoutGroup>

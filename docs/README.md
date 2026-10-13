@@ -13,6 +13,7 @@
 | [AsBuilt.md](AsBuilt.md) | Every deviation between plan and implementation, with reasons | Reviewers |
 | [ReviewVerification.md](ReviewVerification.md) | External review checked claim by claim against the code (what is confirmed, what is not, what it missed) | Reviewers |
 | [ImprovementPlan.md](ImprovementPlan.md) | v1.1 "trust every ETA" plan: P0/P1/P2 tickets with owners, files and acceptance criteria | Implementers |
+| [WebAudit.md](WebAudit.md) | Senior web review of the front-ends: scorecard, fixes, remaining work | Reviewers, web engineers |
 | [ModelCard.md](ModelCard.md) | Auto-generated model card (intended use, performance, weaknesses) | Everyone |
 | [../dashboard/README.md](../dashboard/README.md) | React dashboard: sign-in with demo accounts, sections, run and snapshot commands | Reviewers, UX |
 | [ImplementationPlan.md](ImplementationPlan.md) | Ticket-level plan: owners, estimates, dependencies, files, acceptance criteria, risks | Implementers |

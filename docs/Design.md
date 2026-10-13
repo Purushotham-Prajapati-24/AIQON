@@ -341,7 +341,7 @@ Outputs: `reports/metrics.json` (machine-readable, used by CI gates) + `reports/
 | GET | `/v1/monitoring/accuracy` | Rolling live accuracy, coverage, lane trust (§11.6) | < 50 ms |
 | GET | `/health`, `/ready` | Liveness / readiness (model loaded and warmed up) | < 5 ms |
 | POST | `/v1/auth/login`, `/v1/auth/demo-login` | Start a session: JWT in an httpOnly cookie, also returned for `Authorization: Bearer` | < 150 ms |
-| GET | `/v1/auth/me` · POST `/v1/auth/logout` | Current user and expiry · end the session | < 5 ms |
+| GET | `/v1/auth/me` · POST `/v1/auth/logout` | Current user and expiry (`user: null` when no credentials are sent; 401 for an invalid or expired one) · end the session | < 5 ms |
 | GET | `/v1/auth/config`, `/v1/auth/demo-users` | Auth mode (`optional` / `required`) and the demo accounts | < 5 ms |
 
 `/v1/predict` additionally returns `promise_eta`, `cost_usd {p10,p50,p90}` and `lane_trust`, and accepts `?audience=ops|customer|analyst`.
@@ -517,7 +517,7 @@ A reload keeps the session (the dashboard asks `/v1/auth/me`); the top-bar butto
 **Page order** (same story as the demo script: problem → fleet → one shipment → act → prove):
 
 ```
-Entry   What do you need today?         4 roles, each with a live number
+Sign in Sign in to the delay desk.      4 one-click demo accounts (keys 1–4) or username + password
 Hero    46 hours late at the hub.       Replay of SHP-000174: the delay "cascades" below the plan line
         10 days late at the door.       stage by stage; solid = happened, hatched = predicted;
                                         main-cause band; vessel marker; autoplay + scrub (mouse / ← →)

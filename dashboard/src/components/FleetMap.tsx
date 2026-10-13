@@ -1,9 +1,11 @@
 import { geoGraticule10, geoInterpolate, geoNaturalEarth1, geoPath } from "d3-geo";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { feature } from "topojson-client";
 import type { Topology } from "topojson-specification";
-import land110 from "world-atlas/land-110m.json";
+import type { Feature, FeatureCollection } from "geojson";
+// Loaded as a separate static asset (not inlined into the JS bundle) and parsed once.
+import landUrl from "world-atlas/land-110m.json?url";
 import { useSize } from "../hooks/useSize";
 import { PORTS, TIER, delay, groupName, pct, port, route } from "../lib/format";
 import type { FleetRow } from "../lib/types";
@@ -37,8 +39,10 @@ function seaTrack(a: LL, b: LL, aCode: string): LL[] {
 }
 
 function laneTrack(lane: string): LL[] {
-  const codes = lane.split("-");
+  // Unknown port codes (a newer API than this UI) are skipped instead of crashing the map.
+  const codes = lane.split("-").filter((c) => PORTS[c]);
   const out: LL[] = [];
+  if (codes.length < 2) return codes.length ? [PORTS[codes[0]].ll, PORTS[codes[0]].ll] : [[0, 0], [0, 0]];
   for (let k = 0; k < codes.length - 1; k++) {
     const seg = seaTrack(PORTS[codes[k]].ll, PORTS[codes[k + 1]].ll, codes[k]);
     out.push(...(k === 0 ? seg : seg.slice(1)));
@@ -65,14 +69,44 @@ const LABEL: Record<string, [number, number, "start" | "middle" | "end"]> = {
   SGSIN: [8, 4, "start"],
   MYTPP: [-6, 15, "end"],
   CNYTN: [8, 4, "start"],
-  VNSGN: [-8, 4, "end"],
+  CNSHA: [-8, -4, "end"],
+  KRPUS: [8, -6, "start"],
+  VNSGN: [8, -7, "start"],
+  LKCMB: [-7, 14, "end"],
+  INNSA: [-7, 4, "end"],
 };
 
-const land = feature(land110 as unknown as Topology, (land110 as unknown as Topology).objects.land);
+type Land = Feature | FeatureCollection;
+let landPromise: Promise<Land> | null = null;
+function loadLand(): Promise<Land> {
+  landPromise ??= fetch(landUrl)
+    .then((r) => r.json() as Promise<Topology>)
+    .then((topo) => feature(topo, topo.objects.land) as Land);
+  return landPromise;
+}
+
+/** Status marker: shape AND colour, so risk never depends on colour vision alone. */
+function Marker({ tier, r }: { tier: FleetRow["risk_tier"]; r: number }) {
+  const fill = TIER[tier].color;
+  if (tier === "LATE") return <rect x={-r} y={-r} width={2 * r} height={2 * r} fill={fill} stroke="var(--bg)" strokeWidth={1.5} />;
+  if (tier === "AT_RISK") {
+    const h = r * 1.25;
+    return <path d={`M0 ${-h} L${h} ${h * 0.8} L${-h} ${h * 0.8} Z`} fill={fill} stroke="var(--bg)" strokeWidth={1.5} strokeLinejoin="round" />;
+  }
+  return <circle r={r} fill={fill} stroke="var(--bg)" strokeWidth={1.5} />;
+}
 
 export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selected: string; onSelect: (sid: string) => void }) {
   const [ref, { width }] = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<FleetRow | null>(null);
+  const [land, setLand] = useState<Land | null>(null);
+  useEffect(() => {
+    let alive = true;
+    loadLand().then((l) => alive && setLand(l), () => undefined); // the map still works without coastlines
+    return () => {
+      alive = false;
+    };
+  }, []);
   const W = Math.max(width, 320);
   const H = Math.round(W * 0.5);
 
@@ -108,14 +142,14 @@ export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selec
       lane,
       n: rs.length,
       risk: rs.reduce((a, r) => a + r.p_late, 0) / rs.length,
-      d: "M" + geo.tracks.get(lane)!.map((p) => p.join(",")).join("L"),
+      d: "M" + (geo.tracks.get(lane) ?? []).map((p) => p.join(",")).join("L"),
     }));
   }, [rows, geo]);
 
   const dots = useMemo(() => {
     const seen = new Map<string, number>();
     return rows.map((r) => {
-      const t = geo.tracks.get(r.lane_id)!;
+      const t = geo.tracks.get(r.lane_id) ?? [[0, 0] as LL];
       const f = progress(r.checkpoint, !!r.hub);
       const pos = along(t, f);
       const key = `${r.lane_id}:${f}`;
@@ -129,7 +163,7 @@ export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selec
   }, [rows, geo]);
 
   const ports = useMemo(() => {
-    const used = new Set(rows.flatMap((r) => r.lane_id.split("-")));
+    const used = new Set(rows.flatMap((r) => r.lane_id.split("-")).filter((c) => PORTS[c]));
     return [...used].map((c) => {
       const [x, y] = geo.projection(PORTS[c].ll) as LL;
       const hub = rows.some((r) => r.hub === c);
@@ -142,9 +176,16 @@ export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selec
 
   return (
     <div ref={ref} className="relative w-full">
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label="Map of active shipments by lane, coloured by chance of being late">
+      <svg
+        width={W}
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
+        className="block"
+        role="img"
+        aria-label={`Map of ${rows.length} active shipments by lane. Late shipments are squares, at-risk triangles, on-time circles. The list below has the same shipments.`}
+      >
         <path d={geo.path(geoGraticule10()) ?? ""} fill="none" stroke="var(--line)" strokeWidth={0.6} />
-        <path d={geo.path(land) ?? ""} fill="var(--bg-3)" stroke="var(--line-2)" strokeWidth={0.5} />
+        {land && <path d={geo.path(land) ?? ""} fill="var(--bg-3)" stroke="var(--line-2)" strokeWidth={0.5} />}
         {lanes.map((l) => (
           <g key={l.lane}>
             <path d={l.d} fill="none" stroke={color(l.risk)} strokeOpacity={0.22} strokeWidth={1 + l.n * 0.9} strokeLinecap="round" strokeLinejoin="round" />
@@ -191,8 +232,8 @@ export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selec
               onClick={() => onSelect(r.shipment_id)}
             >
               <circle r={11} fill="transparent" />
-              {sel && <circle r={9} fill="none" stroke="var(--fg)" strokeWidth={1.4} />}
-              <circle r={sel ? 5.5 : 4.2} fill={TIER[r.risk_tier].color} stroke="var(--bg)" strokeWidth={1.5} />
+              {sel && <circle r={10} fill="none" stroke="var(--fg)" strokeWidth={1.4} />}
+              <Marker tier={r.risk_tier} r={sel ? 5.5 : 4.4} />
             </g>
           );
         })}

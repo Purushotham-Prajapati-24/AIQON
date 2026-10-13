@@ -2,13 +2,12 @@ import { scaleLinear } from "d3-scale";
 import { line, curveMonotoneX } from "d3-shape";
 import { motion } from "motion/react";
 import { useState, type ReactNode } from "react";
-import { Reveal, SectionHead, Skeleton, Ticker } from "../components/ui";
+import { EASE, ErrorNote, Reveal, SectionHead, Skeleton, Ticker } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { useSize } from "../hooks/useSize";
 import { api } from "../lib/api";
-import type { Insights } from "../lib/types";
-
-const EASE = [0.16, 1, 0.3, 1] as const;
+import { useStore } from "../lib/store";
+import type { Drift as DriftT, Insights } from "../lib/types";
 
 export function Proof() {
   const data = useAsync(() => api.insights(), []);
@@ -22,7 +21,13 @@ export function Proof() {
         title={["Checked against", <span className="text-fg-3">the real cause.</span>]}
         aside={ins ? `Scored on ${ins.accuracy.n_test_shipments} shipments from a later season the model never saw.` : null}
       />
-      {!ins ? <Skeleton className="h-[900px] w-full" /> : <Body ins={ins} />}
+      {ins ? (
+        <Body ins={ins} />
+      ) : data.error ? (
+        <ErrorNote error={data.error} onRetry={data.retry} />
+      ) : (
+        <Skeleton className="h-[900px] w-full" label="Loading the evaluation" />
+      )}
     </section>
   );
 }
@@ -53,7 +58,7 @@ function Body({ ins }: { ins: Insights }) {
             { label: "Lane history", v: o.B2_propagation_prior.mae },
             { label: "CASCADE", v: o.cascade.mae, hi: true },
           ]}
-          max={60}
+          max={niceMax([o.B0_schedule.mae, o.B1_carry_forward.mae, o.B2_propagation_prior.mae, o.cascade.mae], 10)}
           fmt={(v) => `${v.toFixed(1)} h`}
           caption="Average error at delivery, hours"
         />
@@ -123,6 +128,8 @@ function Body({ ins }: { ins: Insights }) {
         <Multipliers ins={ins} />
       </Block>
 
+      <Drift />
+
       <Reveal className="grid gap-6 py-14 md:grid-cols-12">
         <p className="eyebrow md:col-span-3">Honest limits</p>
         <ul className="space-y-3 text-[1.05rem] text-fg-2 md:col-span-9">
@@ -141,12 +148,17 @@ function Body({ ins }: { ins: Insights }) {
   );
 }
 
+/** Round a chart maximum up to a clean step so bars never overflow when the data grows. */
+const niceMax = (vals: number[], step: number) => Math.max(step, Math.ceil((Math.max(...vals) * 1.08) / step) * step);
+
 function Head({ n, title }: { n: string; title: string }) {
   return (
-    <p className="flex items-center gap-3">
-      <span className="font-mono text-[0.78rem] text-late">{n}</span>
+    <h3 className="flex items-center gap-3">
+      <span className="font-mono text-[0.78rem] text-late" aria-hidden>
+        {n}
+      </span>
       <span className="font-display text-[2rem] font-extrabold uppercase leading-none">{title}</span>
-    </p>
+    </h3>
   );
 }
 
@@ -214,6 +226,7 @@ function Bars({
 }
 
 const CP = ["Booked", "Container in", "Sailed", "Hub in", "Hub out", "Port in", "Unloaded", "Cleared", "Gate out"];
+const CP_SHORT = ["Book", "In", "Sail", "Hub", "Hub→", "Port", "Unld", "Clr", "Out"];
 
 /** Error by milestone: CASCADE vs "same delay as now". Two series, one axis, direct labels. */
 function Convergence({ ins }: { ins: Insights }) {
@@ -229,7 +242,15 @@ function Convergence({ ins }: { ins: Insights }) {
   const W = Math.max(width, 320);
   const M = { t: 20, r: width < 640 ? 16 : 150, b: 54, l: 44 };
   const x = scaleLinear().domain([0, CP.length - 1]).range([M.l, W - M.r]);
-  const y = scaleLinear().domain([0, 70]).range([H - M.b, M.t]);
+  const top = niceMax(series.flatMap((s) => s.pts), 20);
+  const y = scaleLinear().domain([0, top]).range([H - M.b, M.t]);
+  const ticks = Array.from({ length: top / 20 + 1 }, (_, k) => k * 20);
+  // Pick the label set that fits: full names need ~84 px per milestone, short ones ~34 px.
+  const gap = (W - M.l - M.r) / (CP.length - 1);
+  const labels = gap >= 84 ? CP : gap >= 34 ? CP_SHORT : CP_SHORT.map((c, i) => (i % 2 ? "" : c));
+  const cas = series[1].pts;
+  const b1 = series[0].pts;
+  const alt = `Average error by milestone. CASCADE falls from ${Math.round(cas[0])} hours at booking to ${cas[cas.length - 1].toFixed(1)} hours at gate out; "same delay as now" goes from ${Math.round(b1[0])} to ${b1[b1.length - 1].toFixed(1)} hours. The largest error for both is at the hub.`;
   const path = (pts: number[]) =>
     line<number>()
       .x((_, i) => x(i))
@@ -258,9 +279,9 @@ function Convergence({ ins }: { ins: Insights }) {
           }}
           onPointerLeave={() => setHover(null)}
           role="img"
-          aria-label="Average error by milestone: CASCADE falls from 53 hours at booking to about 1 hour after customs; the same-delay rule stays higher."
+          aria-label={alt}
         >
-          {[0, 20, 40, 60].map((t) => (
+          {ticks.map((t) => (
             <g key={t}>
               <line x1={M.l} x2={W - M.r} y1={y(t)} y2={y(t)} stroke="var(--line)" />
               <text x={M.l - 10} y={y(t) + 4} textAnchor="end" className="fill-fg-3 font-mono text-[11px]">
@@ -270,7 +291,7 @@ function Convergence({ ins }: { ins: Insights }) {
           ))}
           {CP.map((c, i) => (
             <text key={c} x={x(i)} y={H - M.b + 26} textAnchor="middle" className={`font-mono text-[10.5px] uppercase ${hover === i ? "fill-fg" : "fill-fg-3"}`}>
-              {width < 640 ? c.split(" ")[0].slice(0, 4) : c}
+              {labels[i]}
             </text>
           ))}
           {series.map((s) => (
@@ -331,8 +352,9 @@ function Multipliers({ ins }: { ins: Insights }) {
     DISCHARGED: "Unloading",
   };
   const order = ["DEPART_ORIGIN", "ARRIVE_TS", "ARRIVE_DEST_PORT", "DISCHARGED"];
-  const max = 2.6;
-  const pos = (v: number) => `${(v / max) * 100}%`;
+  const vals = order.flatMap((e) => (ins.propagation.by_event[e] ? [ins.propagation.by_event[e].phi_hat, ins.propagation.by_event[e].phi_true] : []));
+  const max = Math.max(2.6, Math.ceil(Math.max(...vals, 0) * 1.15 * 5) / 5);
+  const pos = (v: number) => `${(Math.min(Math.max(v, 0), max) / max) * 100}%`;
   return (
     <figure>
       <ul className="mb-6 flex flex-wrap gap-6 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
@@ -387,5 +409,51 @@ function Multipliers({ ins }: { ins: Insights }) {
         </span>
       </div>
     </figure>
+  );
+}
+
+const DRIFT_NAMES: Record<string, string> = {
+  current_delay_h: "Delay so far",
+  rho_dest_fcst: "Arrival-port congestion",
+  rho_hub_fcst: "Hub congestion",
+  weather_fcst_remaining: "Weather ahead",
+  overdue_h: "Overdue milestones",
+  ts_buffer_remaining_h: "Connection buffer",
+  n_missing_past: "Missing reports",
+  hours_since_last_event: "Time since last update",
+};
+const DRIFT_TONE = { stable: "var(--ok-ink)", watch: "var(--risk-ink)", drift: "var(--late-ink)" } as const;
+
+/** Live inputs vs the training data (PSI). Shown openly: drift is why the ranges are drift-calibrated. */
+function Drift() {
+  const { mode } = useStore();
+  const data = useAsync(() => api.drift(), [mode]);
+  const d: DriftT | null | undefined = data.data;
+  if (!d) return null;
+  const feats = Object.entries(d.features).sort((a, b) => b[1].psi - a[1].psi);
+  const shifted = feats.filter(([, f]) => f.status === "drift").length;
+  return (
+    <Reveal className="grid gap-6 border-b border-line py-14 md:grid-cols-12">
+      <div className="md:col-span-3">
+        <h3 className="eyebrow">{mode === "live" ? "Live drift check" : "Drift check · recorded run"}</h3>
+        <p className="mt-3 text-fg-2">
+          {shifted} of {feats.length} inputs have shifted since training. Expected here: the test season is the Q4 peak, which is why
+          the ranges are calibrated on later data.
+        </p>
+      </div>
+      <ul className="grid gap-x-8 gap-y-3 sm:grid-cols-2 md:col-span-9">
+        {feats.map(([k, f]) => (
+          <li key={k} className="flex items-baseline justify-between gap-4 border-b border-line pb-2">
+            <span className="text-fg-2">{DRIFT_NAMES[k] ?? k.replace(/_/g, " ")}</span>
+            <span className="font-mono text-[0.85rem]" style={{ color: DRIFT_TONE[f.status] }}>
+              {f.status} · PSI {f.psi.toFixed(2)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3 md:col-span-9 md:col-start-4">
+        {d.rule} · {d.n} live predictions
+      </p>
+    </Reveal>
   );
 }

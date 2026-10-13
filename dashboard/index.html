@@ -1,15 +1,56 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="CASCADE: when each shipment will really arrive, how sure we are, and which stage is to blame." />
-    <meta name="theme-color" content="#0a0f12" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>CASCADE · Delay Control</title>
+    <meta
+      name="description"
+      content="CASCADE predicts when each shipment will really arrive, how sure it is, which stage is to blame, and what to do about it."
+    />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0a0f12" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f3f0e8" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0f12" />
+
+    <!-- Social cards -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CASCADE" />
+    <meta property="og:title" content="CASCADE · Delay Control" />
+    <meta
+      property="og:description"
+      content="Stage-aware shipment ETAs: when it will really arrive, how sure we are, which stage is to blame, and the fix."
+    />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CASCADE dashboard: a shipment's delay cascading stage by stage." />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Apply the saved / system theme before first paint (no flash of the wrong theme). -->
+    <script>
+      (function () {
+        var t;
+        try {
+          t = localStorage.getItem("cascade-theme");
+        } catch (e) {}
+        if (t !== "dark" && t !== "light") t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p style="font: 16px/1.5 system-ui, sans-serif; padding: 2rem; max-width: 40rem">
+        CASCADE is an interactive dashboard and needs JavaScript. The model's results are summarised in the
+        project README and the technical report.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
