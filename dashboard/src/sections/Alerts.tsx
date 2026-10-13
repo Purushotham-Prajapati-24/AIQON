@@ -23,7 +23,7 @@ function explain(a: Alert): { title: string; detail: string; icon: typeof AlertO
     case "TIER_ESCALATION_AT_RISK":
       return { title: "Now at risk", detail: pl != null ? `${pl}% chance of arriving more than a day late.` : "Could slip past the delivery window.", icon: AlertOctagon };
     case "MISSED_CONNECTION_LIKELY":
-      return { title: "May miss its connection", detail: `${n[0] ?? "High"}% chance of missing the next vessel at the hub.`, icon: Link2Off };
+      return { title: "May miss its connection", detail: n.length ? `${pctOf(n[0] / 100)}% chance of missing the next vessel at the hub.` : "High chance of missing the next vessel at the hub.", icon: Link2Off };
     case "P_LATE_JUMP":
       return {
         title: "Chance late jumped",
@@ -31,7 +31,7 @@ function explain(a: Alert): { title: string; detail: string; icon: typeof AlertO
           a.previous_p_late != null && a.new_p_late != null
             ? `${pctOf(a.previous_p_late)}% → ${pctOf(a.new_p_late)}%`
             : n.length >= 2
-              ? `${n[0]}% → ${n[1]}%`
+              ? `${pctOf(n[0] / 100)}% → ${pctOf(n[1] / 100)}%`
               : head,
         icon: TrendingUp,
       };

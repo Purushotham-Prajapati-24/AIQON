@@ -25,10 +25,12 @@ export function Shipment() {
   // While the next shipment loads, keep showing the previous one (dimmed) instead of a skeleton,
   // so picking from the list never makes the page jump.
   const d = data.data;
-  const stale = !!d && d.sid !== selected;
+  // If the new one fails to load, show the error alone: not the old shipment, dimmed and busy forever.
+  const failed = !!data.error && (!d || d.sid !== selected);
+  const stale = !!d && d.sid !== selected && !failed;
   const idx = d ? Math.min(stale ? d.moments.length - 1 : (at ?? d.moments.length - 1), d.moments.length - 1) : 0;
   const m = d?.moments[idx];
-  const shownId = d?.sid ?? selected;
+  const shownId = failed ? selected : (d?.sid ?? selected);
   const options = useMemo(
     () => [...(list.data?.fleet.active ?? [])].sort((a, b) => b.p_late - a.p_late),
     [list.data],
@@ -69,7 +71,7 @@ export function Shipment() {
       />
 
       {data.error && <ErrorNote error={data.error} onRetry={data.retry} className="mb-6" />}
-      {!d || !m ? (
+      {!d || !m || failed ? (
         data.error ? null : <Skeleton className="h-[640px] w-full" label="Loading shipment" />
       ) : (
         <div aria-busy={stale} className={`transition-opacity duration-300 ${stale ? "pointer-events-none opacity-45" : ""}`}>

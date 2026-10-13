@@ -99,15 +99,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
   const retryWorld = useCallback(() => setAttempt((a) => a + 1), []);
   const signedIn = useCallback((s: Session) => setAuth({ status: "in", session: s, notice: null }), []);
-  const signOut = useCallback(async (notice?: string) => {
-    try {
-      await auth.signOut();
-    } catch {
-      return false;
-    }
-    setAuth({ status: "out", session: null, notice: notice ?? null });
-    return true;
-  }, []);
+  const sessionKind = authState.session?.kind;
+  const signOut = useCallback(
+    async (notice?: string) => {
+      try {
+        await auth.signOut(sessionKind);
+      } catch {
+        return false;
+      }
+      setAuth({ status: "out", session: null, notice: notice ?? null });
+      return true;
+    },
+    [sessionKind],
+  );
   const role = useMemo(() => roleById(authState.session?.user.role ?? null), [authState.session]);
   const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
 

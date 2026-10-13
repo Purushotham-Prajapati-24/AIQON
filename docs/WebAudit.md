@@ -65,7 +65,7 @@
 | Low | Times not labelled UTC; footer year hard-coded | `dateTime()` adds "UTC"; `dayLong(…, withYear)` | `lib/format.ts`, `components/Footer.tsx` |
 | Low | Unstyled native select (no chevron); copy button hid "Copied" | CSS chevron; announced status text | `index.css`, `sections/Shipment.tsx` |
 | Low | Snapshot script read a different env var than the app | Accepts `VITE_API_URL` or `CASCADE_API_URL`; `VITE_SOURCE=snapshot` for static builds | `scripts/snapshot.mjs`, `lib/api.ts` |
-| Low | Package version 1.0.0 vs model v1.1.0; README out of date | Version 1.1.0; README documents scripts, sources, fallback and the quality bar | `package.json`, `dashboard/README.md` |
+| Low | Package version 1.0.0 vs model v1.1.0; README out of date | Version 1.2.0 (matches the recorded model); README documents scripts, sources, fallback and the quality bar | `package.json`, `dashboard/README.md` |
 | Low | README led with the Streamlit app | Dashboard hero screenshot first; quick start launches the dashboard; Streamlit positioned as the analyst console | `README.md`, `docs/screenshots/00_dashboard_*.png` |
 
 ### 3a. Reconciled with `main` (PRs #5, #7, #10, #11)
@@ -117,7 +117,10 @@ python -m pytest -q
 ```
 
 ```bash
-cd dashboard && PW_CHANNEL=msedge npm run test:e2e
+cd dashboard && npx playwright install chromium   # once
+npm run test:e2e                                  # builds first, then runs the suite
+# or reuse an installed browser instead of downloading one:
+PW_CHANNEL=msedge npm run test:e2e                # or PW_CHANNEL=chrome
 ```
 
 To repeat the browser checks:

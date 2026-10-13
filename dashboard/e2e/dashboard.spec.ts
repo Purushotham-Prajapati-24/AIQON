@@ -134,6 +134,29 @@ test("falls back to the recording when the live API stops answering", async ({ p
   await expect(page.locator("footer")).toContainText("Recorded run (API offline)");
 });
 
+test("a static host that answers every path with index.html is not mistaken for the API", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.route("**/api/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>spa</title>" }));
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/late at the hub/i);
+  await expect(page.getByRole("status").filter({ hasText: "Recorded run" }).first()).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "API offline" })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("signing out after a fallback still ends the server session", async ({ page }) => {
+  let logouts = 0;
+  await page.route("**/api/v1/**", (r) => r.abort("connectionrefused"));
+  await page.route("**/api/ready", (r) => r.fulfill({ status: 200, json: { ready: true } }));
+  await page.route("**/api/v1/auth/me", (r) => r.fulfill({ status: 200, json: { user: REVIEWER, expires_at: Math.floor(Date.now() / 1000) + 3600 } }));
+  await page.route("**/api/v1/auth/logout", (r) => (logouts++, r.fulfill({ status: 204 })));
+  await page.goto("/");
+  await expect(page.getByRole("status").filter({ hasText: "API offline" }).first()).toBeVisible();
+  await page.getByRole("button", { name: /sign out aiqon reviewer/i }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/sign in/i);
+  expect(logouts).toBe(1);
+});
+
 test("an expired session (401) returns to sign-in with a notice", async ({ page }) => {
   let me = 0;
   await page.route("**/api/v1/**", (r) => r.fulfill({ status: 401, json: { detail: "session expired" } }));
