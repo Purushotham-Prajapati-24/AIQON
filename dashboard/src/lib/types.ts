@@ -62,6 +62,10 @@ export interface Alert {
   created_at: string;
   message: string;
   age_h: number;
+  /** Structured evidence (API v1.1+); absent in older recordings. */
+  previous_p_late?: number | null;
+  new_p_late?: number | null;
+  recommended_next_step?: string;
 }
 export interface Alerts {
   as_of: string;

@@ -239,7 +239,7 @@ function Readout({ m }: { m: Moment }) {
   );
 }
 
-/** Three numbers that earn trust, straight from the evaluation. */
+/** Four numbers that earn trust, straight from the evaluation. */
 function Proof() {
   const data = useAsync(() => api.model(), []);
   const m = data.data?.metrics;
@@ -247,7 +247,7 @@ function Proof() {
     ? [
         { v: m.mae_improvement_vs_B1 * 100, f: (x: number) => `${Math.round(x)}%`, l: "smaller error than “same delay as now”" },
         { v: m.coverage_p10_p90_overall * 100, f: (x: number) => `${Math.round(x)}%`, l: "of likely ranges held (target 80%)" },
-        { v: m.alert_lead_ge_48h_share * 100, f: (x: number) => `${Math.round(x)}%`, l: "of late shipments flagged 2+ days ahead" },
+        { v: m.promise_hit_rate * 100, f: (x: number) => `${Math.round(x)}%`, l: "of customer dates kept" },
         { v: m.latency_p95_ms, f: (x: number) => `${x.toFixed(1)} ms`, l: "to answer, start to finish" },
       ]
     : [];

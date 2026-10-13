@@ -1,6 +1,10 @@
 # Run from the repo root:  docker compose -f docker/compose.yaml up --build
-# API:  http://localhost:8000/docs     UI:  http://localhost:8501
-# Different host ports:  CASCADE_API_PORT=8200 CASCADE_UI_PORT=8701 docker compose ... up
+# Dashboard:  http://localhost:8080    API:  http://localhost:8000/docs    Streamlit:  http://localhost:8501
+# Different host ports:  CASCADE_DASHBOARD_PORT=8180 CASCADE_API_PORT=8200 CASCADE_UI_PORT=8701 docker compose ... up
+# Sign-in: CASCADE_AUTH=required makes every /v1 data route need a session and needs CASCADE_PASSWORD
+# (12+ characters); set CASCADE_JWT_SECRET (32+ characters) so sessions survive an API restart.
+# The services share a private network (CASCADE_NET, default 172.31.240.x); change it if that range
+# is taken on your machine.
 name: cascade
 
 services:
@@ -14,6 +18,14 @@ services:
     environment:
       CASCADE_MODEL_VERSION: latest
       CASCADE_LEDGER: /tmp/ledger.sqlite   # file-backed (tmpfs), so monitoring survives within a run
+      CASCADE_AUTH: ${CASCADE_AUTH:-optional}
+      CASCADE_JWT_SECRET: ${CASCADE_JWT_SECRET:-}
+      CASCADE_PASSWORD: ${CASCADE_PASSWORD:-}
+      CASCADE_DEMO_LOGIN: ${CASCADE_DEMO_LOGIN:-}
+      # Only the dashboard's nginx may set X-Forwarded-For (the sign-in throttle keys on it);
+      # direct callers on the published port can't spoof their address.
+      FORWARDED_ALLOW_IPS: ${CASCADE_NET:-172.31.240}.10
+    networks: [cascade]
     volumes:
       # Published model bundles, mounted read-only (also baked into the image as a fallback).
       - ../artifacts:/app/artifacts:ro
@@ -31,7 +43,31 @@ services:
       - "${CASCADE_UI_PORT:-8501}:8501"
     environment:
       CASCADE_API_URL: http://api:8000
+    networks: [cascade]
     depends_on:
       api:
         condition: service_healthy
     restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    image: cascade-dashboard:1.2.0
+    ports:
+      - "${CASCADE_DASHBOARD_PORT:-8080}:8080"
+    environment:
+      CASCADE_API_UPSTREAM: http://api:8000
+    networks:
+      cascade:
+        ipv4_address: ${CASCADE_NET:-172.31.240}.10
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  cascade:
+    ipam:
+      config:
+        - subnet: ${CASCADE_NET:-172.31.240}.0/24

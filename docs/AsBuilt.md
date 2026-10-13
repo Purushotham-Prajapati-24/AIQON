@@ -48,7 +48,8 @@ The six pages were built as designed (Fleet, Shipment detail with time-travel, W
 - plain-language labels throughout (chance late, likely range, hub transfer);
 - what-if switches are disabled for stages that already happened;
 - no Data health page (feed completeness is not shown; it stays in Streamlit);
-- runs without the API from a recorded snapshot of real responses.
+- runs without the API from a recorded snapshot of real responses (re-recorded from v1.2.0; CI fails if the snapshot's model version differs from the published bundle);
+- ships as its own container (`docker/Dockerfile.dashboard`: nginx serves the build and proxies `/api` to the API, so the session cookie is first-party), and CI type-checks and builds it (issue #9).
 
 ## 5. Stability across simulator seeds (`cascade seeds`, 5 seeds × 300 shipments)
 
