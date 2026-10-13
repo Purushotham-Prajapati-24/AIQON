@@ -51,6 +51,22 @@
   --contour: rgb(29 106 158 / 0.09);
 }
 
+/* Sidebar rail. --rail is its width; --rail-offset is how much room the page gives it (none below lg,
+   where it becomes a drawer). --cw is 1% of the content column, the sidebar-aware stand-in for 1vw. */
+:root {
+  --rail: 16.5rem;
+  --rail-offset: 0px;
+  --cw: calc((100vw - var(--rail-offset)) / 100);
+}
+:root[data-rail="collapsed"] {
+  --rail: 4.5rem;
+}
+@media (min-width: 64rem) {
+  :root[data-rail] {
+    --rail-offset: var(--rail);
+  }
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-bg-2: var(--bg-2);
@@ -82,6 +98,11 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
+  }
+  @media (min-width: 64rem) {
+    html {
+      scroll-padding-top: 1rem;
+    }
     -webkit-text-size-adjust: 100%;
   }
   body {
@@ -111,7 +132,7 @@
     @apply font-mono text-[0.8rem] uppercase tracking-[0.18em] text-fg-3;
   }
   .h-section {
-    @apply font-display font-extrabold uppercase leading-[0.9] tracking-[-0.01em] text-[clamp(2.75rem,6vw,5.5rem)];
+    @apply font-display font-extrabold uppercase leading-[0.9] tracking-[-0.01em] text-[clamp(2.75rem,calc(6*var(--cw)),5.5rem)];
   }
   .num {
     @apply font-display font-bold tabular-nums leading-none;

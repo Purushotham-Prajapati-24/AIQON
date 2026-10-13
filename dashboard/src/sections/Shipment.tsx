@@ -131,7 +131,7 @@ function Detail({
       <div className="grid grid-cols-2 border-b border-line lg:grid-cols-4">
         <Figure label={delivered ? "Final delay" : "Expected delay"}>
           <div className="flex items-baseline gap-2" style={{ color: v.delay_hours.p50 > 24 ? "var(--late)" : undefined }}>
-            <span className="num text-[clamp(3.2rem,5vw,4.75rem)]">
+            <span className="num text-[clamp(3.2rem,calc(5*var(--cw)),4.75rem)]">
               {parts.sign}
               <Ticker value={+parts.v} format={(x) => (parts.u === "days" ? x.toFixed(1) : x.toFixed(0))} duration={0.8} />
             </span>
@@ -160,7 +160,7 @@ function Detail({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.35, ease: EASE }}
-              className="num text-[clamp(3.2rem,5vw,4.75rem)] uppercase"
+              className="num text-[clamp(3.2rem,calc(5*var(--cw)),4.75rem)] uppercase"
             >
               {day(v.eta.p50)}
             </motion.div>
@@ -170,7 +170,7 @@ function Detail({
           </p>
         </Figure>
         <Figure label="Delay cost" className="border-l border-line max-lg:border-t">
-          <div className="num text-[clamp(3.2rem,5vw,4.75rem)]">
+          <div className="num text-[clamp(3.2rem,calc(5*var(--cw)),4.75rem)]">
             <Ticker value={v.cost_usd.p50 ?? 0} format={(x) => usd(x)} duration={0.8} />
           </div>
           <CostSplit v={v.cost_usd} />

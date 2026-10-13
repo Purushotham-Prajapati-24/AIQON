@@ -32,15 +32,17 @@ export function App() {
           </a>
           <OpenAt target={location.hash.slice(1) || role.opens} />
           <Nav />
-          <main>
-            <Hero />
-            <Fleet />
-            <Shipment />
-            <Fix />
-            <Alerts />
-            <Proof />
-          </main>
-          <Footer />
+          <div className="transition-[padding] duration-300 ease-out-expo lg:pl-[var(--rail-offset)]">
+            <main>
+              <Hero />
+              <Fleet />
+              <Shipment />
+              <Fix />
+              <Alerts />
+              <Proof />
+            </main>
+            <Footer />
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

@@ -38,7 +38,7 @@ function Body({ ins }: { ins: Insights }) {
         title="Smaller error"
         lead={
           <>
-            <span className="num text-[clamp(4rem,8vw,7.5rem)] text-sea">
+            <span className="num text-[clamp(4rem,calc(8*var(--cw)),7.5rem)] text-sea">
               −<Ticker value={h.mae_improvement_vs_B1 * 100} format={(x) => `${Math.round(x)}%`} />
             </span>
             <p className="mt-3 max-w-xs text-fg-2">average error versus assuming the delay stays as it is today</p>
@@ -73,7 +73,7 @@ function Body({ ins }: { ins: Insights }) {
         <div className="py-14 lg:pr-12">
           <Head n="C" title="Ranges you can trust" />
           <div className="mt-6 flex items-end gap-4">
-            <span className="num text-[clamp(3.5rem,6vw,5.5rem)]">
+            <span className="num text-[clamp(3.5rem,calc(6*var(--cw)),5.5rem)]">
               <Ticker value={ins.accuracy.coverage_p10_p90.overall * 100} format={(x) => `${Math.round(x)}%`} />
             </span>
             <span className="mb-2 max-w-[14rem] text-fg-2">of actual delays landed inside the likely range (aim: 80%)</span>
@@ -95,7 +95,7 @@ function Body({ ins }: { ins: Insights }) {
         <div className="border-line py-14 lg:border-l lg:pl-12">
           <Head n="D" title="Blames the right stage" />
           <div className="mt-6 flex items-end gap-4">
-            <span className="num text-[clamp(3.5rem,6vw,5.5rem)]">
+            <span className="num text-[clamp(3.5rem,calc(6*var(--cw)),5.5rem)]">
               <Ticker value={ins.attribution.accuracy.shap_top2 * 100} format={(x) => `${Math.round(x)}%`} />
             </span>
             <span className="mb-2 max-w-[14rem] text-fg-2">true cause is in its top two, checked against the simulator’s record</span>

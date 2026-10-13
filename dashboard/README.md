@@ -36,7 +36,13 @@ The dashboard opens on a sign-in screen. Click a demo account (or press 1–4), 
 | Lena Fischer · Network analyst | 05 Proof | planner |
 | Aiqon Reviewer | Hero replay | customer |
 
-The API sets the session as a signed JWT in an httpOnly cookie, so a reload keeps you signed in and the top-right button signs out. If the session ends (it expired, or the API runs with `CASCADE_AUTH=required` and the cookie is gone), the dashboard returns to sign-in and says so. A deep link such as `/#alerts` opens that section after sign-in. When the API isn't running, sign-in is simulated in the browser and the screen says "Offline preview".
+The API sets the session as a signed JWT in an httpOnly cookie, so a reload keeps you signed in and the account button at the foot of the sidebar signs out. If the session ends (it expired, or the API runs with `CASCADE_AUTH=required` and the cookie is gone), the dashboard returns to sign-in and says so. A deep link such as `/#alerts` opens that section after sign-in. When the API isn't running, sign-in is simulated in the browser and the screen says "Offline preview".
+
+## Finding your way
+
+Sections live in a left sidebar: a fixed rail from 1024 px wide (collapse it to icons with the panel button; the choice is remembered), and a drawer behind the menu button on smaller screens. Each entry says the question its section answers. The **Your task** card at the top states the signed-in role's job and links to where that role starts, and the same section is tagged **Start**.
+
+Every section opens with a **How to use** strip listing what you can do there. Hide them with **Hide tips** or the lightbulb in the sidebar. The copy for both lives in `src/lib/guide.ts`.
 
 ## What's on the page
 

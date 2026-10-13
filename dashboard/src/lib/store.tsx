@@ -15,6 +15,9 @@ interface Store {
   select: (sid: string, scroll?: boolean) => void;
   theme: "dark" | "light";
   toggleTheme: () => void;
+  /** Show the "what you can do here" strip under each section heading. */
+  tips: boolean;
+  toggleTips: () => void;
   /** "checking" while the saved session is verified; "out" shows the sign-in screen. */
   auth: { status: "checking" | "in" | "out"; session: Session | null; notice: string | null };
   /** The signed-in user's role: where the page opens and how explanations are worded. */
@@ -37,12 +40,21 @@ function initialTheme(): "dark" | "light" {
   return matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
+function initialTips() {
+  try {
+    return localStorage.getItem("cascade-tips") !== "off";
+  } catch {
+    return true;
+  }
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode | null>(null);
   const [world, setWorld] = useState<World | null>(null);
   const [days, setDays] = useState(0);
   const [selected, setSelected] = useState(HERO_SHIPMENT);
   const [theme, setTheme] = useState(initialTheme);
+  const [tips, setTips] = useState(initialTips);
   const [authState, setAuth] = useState<Store["auth"]>({ status: "checking", session: null, notice: null });
 
   useEffect(() => {
@@ -68,6 +80,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [theme]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("cascade-tips", tips ? "on" : "off");
+    } catch {
+      /* storage blocked */
+    }
+  }, [tips]);
+
   const select = useCallback((sid: string, scroll = false) => {
     setSelected(sid);
     if (scroll) document.getElementById("shipment")?.scrollIntoView({ behavior: "smooth" });
@@ -84,10 +104,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
   const role = useMemo(() => roleById(authState.session?.user.role ?? null), [authState.session]);
   const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
+  const toggleTips = useCallback(() => setTips((t) => !t), []);
 
   const value = useMemo(
-    () => ({ mode, world, days, setDays, selected, select, theme, toggleTheme, auth: authState, role, signedIn, signOut }),
-    [mode, world, days, selected, select, theme, toggleTheme, authState, role, signedIn, signOut],
+    () => ({ mode, world, days, setDays, selected, select, theme, toggleTheme, tips, toggleTips, auth: authState, role, signedIn, signOut }),
+    [mode, world, days, selected, select, theme, toggleTheme, tips, toggleTips, authState, role, signedIn, signOut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

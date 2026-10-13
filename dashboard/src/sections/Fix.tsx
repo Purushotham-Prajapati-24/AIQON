@@ -124,7 +124,7 @@ function Side({ label, delayH, eta, accent }: { label: string; delayH: number; e
   return (
     <div>
       <p className="eyebrow">{label}</p>
-      <div className={`num mt-3 text-[clamp(3rem,5.5vw,5.25rem)] ${accent ? "text-fg" : "text-fg-2"}`}>
+      <div className={`num mt-3 text-[clamp(3rem,calc(5.5*var(--cw)),5.25rem)] ${accent ? "text-fg" : "text-fg-2"}`}>
         <Ticker value={delayH / 24} format={(x) => `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(1)}`} duration={0.7} />
         <span className="ml-1 text-[0.4em] uppercase">days</span>
       </div>
@@ -151,7 +151,7 @@ function Delta({
   return (
     <div className={`py-6 ${border ? "border-l border-line pl-4 md:pl-6" : "pr-4"}`}>
       <p className="eyebrow">{label}</p>
-      <div className={`num mt-3 text-[clamp(2rem,3.4vw,3rem)] ${good ? "text-ok" : ""}`}>
+      <div className={`num mt-3 text-[clamp(2rem,calc(3.4*var(--cw)),3rem)] ${good ? "text-ok" : ""}`}>
         <Ticker value={value} format={format} duration={0.7} />
       </div>
       {note && <p className="mt-1 font-mono text-[0.78rem] text-fg-3">{note}</p>}
@@ -280,7 +280,7 @@ function Disruption() {
 function Big({ v, l, tone, prefix = "", money, border }: { v: number; l: string; tone?: string; prefix?: string; money?: boolean; border?: boolean }) {
   return (
     <Reveal className={border ? "border-l border-line pl-4 md:pl-6" : ""} y={10}>
-      <div className="num text-[clamp(2.6rem,5vw,4.5rem)]" style={tone ? { color: tone } : undefined}>
+      <div className="num text-[clamp(2.6rem,calc(5*var(--cw)),4.5rem)]" style={tone ? { color: tone } : undefined}>
         <Ticker value={v} format={(x) => (money ? usd(x, true) : `${prefix}${Math.round(x)}`)} duration={0.8} />
       </div>
       <p className="mt-2 text-[0.95rem] text-fg-2">{l}</p>
