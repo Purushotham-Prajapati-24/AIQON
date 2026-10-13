@@ -27,6 +27,7 @@ import os
 import secrets
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 
 import jwt
@@ -151,12 +152,14 @@ def public(user: User) -> dict:
 class Throttle:
     """At most ``limit`` failed sign-ins per client per ``window_s``; a success clears the count."""
 
-    def __init__(self, limit: int = 10, window_s: float = 60.0) -> None:
-        self.limit, self.window_s = limit, window_s
+    def __init__(
+        self, limit: int = 10, window_s: float = 60.0, clock: Callable[[], float] = time.monotonic
+    ) -> None:
+        self.limit, self.window_s, self._clock = limit, window_s, clock
         self._fails: dict[str, list[float]] = {}
 
     def blocked(self, key: str) -> bool:
-        now = time.monotonic()
+        now = self._clock()
         recent = [t for t in self._fails.get(key, []) if now - t < self.window_s]
         if recent:
             self._fails[key] = recent
@@ -165,7 +168,7 @@ class Throttle:
         return len(recent) >= self.limit
 
     def fail(self, key: str) -> None:
-        self._fails.setdefault(key, []).append(time.monotonic())
+        self._fails.setdefault(key, []).append(self._clock())
 
     def clear(self, key: str) -> None:
         self._fails.pop(key, None)

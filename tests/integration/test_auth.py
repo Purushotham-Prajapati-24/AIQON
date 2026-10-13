@@ -163,9 +163,12 @@ def test_bad_settings_fail_fast(monkeypatch):
 
 
 def test_throttle_forgets_expired_clients():
-    t = auth.Throttle(limit=2, window_s=0.05)
+    now = [1000.0]  # a fake clock: real sleeps are too coarse on Windows (~15 ms ticks)
+    t = auth.Throttle(limit=2, window_s=60, clock=lambda: now[0])
     t.fail("a")
     t.fail("a")
     assert t.blocked("a")
-    time.sleep(0.06)
+    now[0] += 59
+    assert t.blocked("a")
+    now[0] += 2
     assert not t.blocked("a") and "a" not in t._fails
