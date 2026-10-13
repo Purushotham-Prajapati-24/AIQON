@@ -44,13 +44,16 @@ If your machine blocks the `cascade` launcher, `python -m cascade.cli serve` doe
 
 To rebuild everything from scratch (simulate → train → evaluate → gate → publish, about 1 minute), run `cascade all --force`. This overwrites `data/`, `reports/` and `artifacts/v1.2.0`. `cascade seeds` reruns the 5-seed stability study, and `cascade sensitivity` reruns the wrong-assumption study (the baseline plus 6 worlds with changed simulator mechanics → `reports/sensitivity.json`).
 
-**Docker alternative** (API + UI, healthchecked, API runs as a non-root user):
+**Docker alternative** (API + React dashboard + Streamlit, healthchecked, API runs as a non-root user):
 
 ```bash
 docker compose -f docker/compose.yaml up --build
-# API: http://localhost:8000/docs   UI: http://localhost:8501
-# Ports already taken?  CASCADE_API_PORT=8200 CASCADE_UI_PORT=8701 docker compose -f docker/compose.yaml up --build
+# Dashboard: http://localhost:8080   API: http://localhost:8000/docs   Streamlit: http://localhost:8501
+# Ports already taken?  CASCADE_DASHBOARD_PORT=8180 CASCADE_API_PORT=8200 CASCADE_UI_PORT=8701 docker compose -f docker/compose.yaml up --build
+# Sign-in on every data route:  CASCADE_AUTH=required CASCADE_PASSWORD=<12+ chars> CASCADE_JWT_SECRET=<32+ chars> docker compose ... up --build
 ```
+
+The dashboard container is nginx serving the built app; it proxies `/api` to the API, so the session cookie stays first-party.
 
 ## Sign in
 
@@ -179,7 +182,7 @@ artifacts/    published model bundle v1.2.0 (committed, so the API runs without 
 reports/      metrics.json, seeds.json, figures/
 report/       technical report builder → CASCADE_Technical_Report.pdf
 docs/         PRD, architecture, design, as-built notes, model card, demo script
-docker/       Dockerfile.api, Dockerfile.ui, compose.yaml
+docker/       Dockerfile.api, Dockerfile.ui, Dockerfile.dashboard (+ nginx config), compose.yaml
 tests/        unit, property (leakage, invariants), API contract, perf
 ```
 

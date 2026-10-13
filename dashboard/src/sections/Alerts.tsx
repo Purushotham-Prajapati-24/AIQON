@@ -12,16 +12,28 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 
 /** Alert rules in plain words. */
 function explain(a: Alert): { title: string; detail: string; icon: typeof AlertOctagon } {
-  const n = a.message.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
+  // Only the API's own sentence is parsed; any narrative appended after it is ignored.
+  const head = a.message.split(/(?<=\.)\s/)[0];
+  const n = head.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
+  const pct = a.new_p_late != null ? Math.round(a.new_p_late * 100) : null;
   switch (a.rule) {
     case "TIER_ESCALATION_LATE":
-      return { title: "Now late", detail: "Expected more than a day late.", icon: AlertOctagon };
+      return { title: "Now late", detail: pct != null ? `${pct}% chance of arriving more than a day late.` : "Expected more than a day late.", icon: AlertOctagon };
     case "TIER_ESCALATION_AT_RISK":
-      return { title: "Now at risk", detail: "Could slip past the delivery window.", icon: AlertOctagon };
+      return { title: "Now at risk", detail: pct != null ? `${pct}% chance of arriving more than a day late.` : "Could slip past the delivery window.", icon: AlertOctagon };
     case "MISSED_CONNECTION_LIKELY":
       return { title: "May miss its connection", detail: `${n[0] ?? "High"}% chance of missing the next vessel at the hub.`, icon: Link2Off };
     case "P_LATE_JUMP":
-      return { title: "Chance late jumped", detail: n.length >= 2 ? `${n[0]}% → ${n[1]}%` : a.message, icon: TrendingUp };
+      return {
+        title: "Chance late jumped",
+        detail:
+          a.previous_p_late != null && a.new_p_late != null
+            ? `${Math.round(a.previous_p_late * 100)}% → ${Math.round(a.new_p_late * 100)}%`
+            : n.length >= 2
+              ? `${n[0]}% → ${n[1]}%`
+              : head,
+        icon: TrendingUp,
+      };
     case "PROMISE_MOVED": {
       const d = n[0] ?? 0;
       return { title: "Customer date moved", detail: `${Math.abs(d)} day${Math.abs(d) === 1 ? "" : "s"} ${d > 0 ? "later" : "earlier"}.`, icon: CalendarClock };
@@ -29,7 +41,7 @@ function explain(a: Alert): { title: string; detail: string; icon: typeof AlertO
     case "SILENT_SHIPMENT":
       return {
         title: "Gone quiet",
-        detail: n.length >= 2 ? `No update for ${Math.round(n[0] / 24)} days (usually ${Math.max(1, Math.round(n[1] / 24))}).` : a.message,
+        detail: n.length >= 2 ? `No update for ${Math.round(n[0] / 24)} days (usually ${Math.max(1, Math.round(n[1] / 24))}).` : head,
         icon: VolumeX,
       };
     default:

@@ -77,3 +77,27 @@ jobs:
           cache-dependency-glob: pyproject.toml
       - run: uv pip install -e ".[dev]"
       - run: pytest -q -m perf
+
+  dashboard:
+    name: dashboard (typecheck + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Typecheck and build
+        run: npm run build
+      - name: Recorded snapshot matches the published model
+        run: |
+          snap=$(node -p "require('./public/snapshot/model.json').version")
+          pub=$(ls ../artifacts | sort -V | tail -1 | sed 's/^v//')
+          echo "snapshot $snap, published $pub"
+          test "$snap" = "$pub"

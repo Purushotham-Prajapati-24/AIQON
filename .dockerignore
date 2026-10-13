@@ -16,3 +16,5 @@ docs/screenshots
 *.pdf
 *.sqlite
 *.db
+dashboard/node_modules
+dashboard/dist
