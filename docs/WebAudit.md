@@ -97,7 +97,7 @@ Main gained JWT sign-in with four demo accounts, a same-origin `/api` proxy (Vit
 | P2 | Add structured alert fields server-side (`hours_silent`, `promise_shift_days`, `p_miss`). | Three alert types still read numbers out of message text. | Backend |
 | P2 | Compute disruption impacts lazily (on hover or click) instead of 4 POSTs on load. | Load on the API. | Web |
 | P2 | ~~Production API hardening~~ | **Mostly done on main.** JWT in an httpOnly cookie, `CASCADE_AUTH=required`, a sign-in throttle, an allow-list via `CASCADE_CORS_ORIGINS`, and same-origin `/api`. Left: a general per-client rate limit on data routes. | Backend |
-| P3 | `GET /v1/auth/me` answers 401 when nobody is signed in, which the browser logs as a console error on every visit to the sign-in screen. A `200 {user: null}` would keep the console clean. | Cosmetic, but it shows in every devtools session. | Backend |
+| P3 | ~~`GET /v1/auth/me` answered 401 when nobody was signed in~~ | **Done.** It now returns `200 {user: null}` when no credentials are sent, so the sign-in screen no longer logs a failed request. An invalid, tampered or expired token is still a 401. | ✅ |
 | P3 | Re-audit the Streamlit console, and consider retiring the views it duplicates. | It wasn't re-audited in this pass (its earlier issues were fixed in v1.1). | Web |
 
 ---

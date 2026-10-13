@@ -58,6 +58,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 type ServerSession = { user: User; expires_at: number };
+/** `/v1/auth/me` answers `user: null` (HTTP 200) when nobody is signed in. */
+type MaybeSession = { user: User | null; expires_at: number | null };
 const fromServer = (s: ServerSession): Session => ({ user: s.user, expiresAt: s.expires_at, kind: "server" });
 
 function readOffline(): Session | null {
@@ -83,7 +85,8 @@ export const session = {
   async current(): Promise<Session | null> {
     if ((await detectMode()) === "snapshot") return readOffline();
     try {
-      return fromServer(await call<ServerSession>("/v1/auth/me"));
+      const s = await call<MaybeSession>("/v1/auth/me");
+      return s.user && s.expires_at ? fromServer({ user: s.user, expires_at: s.expires_at }) : null;
     } catch {
       return null;
     }

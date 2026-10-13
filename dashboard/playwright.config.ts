@@ -10,6 +10,9 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
+  // Locally, 10+ browsers loading a fresh build at once can stall `vite preview` for 15-20 s
+  // (first reads of newly written dist/ files), which looks like an app hang. CI keeps the default.
+  workers: process.env.CI ? undefined : 5,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",

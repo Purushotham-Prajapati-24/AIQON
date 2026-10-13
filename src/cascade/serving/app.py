@@ -343,9 +343,12 @@ def demo_login(req: DemoLoginRequest, response: Response):
 
 @app.get("/v1/auth/me", tags=["auth"])
 def me(request: Request):
+    """The signed-in user. No credentials at all is an answer (`user: null`), not an error, so a
+    browser checking for a session on page load doesn't log a failed request; a credential that
+    is invalid, tampered with or expired is still a 401."""
     found = _session(request)
     if found is None:
-        raise HTTPException(401, "not signed in")
+        return {"user": None, "expires_at": None, "mode": _settings().mode}
     user, exp = found
     return {"user": auth.public(user), "expires_at": exp, "mode": _settings().mode}
 
