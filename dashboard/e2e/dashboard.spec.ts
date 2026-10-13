@@ -6,7 +6,8 @@ const SECTIONS = ["fleet", "shipment", "fix", "alerts", "proof"] as const;
 /** Scroll through every section so lazy chunks, data and reveal animations all settle. */
 async function visitAllSections(page: Page) {
   for (const id of SECTIONS) {
-    await page.locator(`#${id}`).first().scrollIntoViewIfNeeded();
+    // The heading exists only in the loaded section, not its lazy placeholder (which is swapped out).
+    await page.locator(`#${id}-head`).scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
   }
   await page.waitForLoadState("networkidle");
@@ -129,7 +130,7 @@ test("falls back to the recording when the live API stops answering", async ({ p
   await page.route("**/api/v1/auth/me", (r) => r.fulfill({ status: 200, json: { user: REVIEWER, expires_at: Math.floor(Date.now() / 1000) + 3600 } }));
   await page.goto("/");
   await expect(page.getByRole("status").filter({ hasText: "API offline" }).first()).toBeVisible();
-  await page.locator("#fleet").scrollIntoViewIfNeeded();
+  await page.locator("#fleet-head").scrollIntoViewIfNeeded();
   await expect(page.getByRole("heading", { level: 2 }).filter({ hasText: /shipments/i }).first()).toContainText(/\d+\s+of\s+\d+/);
   await expect(page.locator("footer")).toContainText("Recorded run (API offline)");
 });
