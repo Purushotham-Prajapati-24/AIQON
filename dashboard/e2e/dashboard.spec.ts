@@ -122,6 +122,16 @@ test.describe("recorded run", () => {
   });
 });
 
+test("on a large screen the sidebar shows and on-screen counters finish without scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 2560, height: 1440 });
+  await page.goto("/?source=snapshot");
+  await expect(page.getByRole("complementary", { name: "Sidebar" })).toBeVisible();
+  const stat = page.getByText(/smaller error than/).locator("xpath=ancestor::div[1]").locator(".num").first();
+  await expect(stat).toBeInViewport();
+  const target = (await stat.locator(".sr-only").textContent())?.trim();
+  await expect.poll(async () => (await stat.locator('[aria-hidden="true"]').textContent())?.trim()).toBe(target);
+});
+
 test("falls back to the recording when the live API stops answering", async ({ page }) => {
   // The probe and the session check succeed (API "up", user signed in), then every data call
   // fails: an outage mid-session. Later routes take precedence, so the catch-all goes first.

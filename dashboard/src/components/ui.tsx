@@ -25,7 +25,9 @@ export function Ticker({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
+  // Start once the number itself is mostly on screen. (A "-10%" root margin left a figure sitting in
+  // the bottom tenth of a tall window at 0 until the user scrolled.)
+  const inView = useInView(ref, { once: true, amount: 0.6 });
   const reduce = useReducedMotion();
   const mv = useMotionValue(0);
   const text = useTransform(mv, (v) => format(v));
