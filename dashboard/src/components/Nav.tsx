@@ -10,6 +10,7 @@ import {
   Package,
   PanelLeftClose,
   PanelLeftOpen,
+  Search,
   ShieldCheck,
   Sun,
   Wrench,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GUIDE } from "../lib/guide";
+import { PALETTE_SHORTCUT } from "./CommandPalette";
 import { useStore } from "../lib/store";
 
 export const SECTIONS: { id: string; label: string; icon: LucideIcon }[] = [
@@ -144,7 +146,10 @@ function SidebarBody({
         {headerAction}
       </div>
 
-      <nav aria-label="Sections" className="flex-1 overflow-y-auto overscroll-contain py-4">
+      <div className={`pt-4 ${compact ? "px-2" : "px-3"}`}>
+        <SearchButton compact={compact} onOpen={onNavigate} />
+      </div>
+      <nav aria-label="Sections" className="flex-1 overflow-y-auto overscroll-contain py-3">
         <ul className={`space-y-0.5 ${compact ? "px-2" : "px-3"}`}>
           {[{ id: "top", label: "Replay", icon: CirclePlay }, ...SECTIONS].map((s) => (
             <NavItem
@@ -163,6 +168,34 @@ function SidebarBody({
 
       <SidebarFooter compact={compact} />
     </div>
+  );
+}
+
+/** Opens the command palette; styled as a field so it reads as "search", with its shortcut on show. */
+function SearchButton({ compact, onOpen }: { compact: boolean; onOpen?: () => void }) {
+  const { setPalette } = useStore();
+  return (
+    <button
+      onClick={() => {
+        onOpen?.();
+        setPalette(true);
+      }}
+      aria-keyshortcuts={PALETTE_SHORTCUT === "⌘K" ? "Meta+K" : "Control+K"}
+      title={compact ? `Search (${PALETTE_SHORTCUT})` : undefined}
+      className={`flex h-10 w-full items-center gap-3 rounded-[5px] border border-line-2 bg-bg text-fg-3 transition-colors hover:border-fg-3 hover:text-fg-2 ${
+        compact ? "justify-center" : "px-3"
+      }`}
+    >
+      <Search size={16} aria-hidden className="shrink-0" />
+      {compact ? (
+        <span className="sr-only">Search</span>
+      ) : (
+        <>
+          <span className="text-[0.92rem]">Search</span>
+          <span className="kbd ml-auto">{PALETTE_SHORTCUT}</span>
+        </>
+      )}
+    </button>
   );
 }
 
@@ -289,6 +322,7 @@ function ScrollProgress({ axis }: { axis: "x" | "y" }) {
 
 /** Below `lg`: brand plus a button that opens the sidebar as a drawer. */
 function MobileBar({ onOpen }: { onOpen: () => void }) {
+  const { setPalette } = useStore();
   return (
     <header className="fixed inset-x-0 top-0 z-40 border-b border-line bg-bg/92 backdrop-blur-md lg:hidden">
       <div className="shell flex h-16 items-center gap-3 md:h-[4.5rem]">
@@ -304,6 +338,13 @@ function MobileBar({ onOpen }: { onOpen: () => void }) {
           <Logo className="size-7" />
           <span className="font-display text-[1.55rem] font-extrabold uppercase tracking-[0.04em]">Cascade</span>
         </a>
+        <button
+          onClick={() => setPalette(true)}
+          className="-mr-2.5 ml-auto grid size-11 place-items-center rounded-[4px] text-fg-2 transition-colors hover:bg-bg-3 hover:text-fg"
+          aria-label="Search"
+        >
+          <Search size={19} />
+        </button>
       </div>
       <ScrollProgress axis="x" />
     </header>

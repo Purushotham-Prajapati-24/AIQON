@@ -114,6 +114,7 @@ export function Alerts() {
                   transition={{ duration: 0.5, ease: EASE, delay: (k % 6) * 0.04 }}
                 >
                   <button
+                    data-spotlight
                     onClick={(ev) => select(a.shipment_id, true, { label: "Alerts", section: "alerts", el: ev.currentTarget })}
                     className="group grid w-full grid-cols-[2.25rem_minmax(0,1fr)_auto] items-start gap-4 border-b border-line py-5 text-left transition-colors hover:bg-bg-2"
                   >

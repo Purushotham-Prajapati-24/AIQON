@@ -23,7 +23,7 @@ export function Hero() {
   }, [world?.now]);
 
   return (
-    <section id="top" className="relative isolate min-h-[100svh] overflow-hidden pt-28 md:pt-32 lg:pt-20">
+    <section id="top" className="grain relative isolate min-h-[100svh] overflow-hidden pt-28 md:pt-32 lg:pt-20">
       <Contours />
       <div className="shell relative">
         {data.data ? <Story moments={data.data.moments} labels={[...data.data.checkpoints.map((c) => c.label), "Today"]} /> : <HeroSkeleton />}

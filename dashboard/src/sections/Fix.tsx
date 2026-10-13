@@ -218,6 +218,7 @@ function Disruption() {
             return (
               <li key={p.scenario_id}>
                 <button
+                  data-spotlight
                   onClick={() => setId(p.scenario_id)}
                   aria-pressed={on}
                   className={`flex w-full items-center gap-4 rounded-[4px] border px-4 py-4 text-left transition-colors ${
@@ -253,6 +254,7 @@ function Disruption() {
                     {x.affected.slice(0, 6).map((a) => (
                       <li key={a.shipment_id}>
                         <button
+                          data-spotlight
                           onClick={(ev) => select(a.shipment_id, true, { label: "If this happens", section: "fix", el: ev.currentTarget })}
                           className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-line py-4 text-left transition-colors hover:bg-bg-2 sm:grid-cols-[8rem_minmax(0,1fr)_auto_auto]"
                         >

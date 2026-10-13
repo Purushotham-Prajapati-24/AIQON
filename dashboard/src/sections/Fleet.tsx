@@ -256,6 +256,7 @@ function ShipmentList({
                 transition={{ duration: 0.45, ease: EASE }}
               >
                 <button
+                  data-spotlight
                   onClick={(e) => onSelect(r.shipment_id, e.currentTarget)}
                   className={`group grid w-full grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 border-b border-line py-5 text-left transition-colors hover:bg-bg-2 lg:grid-cols-[3rem_minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1.2fr)_6rem_2rem] lg:gap-5 ${
                     r.shipment_id === selected ? "bg-bg-2" : ""

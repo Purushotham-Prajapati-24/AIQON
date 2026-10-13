@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect } from "react";
+import { CommandPalette } from "./components/CommandPalette";
 import { Footer } from "./components/Footer";
 import { Logo, Nav } from "./components/Nav";
 import { focusSection } from "./lib/focus";
@@ -33,6 +34,8 @@ export function App() {
           </a>
           <OpenAt target={location.hash.slice(1) || role.opens} />
           <Nav />
+          <CommandPalette />
+          <Spotlight />
           <div className="transition-[padding] duration-300 ease-out-expo lg:pl-[var(--rail-offset)]">
             <main>
               <Hero />
@@ -48,6 +51,26 @@ export function App() {
       )}
     </AnimatePresence>
   );
+}
+
+/** One delegated listener feeds the pointer position to whichever `[data-spotlight]` element is under it. */
+function Spotlight() {
+  useEffect(() => {
+    if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    let el: HTMLElement | null = null;
+    const on = (e: PointerEvent) => {
+      const t = (e.target as Element | null)?.closest?.<HTMLElement>("[data-spotlight]") ?? null;
+      if (el && el !== t) el.style.removeProperty("--mx");
+      el = t;
+      if (!t) return;
+      const r = t.getBoundingClientRect();
+      t.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      t.style.setProperty("--my", `${e.clientY - r.top}px`);
+    };
+    addEventListener("pointermove", on, { passive: true });
+    return () => removeEventListener("pointermove", on);
+  }, []);
+  return null;
 }
 
 /** Opens the page on the chosen section. Sections above it load data and grow, so re-anchor a few times

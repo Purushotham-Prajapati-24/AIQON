@@ -213,7 +213,7 @@ export function HowTo({ id, className = "" }: { id: string; className?: string }
 }
 
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-[4px] bg-bg-3 ${className}`} />;
+  return <div className={`shimmer rounded-[4px] ${className}`} aria-hidden />;
 }
 
 export function ErrorNote({ error }: { error: Error }) {

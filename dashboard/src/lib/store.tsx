@@ -27,6 +27,9 @@ interface Store {
   theme: "dark" | "light";
   toggleTheme: () => void;
   /** Show the "what you can do here" strip under each section heading. */
+  /** Command palette (⌘K). */
+  palette: boolean;
+  setPalette: (open: boolean) => void;
   tips: boolean;
   toggleTips: () => void;
   /** "checking" while the saved session is verified; "out" shows the sign-in screen. */
@@ -66,6 +69,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState(HERO_SHIPMENT);
   const [theme, setTheme] = useState(initialTheme);
   const [tips, setTips] = useState(initialTips);
+  const [palette, setPalette] = useState(false);
   const [origin, setOrigin] = useState<Origin | null>(null);
   const [authState, setAuth] = useState<Store["auth"]>({ status: "checking", session: null, notice: null });
 
@@ -131,8 +135,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const toggleTips = useCallback(() => setTips((t) => !t), []);
 
   const value = useMemo(
-    () => ({ mode, world, days, setDays, selected, select, origin, goBack, theme, toggleTheme, tips, toggleTips, auth: authState, role, signedIn, signOut }),
-    [mode, world, days, selected, select, origin, goBack, theme, toggleTheme, tips, toggleTips, authState, role, signedIn, signOut],
+    () => ({ mode, world, days, setDays, selected, select, origin, goBack, theme, toggleTheme, palette, setPalette, tips, toggleTips, auth: authState, role, signedIn, signOut }),
+    [mode, world, days, selected, select, origin, goBack, theme, toggleTheme, palette, tips, toggleTips, authState, role, signedIn, signOut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

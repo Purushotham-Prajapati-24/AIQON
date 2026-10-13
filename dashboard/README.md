@@ -42,6 +42,8 @@ The API sets the session as a signed JWT in an httpOnly cookie, so a reload keep
 
 Sections live in a left sidebar: a fixed rail from 1024 px wide (collapse it to icons with the panel button; the choice is remembered), and a drawer behind the menu button on smaller screens. It holds only the section links, a **Start** tag on the section the signed-in role starts from (hover it for the role's task), the tips and theme switches, and sign-out. Hovering a link shows the question its section answers.
 
+Press **⌘K** (Ctrl K on Windows/Linux) or **/**, or click **Search** in the sidebar, to jump to a section, open any shipment by ID, port or lane, or switch theme. The visual system behind all of this is documented in [`docs/VisualDesign.md`](../docs/VisualDesign.md).
+
 Every section opens with a **How to use** strip listing what you can do there. Hide them with **Hide tips** or the lightbulb in the sidebar. The copy for both lives in `src/lib/guide.ts`.
 
 Opening a shipment from the Fleet list, the map, Alerts or "If this happens" moves focus to the Shipment section and shows a **Back to …** button that returns you (and keyboard focus) to the row you came from. The Late / At risk / On time counts filter the Worst first list.

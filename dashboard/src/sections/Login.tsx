@@ -77,7 +77,7 @@ export function Login() {
   return (
     <motion.main
       key="login"
-      className="relative isolate flex min-h-svh flex-col overflow-hidden"
+      className="grain relative isolate flex min-h-svh flex-col overflow-hidden"
       exit={{ opacity: 0, y: -24, transition: { duration: 0.5, ease: EASE } }}
     >
       <Contours className="inset-x-0 top-0 h-svh" />
