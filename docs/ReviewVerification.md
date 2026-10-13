@@ -6,7 +6,8 @@
 
 > **Resolution (v1.1.0, 2026-10-13):** the verdicts below describe **v1.0.0**. The fixes are tracked in [`ImprovementPlan.md`](ImprovementPlan.md) → *Status*, with results in [`AsBuilt.md`](AsBuilt.md) §8. In v1.1:
 > - information time (§1.1–1.4), explanation honesty and real identities (§4), split and evidence reporting (§2.4–2.7, §5.2, §6.2), alert burden (§5.6), advisor validity (§7.3), propagation by shock size (§7.4), `data_quality` (§7.1) and parameter sensitivity (§7.5) are **fixed**;
-> - schedule revisions (§1.5), calibrated P80 (§6.4), error slices (§7.7) and validation-tuned alert thresholds remain **open** and are documented.
+> - **v1.2.0** closes the rest: schedule revisions and corrected/duplicated messages (§1.3, §1.5), the calibrated P80 promise (§6.4), error slices (§7.7), validation-tuned alert thresholds (§5.6), PSI drift and per-row batch fallback ([`AsBuilt.md`](AsBuilt.md) §9).
+> - Still **unmet** as results, and reported as such: Brier ≤ 0.15, root-cause top-1 ≥ 70% and promise flip ratio ≤ 0.40 (see the generated model card).
 
 ## Bottom line
 

@@ -5,7 +5,9 @@
 > **Owners:** **C1** = core code (`src/`, `app/`, `tests/`, `configs/`, `eval/model_card.py`) · **C2** = docs, report, README, screenshots, demo · **YOU** = decisions and recording.
 > The C1 work is packaged as a ready-to-paste prompt in `claude1.md` (repo root, gitignored).
 
-## Status — v1.1.0 implemented (2026-10-13)
+## Status — v1.2.0 published (2026-10-13)
+
+> v1.1.0 implemented the P0 tickets and most of P1; **v1.2.0 closes the rest** (rows marked v1.2). Numbers below are seed 42 from `reports/metrics.json` (model v1.2.0); see [`AsBuilt.md`](AsBuilt.md) §8–§9.
 
 The P0 tickets were implemented (by C2, at the user's request), along with most of P1 and two P2 items. Bundle `artifacts/v1.1.0`, tests 57/57, all hard gates pass. Results: [`ModelCard.md`](ModelCard.md) (generated) and [`AsBuilt.md`](AsBuilt.md) §8.
 
@@ -22,15 +24,15 @@ The P0 tickets were implemented (by C2, at the user's request), along with most 
 | P1-1 Independence-aware evaluation | ✅ | Split counts in voyages; voyage-cluster bootstrap; coverage with n and a voyage CI; attribution ambiguity, per-checkpoint and unambiguous accuracy |
 | P1-2 Embargo | ✅ | `metrics.embargo` (retrain without labels realised after the first test departure) |
 | P1-3 `data_quality` object | ✅ | On every prediction; an Evidence row on Shipment Detail. Forecast age is not modelled (forecasts are issued at the as-of time) |
-| P1-4 Alerts | 🟡 | Contract fields (reason, evidence time, previous → new risk and P(late), next step, data-quality flags), FPR, burden and lead-time distribution to the actual delivery are done. **Not done:** thresholds tuned on validation (they are still fixed rules), and a duplicates-suppressed count |
+| P1-4 Alerts | ✅ (v1.2) | Contract fields, FPR, burden and lead-time distribution (v1.1). **v1.2:** the LATE alert also needs P(late) ≥ θ, with θ = 0.7 chosen on voyage-grouped out-of-fold *training* predictions (F1). On test: recall 100%, precision 79% → **86%**, false-positive rate 26% → **16%**; 51 duplicate alerts suppressed |
 | P1-5 Advisor | ✅ | Deadline milestone + lead time, three validity flags, assumptions, baseline vs scenario, benefit range over +0 / +6 / +12 h; feasible actions ranked first |
 | P1-6 Propagation | ✅ | δ ∈ {1, 6, 12, 24} h, near-cut-off vs comfortable buffer, n per cell (cells are captioned, not greyed out) |
-| P1-7 Promise P80 | ❌ | Still a normal approximation; documented as such (Design §11.1) |
-| P1-8 Error slices | ❌ | Only by checkpoint, checkpoint group, missingness rate and attribution ambiguity |
-| P2-1 / P2-2 Schedule revisions, duplicate/corrected messages | ❌ | Design only (below) |
+| P1-7 Promise P80 | ✅ (v1.2) | Trained q80 + one-sided, drift-aware conformal offset per checkpoint group, kept within [P50, P90]. P80 coverage **82%** (the old normal approximation: 76%); promise hit rate 92%. The promise still moves often (flip ratio 0.92 vs the ≤ 0.40 target): G6b remains unmet |
+| P1-8 Error slices | ✅ (v1.2) | `metrics.slices`: horizon, route, EDI tier, destination congestion, missing events, lane, each with voyage/shipment/snapshot n; < 5 voyages suppressed. MAE by remaining horizon: 6 h (< 48 h) → 10 h → 32 h → **41 h (> 504 h)**. Shown in the model card and on Insights |
+| P2-1 / P2-2 Schedule revisions, duplicate/corrected messages | ✅ (v1.2) | Feed log with duplicates (104 milestones) and wrong-then-corrected times (145; median error 4.1 h), collapsed idempotently by `domain.feed.collapse_messages`; snapshots see the first value until the correction arrives. Carrier re-plans (239 of 300 shipments, 1.6 per shipment) are versioned by `effective_at`; the API shows the current plan beside the original commitment, which lateness is still measured against. The carrier's revised ETA as a baseline (B3) scores 38.7 h MAE, no better than carry-forward |
 | P2-3 Simulator sensitivity | ✅ | `cascade sensitivity` → `reports/sensitivity.json` (7 variants) |
 | P2-4 Latency methodology | 🟡 | Environment and method are recorded in `metrics.meta.environment`; HTTP/concurrency figures are not published |
-| P2-5 / P2-6 Durable ledger, per-row batch fallback | 🟡 / ❌ | The compose ledger is file-backed; PSI and per-row batch fallback are not done |
+| P2-5 / P2-6 Durable ledger + drift, per-row batch fallback | ✅ (v1.2) | File-backed ledger in compose; PSI drift: training reference in the bundle, train → test PSI in metrics (destination congestion 1.22 and hub congestion 0.91: the Q4 shift is detected), live `/v1/monitoring/drift`. Batch inference falls back per row, and carry-forward is reachable and tested |
 
 ## 0. Principles for this round
 
