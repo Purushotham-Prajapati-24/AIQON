@@ -48,6 +48,61 @@ def quantile_implied_exceedance(
     return 1.0 - norm.cdf(z)
 
 
+MIN_POOL = 150  # fewer training residuals at a checkpoint -> use the pooled distribution
+
+
+def logit(p: np.ndarray) -> np.ndarray:
+    p = np.clip(np.asarray(p, float), 1e-4, 1.0 - 1e-4)
+    return np.log(p / (1.0 - p))
+
+
+def residual_pools(resid: np.ndarray, checkpoints: np.ndarray) -> dict[str, list[float]]:
+    """Sorted training residuals (truth - rulebook) per checkpoint, plus a pooled fallback."""
+    resid = np.round(np.asarray(resid, float), 2)
+    cp = np.asarray(checkpoints).astype(int)
+    pools = {"__global__": np.sort(resid).tolist()}
+    for c in np.unique(cp):
+        if (cp == c).sum() >= MIN_POOL:
+            pools[str(int(c))] = np.sort(resid[cp == c]).tolist()
+    return pools
+
+
+def empirical_exceedance(
+    pools: dict[str, list[float]] | dict[str, np.ndarray], checkpoints: np.ndarray, need: np.ndarray
+) -> np.ndarray:
+    """P(residual > need): the share of same-checkpoint training residuals above `need`."""
+    need = np.asarray(need, float)
+    cp = np.asarray(checkpoints).astype(int)
+    out = np.empty(len(need))
+    for c in np.unique(cp):
+        m = cp == c
+        pool = np.asarray(pools.get(str(int(c)), pools["__global__"]))
+        out[m] = 1.0 - np.searchsorted(pool, need[m], side="right") / len(pool)
+    return np.clip(out, 1e-4, 1.0 - 1e-4)
+
+
+def stack_probability(coef: list[float], p_emp: np.ndarray, clf_raw: np.ndarray) -> np.ndarray:
+    """Logistic stack: sigmoid(a + b * logit(empirical P(late)) + c * logit(classifier))."""
+    z = coef[0] + coef[1] * logit(p_emp) + coef[2] * logit(clf_raw)
+    return 1.0 / (1.0 + np.exp(-z))
+
+
+def assemble_quantiles(
+    base: np.ndarray, g: dict[str, np.ndarray], shrink: float, band_mode: str = "shifted"
+) -> dict[str, np.ndarray]:
+    """Remaining-delay quantiles from the rulebook base and the learned residual quantiles g.
+
+    The P50 is always base + λ·g50. "shifted" (<= v1.2) moves the whole band with the shrunk
+    median: base + λ·g50 + (g_k - g50). "direct" (v1.3) keeps the point forecast shrunk but
+    takes the band from the learned quantiles themselves, base + g_k: with λ = 0 the shifted
+    band subtracts the learned median and is mis-centred.
+    """
+    center = shrink * g["q50"]
+    if band_mode == "direct":
+        return {k: base + (center if k == "q50" else v) for k, v in g.items()}
+    return {k: base + center + (v - g["q50"]) for k, v in g.items()}
+
+
 def future_groups(checkpoint: int, has_ts: bool) -> list[StageGroup]:
     """Physical stage groups that still lie ahead at a checkpoint."""
     seq = event_sequence(has_ts)
@@ -95,7 +150,23 @@ class CascadeModel:
     offsets80: dict[str, float] = field(default_factory=dict)  # one-sided conformal for P80
     late_alert_p: float = 0.0  # LATE alert needs P(late) >= this (chosen out-of-fold on training)
     drift_ref: dict[str, dict] = field(default_factory=dict)  # training reference for PSI
+    # P(late) stack (v1.3): empirical residual distribution around the rulebook + classifier.
+    # Empty -> the <= v1.2 blend of the isotonic classifier and the quantile-implied probability.
+    resid_pools: dict[str, list[float]] = field(default_factory=dict)
+    late_stack: list[float] = field(default_factory=list)
+    band_mode: str = (
+        "shifted"  # P10/P80/P90: "direct" learned quantiles (v1.3) | "shifted" (<= v1.2)
+    )
     version: str = "dev"
+    # residual pools as arrays, built once (not an init field: `replace` never copies a stale one)
+    _pool_arrays: dict[str, np.ndarray] = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
+
+    def pool_arrays(self) -> dict[str, np.ndarray]:
+        if not self._pool_arrays and self.resid_pools:
+            self._pool_arrays = {k: np.asarray(v, float) for k, v in self.resid_pools.items()}
+        return self._pool_arrays
 
     # ---- core ---------------------------------------------------------------------------
     def _base(self, X: np.ndarray) -> np.ndarray:
@@ -107,8 +178,7 @@ class CascadeModel:
         """Remaining-delay quantiles before conformal widening and guardrails."""
         base = self._base(X)
         g = {k: self.boosters[k].predict(X, num_threads=1) for k in QUANTILES if k in self.boosters}
-        center = self.shrink * g["q50"]
-        return {k: base + center + (v - g["q50"]) for k, v in g.items()}
+        return assemble_quantiles(base, g, self.shrink, self.band_mode)
 
     def min_remaining_h(self, plan_remaining: np.ndarray, elapsed: np.ndarray) -> np.ndarray:
         """Heuristic floor on the time still needed (not a physical bound; see AsBuilt §1)."""
@@ -153,9 +223,14 @@ class CascadeModel:
         p80 = np.clip(p80, q[1], q[2])
         p80[delivered] = cur[delivered]
         raw = self.boosters["clf"].predict(X, num_threads=1)
-        p_clf = np.interp(raw, self.iso_x, self.iso_y) if self.iso_x else raw
-        p_q = quantile_implied_exceedance(q[0], q[1], q[2], self.late_threshold_h)
-        p_late = self.late_blend * p_clf + (1.0 - self.late_blend) * p_q
+        if self.late_stack and self.resid_pools:
+            need = self.late_threshold_h - cur - X[:, PHYS_IDX].sum(axis=1)
+            p_emp = empirical_exceedance(self.pool_arrays(), cp, need)
+            p_late = stack_probability(self.late_stack, p_emp, np.asarray(raw, float))
+        else:
+            p_clf = np.interp(raw, self.iso_x, self.iso_y) if self.iso_x else raw
+            p_q = quantile_implied_exceedance(q[0], q[1], q[2], self.late_threshold_h)
+            p_late = self.late_blend * p_clf + (1.0 - self.late_blend) * p_q
         p_late = np.where(delivered, (cur > self.late_threshold_h).astype(float), p_late)
         stage = self._stage_forecast(X, q[1] - cur, cp)
         return PredictionArrays(

@@ -1,0 +1,35 @@
+seed 42: MAE 24.2 h, vs B1 37.2%
+seed 7: MAE 19.9 h, vs B1 36.9%
+seed 11: MAE 23.9 h, vs B1 31.6%
+seed 23: MAE 29.5 h, vs B1 33.6%
+seed 99: MAE 22.2 h, vs B1 28.6%
+mae_cascade_h                    23.937 ± 3.173
+mae_B1_h                         36.108 ± 4.949
+mae_B2_h                         33.472 ± 4.284
+mae_B3_carrier_plan_h            36.291 ± 4.831
+mae_improvement_vs_B1            0.336 ± 0.033
+mae_improvement_vs_B2            0.284 ± 0.045
+mae_rulebook_h                   23.971 ± 3.184
+mae_improvement_vs_rulebook      0.001 ± 0.001
+mae_ratio_cascade_vs_rulebook    0.999 ± 0.001
+shrink                           0.000 ± 0.000
+eta_floor_binding_share          0.007 ± 0.003
+coverage_p10_p90_overall         0.814 ± 0.025
+brier_tau24                      0.155 ± 0.024
+pr_auc_tau24                     0.884 ± 0.015
+pr_auc_tau24_at_arrival          0.922 ± 0.029
+attribution_top1                 0.493 ± 0.049
+attribution_top2                 0.697 ± 0.030
+attribution_top1_major           0.555 ± 0.064
+attribution_lift_vs_lane_prior   0.109 ± 0.065
+propagation_spearman             0.339 ± 0.084
+advisor_spearman                 0.458 ± 0.147
+alert_lead_ge_48h_share          0.711 ± 0.136
+promise_flip_ratio               0.819 ± 0.037
+late_alert_false_positive_rate   0.263 ± 0.066
+alerts_per_100_shipment_days     8.895 ± 0.594
+attribution_ambiguous_share      0.213 ± 0.058
+promise_hit_rate                 0.907 ± 0.019
+promise_reversals_per_shipment   0.445 ± 0.069
+raw_eta_reversals_per_shipment   0.649 ± 0.133
+latency_p95_ms                   6.653 ± 0.507

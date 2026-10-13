@@ -70,8 +70,21 @@ def write_model_card(m: dict, path: Path) -> None:
         "  from the simulator's. LightGBM residual quantile models (P10/P50/P90); a late classifier with",
         "  monotone constraints on registry-declared features (method `basic`); per-stage increment models",
         "  reconciled to the P50.",
-        f"* λ = {lam} and the P(late) classifier blend = {sel['late_blend']} are chosen on a temporal",
-        "  validation slice (the latest 20% of training voyages), never on the test set.",
+        f"* λ = {lam} is chosen on two validation views of the training data, never the test set: the",
+        "  temporal slice (latest 20% of training voyages) and voyage-grouped out-of-fold predictions",
+        f"  (temporal slice alone would pick λ = {sel.get('shrink_temporal_only', lam)}).",
+        "* P(late): "
+        + (
+            "a logistic stack of the empirical residual distribution around the rulebook (per "
+            "checkpoint) and the classifier, fit on voyage-grouped out-of-fold predictions "
+            f"(coefficients {[round(c, 3) for c in sel['late_stack']]})."
+            if sel.get("late_stack")
+            else f"classifier / quantile-implied blend = {sel['late_blend']} (temporal slice)."
+        ),
+        "* P10/P80/P90 come from the learned residual quantiles directly (v1.3); λ shrinks only the",
+        "  point forecast, so with λ = 0 the band is no longer shifted by the unused learned median.",
+        "* Data cleaning: a silent milestone counts as overdue only within a short grace window;",
+        "  longer silence is treated as a missing EDI report (see experiments/ml_optimization).",
         "* Drift-aware CQR per checkpoint group. Post-processing: quantile ordering, then a heuristic ETA",
         f"  floor (remaining stages take ≥ {acc['eta_floor']['frac']} × their planned time; it binds on "
         f"{_f(acc['eta_floor']['binding_share'], True)} of live test snapshots).",

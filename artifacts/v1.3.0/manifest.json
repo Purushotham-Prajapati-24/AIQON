@@ -1,0 +1,108 @@
+{
+ "schema_version": 1,
+ "version": "1.3.0",
+ "created_at": "2026-10-13T00:39:56+00:00",
+ "git_sha": "ca379e5",
+ "feature_hash": "c29c39bf7296cd76",
+ "files": {
+  "external.npz": "856b8b645aad36995bde82c1c27e6a54cf00adabde1c04f76739db30f811c023",
+  "insights.json": "2b9ba94cf7b7428600d5709105da52214d358a7b47f5fa9f6d045377af7d07d9",
+  "model.json": "77314ddf3250a3ab6300c460c6d4f2de55a5007c0834482a504a4b5108379442",
+  "models/clf.txt": "f37a7ac41a30665a0afda87e25e15d7cc71805791c69f721fa6b32425c00c84f",
+  "models/q10.txt": "7417d1641f779d9aea0bfeecc9aca241dd200fd6d67b44f9f9c9ab90a6bb01cf",
+  "models/q50.txt": "572a493ba9383bfde8eed50a027788bfc531577fe1e5f02aa2b4926c5013bc64",
+  "models/q80.txt": "6fe17d149020506fd85611d94e540123621a68ff566fed03b6735042bc5e5f9e",
+  "models/q90.txt": "556e787d22ad45721c7b63de6ae54a1ddc61165d45191548c390db34d3b54c2b",
+  "models/stage_CUSTOMS.txt": "f7a19251aa6a747237b397b61062c7e5d0ba3b405b25faea54e1e162cdc58320",
+  "models/stage_INLAND.txt": "626c1c7fb678190691868f2dd5946587294ff05dfead8ddf9aa1e3b8b06db36a",
+  "models/stage_OCEAN.txt": "cb0a803d2cdaafa715310a2d940d854ebebb694416349617c034e8ecdaf94602",
+  "models/stage_ORIGIN.txt": "fad403f446fb82fddb429a1d80b39cb0de029e9d445b4e3abb5c97574fd66db1",
+  "models/stage_PORT.txt": "f55304d75b9ce15ac6b8db69b0bab35c892d7b7149b9d575fdf266868b93476b",
+  "models/stage_TRANSSHIPMENT.txt": "9b1eba1ec9ad8b3569d95056d16ad6c39c93db80b883002422fad200909fe6b1",
+  "world_events.csv": "e6064a5fd98f3900db6ee2ae376f02156db90b00eb4b382123aa9dc152f3e5de",
+  "world_now.txt": "81955a0110db422d66d64fdd93342643c6028bcd2278274c34795a41438baf1d",
+  "world_revisions.csv": "a35ef368d0c0924fdc74b581962e619b23706bb876b623296adaae9745d7a81b",
+  "world_shipments.csv": "3f047b8574f1539c11094e5a38ef21c889270310fd3716c1a0820c13cbe4e195"
+ },
+ "metrics": {
+  "mae_cascade_h": 24.219262554988507,
+  "mae_B1_h": 38.59171297396089,
+  "mae_B2_h": 34.99430444730331,
+  "mae_B3_carrier_plan_h": 38.73155515081433,
+  "mae_improvement_vs_B1": 0.3724232305694736,
+  "mae_improvement_vs_B1_ci95": [
+   0.297446499442655,
+   0.449647834117679
+  ],
+  "mae_improvement_vs_B2": 0.3079084457455229,
+  "mae_improvement_vs_B1_ci95_voyage": [
+   0.2543177277724605,
+   0.48695729285052264
+  ],
+  "mae_rulebook_h": 24.2148791754777,
+  "mae_improvement_vs_rulebook": -0.00018102008599929498,
+  "mae_improvement_vs_rulebook_ci95_voyage": [
+   -0.0032842786180933836,
+   0.0027419230023927816
+  ],
+  "mae_ratio_cascade_vs_rulebook": 1.0001810200859993,
+  "shrink": 0.0,
+  "n_test_voyages": 20,
+  "eta_floor_binding_share": 0.006896551724137931,
+  "coverage_p10_p90_overall": 0.8206896551724138,
+  "brier_tau24": 0.1788634247463176,
+  "pr_auc_tau24": 0.8711005679682454,
+  "pr_auc_tau24_at_arrival": 0.9321826847321171,
+  "attribution_top1": 0.42450142450142453,
+  "attribution_top2": 0.6894586894586895,
+  "attribution_top1_major": 0.504950495049505,
+  "attribution_lift_vs_lane_prior": 0.16239316239316243,
+  "propagation_spearman": 0.4663890634100757,
+  "advisor_spearman": 0.4470866719192708,
+  "alert_lead_ge_48h_share": 0.6129032258064516,
+  "promise_flip_ratio": 0.8492063492063492,
+  "late_alert_false_positive_rate": 0.1935483870967742,
+  "alerts_per_100_shipment_days": 9.734724338673875,
+  "attribution_ambiguous_share": 0.25071225071225073,
+  "promise_hit_rate": 0.9137800819252432,
+  "promise_reversals_per_shipment": 0.5806451612903226,
+  "raw_eta_reversals_per_shipment": 0.8548387096774194,
+  "latency_p95_ms": 6.339990021660921,
+  "identity_violations": 0
+ },
+ "gates": {
+  "mae_improvement_vs_B1": {
+   "value": 0.3724232305694736,
+   "rule": ">= 0.15",
+   "pass": true
+  },
+  "coverage_p10_p90_overall": {
+   "value": 0.8206896551724138,
+   "rule": "between (0.7, 0.9)",
+   "pass": true
+  },
+  "brier_tau24": {
+   "value": 0.1788634247463176,
+   "rule": "<= 0.2",
+   "pass": true
+  },
+  "attribution_lift_vs_lane_prior": {
+   "value": 0.16239316239316243,
+   "rule": ">= 0.1",
+   "pass": true
+  },
+  "identity_violations": {
+   "value": 0,
+   "rule": "<= 0",
+   "pass": true
+  },
+  "latency_p95_ms": {
+   "value": 6.339990021660921,
+   "rule": "< 50.0",
+   "pass": true
+  }
+ },
+ "gates_passed": true,
+ "data_seed": 42,
+ "n_shipments": 300
+}

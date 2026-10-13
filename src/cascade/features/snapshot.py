@@ -83,16 +83,23 @@ def op_recovery_cap_h(leg_days: float) -> float:
 
 E = EventType
 NO_CONNECTION = 500.0  # sentinel: direct route or connection already resolved ("infinite" buffer)
+# Silence longer than this past a milestone's due time is treated as a missing EDI report, not
+# a hold-up (v1.3: tuned by coordinate descent on the training split of 20 development worlds;
+# with 6-31% of reports missing, a short grace window beats reading silence as lateness for
+# vessel arrivals, discharge and gate-out). See experiments/ml_optimization/README.md.
 MAX_PLAUSIBLE_HOLD_H = {
     E.GATE_IN_ORIGIN: 48.0,
-    E.DEPART_ORIGIN: 48.0,
-    E.ARRIVE_TS: 72.0,
-    E.ARRIVE_DEST_PORT: 72.0,
-    E.DISCHARGED: 120.0,
+    E.DEPART_ORIGIN: 24.0,
+    E.ARRIVE_TS: 12.0,
+    E.ARRIVE_DEST_PORT: 12.0,
+    E.DISCHARGED: 12.0,
     E.CUSTOMS_CLEARED: 120.0,
-    E.GATE_OUT: 72.0,
+    E.GATE_OUT: 12.0,
     E.DELIVERED: 72.0,
 }
+# A missed connection waits for the next sailing: silence past one headway at the hub is a
+# missing DEPART_TS report (only 2 of 6,000 simulated shipments ever miss twice).
+HUB_MAX_EXTRA_HOLD_H = 0.0
 _LANE_IDX = {k: i for i, k in enumerate(LANE_IDS)}
 _CARRIER_IDX = {k: i for i, k in enumerate(CARRIER_CODES)}
 _PORT_IDX = {k: i for i, k in enumerate(PORT_CODES)}
@@ -235,6 +242,10 @@ def build_snapshot(
     # A hold-up longer than a stage plausibly causes is also more likely a reporting gap
     # (except at the hub, where a missed connection genuinely means days of waiting).
     if next_ev is not None and overdue > MAX_PLAUSIBLE_HOLD_H.get(next_ev, math.inf):
+        reporting_gap = True
+    # At the hub a missed connection waits for the next sailing (one headway); silence beyond
+    # that is a missing DEPART_TS report while the vessel is already on the second leg.
+    if next_ev == E.DEPART_TS and overdue > lane.headway_h + HUB_MAX_EXTRA_HOLD_H:
         reporting_gap = True
     if reporting_gap:
         overdue = 0.0

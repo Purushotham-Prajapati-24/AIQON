@@ -14,3 +14,6 @@ late_threshold_h: 24
 alpha: 0.2                    # P10-P90 nominal coverage = 1 - alpha
 eta_floor_min_remaining_frac: 0.5  # heuristic ETA floor: remaining stages take >= this share of planned time (0 = ETA >= as_of only)
 seed: 0
+shrink_rule: combined         # v1.3: lambda from temporal slice + voyage-grouped OOF (or: temporal)
+late_model: stack             # v1.3: P(late) = logistic stack of empirical residual distribution + classifier (or: blend)
+band: direct                  # v1.3: P10/P80/P90 from the learned quantiles (or: shifted, <= v1.2)

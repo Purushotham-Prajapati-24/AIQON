@@ -1,0 +1,69 @@
+[1/7] generating 300 shipments (seed 42)
+[2/7] building as-of checkpoint rows
+[3/7] training (train 238 / test 62 shipments, 3390 rows)
+[4/7] evaluating on the out-of-time test set
+[5/7] checking guardrails, latency and quality gates
+[6/7] writing reports and figures
+[7/7] publishing bundle v1.3.0 (gates PASS)
+   gate mae_improvement_vs_B1                  0.3724  >= 0.15                PASS
+   gate coverage_p10_p90_overall               0.8207  between (0.7, 0.9)     PASS
+   gate brier_tau24                            0.1789  <= 0.2                 PASS
+   gate attribution_lift_vs_lane_prior         0.1624  >= 0.1                 PASS
+   gate identity_violations                         0  <= 0                   PASS
+   gate latency_p95_ms                           6.34  < 50.0                 PASS
+   info mae_ratio_cascade_vs_rulebook      1.0002  <= 1.01                PASS
+   target G1   MAE improvement vs carry-forward                     MET
+   target G2   PR-AUC P(late) at destination arrival                MET
+   target G2b  Brier P(late > 24 h)                                 UNMET
+   target G3   P10-P90 coverage in every checkpoint group           PARTLY
+   target G4   Future-delay driver top-1 vs cause ledger            UNMET
+   target G5   Latency p95 predict + explain (in-process)           MET
+   target G6a  Late shipments alerted >= 48 h before planned delivery UNMET
+   target G6b  Promise changes / raw P50 day changes                UNMET
+   target G7   One-command run time                                 UNMET
+{
+ "mae_cascade_h": 24.219262554988507,
+ "mae_B1_h": 38.59171297396089,
+ "mae_B2_h": 34.99430444730331,
+ "mae_B3_carrier_plan_h": 38.73155515081433,
+ "mae_improvement_vs_B1": 0.3724232305694736,
+ "mae_improvement_vs_B1_ci95": [
+  0.297446499442655,
+  0.449647834117679
+ ],
+ "mae_improvement_vs_B2": 0.3079084457455229,
+ "mae_improvement_vs_B1_ci95_voyage": [
+  0.2543177277724605,
+  0.48695729285052264
+ ],
+ "mae_rulebook_h": 24.2148791754777,
+ "mae_improvement_vs_rulebook": -0.00018102008599929498,
+ "mae_improvement_vs_rulebook_ci95_voyage": [
+  -0.0032842786180933836,
+  0.0027419230023927816
+ ],
+ "mae_ratio_cascade_vs_rulebook": 1.0001810200859993,
+ "shrink": 0.0,
+ "n_test_voyages": 20,
+ "eta_floor_binding_share": 0.006896551724137931,
+ "coverage_p10_p90_overall": 0.8206896551724138,
+ "brier_tau24": 0.1788634247463176,
+ "pr_auc_tau24": 0.8711005679682454,
+ "pr_auc_tau24_at_arrival": 0.9321826847321171,
+ "attribution_top1": 0.42450142450142453,
+ "attribution_top2": 0.6894586894586895,
+ "attribution_top1_major": 0.504950495049505,
+ "attribution_lift_vs_lane_prior": 0.16239316239316243,
+ "propagation_spearman": 0.4663890634100757,
+ "advisor_spearman": 0.4470866719192708,
+ "alert_lead_ge_48h_share": 0.6129032258064516,
+ "promise_flip_ratio": 0.8492063492063492,
+ "late_alert_false_positive_rate": 0.1935483870967742,
+ "alerts_per_100_shipment_days": 9.734724338673875,
+ "attribution_ambiguous_share": 0.25071225071225073,
+ "promise_hit_rate": 0.9137800819252432,
+ "promise_reversals_per_shipment": 0.5806451612903226,
+ "raw_eta_reversals_per_shipment": 0.8548387096774194,
+ "latency_p95_ms": 6.339990021660921,
+ "identity_violations": 0
+}

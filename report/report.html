@@ -46,17 +46,17 @@ figcaption { font-size: 8.6pt; color: var(--muted); text-align: left; margin-top
 </style></head><body>
 
 <h1>CASCADE: stage-aware shipment ETA, delay propagation and explanation</h1>
-<div class=sub>Aiqon AI Internship take-home · model v1.2.0
-· seed 42 · out-of-time test (Q4 peak) · 6/6 quality gates pass · generated 2026-10-12</div>
+<div class=sub>Aiqon AI Internship take-home · model v1.3.0
+· seed 42 · out-of-time test (Q4 peak) · 6/6 quality gates pass · generated 2026-10-13</div>
 
 <div class=tldr><p><b>Answer first.</b> On a held-out, later-in-time test season, CASCADE's ETA error (MAE of the P50 final delay) is
-<b>24.5 h</b>, which is <b>37% better than carry-forward</b>
-(95% CI 25%–48%) and 30% better than a lane-level
-propagation prior. Its P10–P90 ranges cover 81% of outcomes (target 80%),
-P(late&nbsp;&gt;&nbsp;24&nbsp;h) has Brier 0.185 and PR-AUC 0.85,
+<b>24.2 h</b>, which is <b>37% better than carry-forward</b>
+(95% CI 25%–49%) and 31% better than a lane-level
+propagation prior. Its P10–P90 ranges cover 82% of outcomes (target 80%),
+P(late&nbsp;&gt;&nbsp;24&nbsp;h) has Brier 0.179 and PR-AUC 0.87,
 and every P50 is shown as realised delay plus a per-stage projection of the delay still to come.
 Because a structural causal simulator records a <i>cause ledger</i> for every hour of delay, we can score that explanation:
-the stage projected to add the most future delay is the ledger's top future stage 42% of the time (top-2: 68%).
+the stage projected to add the most future delay is the ledger's top future stage 42% of the time (top-2: 69%).
 Caveat: the point forecast <b>and</b> these stage explanations come from a mechanistic operator-rulebook projection; the learned median correction did not beat it out-of-time, so validation set its weight to 0.0. The ML contributes the P10–P90 spread, P(late) and the stage forecasts.</p></div>
 
 <h2>1 · Problem and definitions</h2>
@@ -101,41 +101,40 @@ fail to report discharge. A report reaches the system after a carrier-dependent 
 <li><b>As-of checkpoints.</b> Each shipment expands into one row per milestone. Features use only milestone reports that had <i>arrived</i> by the as-of time (an event that happened but was reported later is invisible), and leakage is property-tested.</li>
 <li><b>Operator rulebook vs truth.</b> A physics-style projection of every <i>remaining</i> stage (cut-offs, headways, Kingman queue, customs calendars, rail timetables) from forecast congestion and weather, with coefficients <b>deliberately different from the simulator's</b>, so the model cannot "know the simulator".</li>
 <li><b>Propagation features.</b> These include projected hub buffer versus cut-off, congestion × current lateness, days to the next business slot, rail cut-off slack, and missingness flags that carry signal (EDI tier, gaps so far).</li>
-<li><b>Residual quantile GBM with temporal shrinkage.</b> LightGBM models P10/P50/P90 of the residual on top of the rulebook (300 trees, 15 leaves). The learned median correction is blended in with weight λ ∈ {0.0, 0.25, 0.5, 0.75, 1.0}, chosen on the latest training voyages. <b>λ = 0.0 was selected</b>, so the median comes from the rulebook, and ML contributes uncertainty, P(late) and stage forecasts.</li>
-<li><b>Drift-aware CQR and P(late).</b> Conformalised quantile regression per checkpoint group (offset = max(out-of-fold, temporal-slice)) protects coverage under the seasonal shift. P(late) blends a monotone classifier + isotonic calibration with the quantile-implied probability (weight from {0.0, 0.5, 1.0}; selected 0.5).</li>
+<li><b>Residual quantile GBM with temporal shrinkage.</b> LightGBM models P10/P50/P90 of the residual on top of the rulebook (300 trees, 15 leaves). The learned median correction is blended in with weight λ ∈ {0.0, 0.25, 0.5, 0.75, 1.0}, chosen on the latest training voyages and out-of-fold. <b>λ = 0.0 was selected</b>, so the median comes from the rulebook, and ML contributes uncertainty, P(late) and stage forecasts; the band uses the learned quantiles directly.</li>
+<li><b>Drift-aware CQR and P(late).</b> Conformalised quantile regression per checkpoint group (offset = max(out-of-fold, temporal-slice)) protects coverage under the seasonal shift. P(late) stacks the empirical residual distribution around the rulebook with the monotone classifier (logistic, fit out-of-fold).</li>
 <li><b>Explanations.</b> Stage bar = rulebook projected increment + λ × exact TreeSHAP of the residual model (<code>pred_contrib</code>); at λ = 0 the bars, and the attribution score, are the <b>rulebook alone</b>. Realised delay + stage bars + a floor/ordering adjustment = P50; templates write ops/customer/analyst narratives. Future-stage attribution is inherently noisy, so we report top-2 and lift, not just top-1.</li>
 <li><b>Decision layer.</b> Promise ETA with hysteresis, alerts, cost-of-delay, an intervention advisor (model re-run under a fixed action menu), a scenario radar and a prediction ledger; FastAPI with a fallback chain (lane propagation prior → carry-forward) and a Streamlit control tower.</li>
 </ul>
 
 <h2>4 · Results</h2>
 <table><caption>Table 2 · Final-delay error on the out-of-time test, all 725 snapshots (hours; bias = mean of prediction − actual)</caption>
-<tr><th>Model</th><th class=n>MAE</th><th class=n>RMSE</th><th class=n>MedAE</th><th class=n>P90 AE</th><th class=n>Bias</th></tr><tr><td>B0 Schedule (assume on plan)</td><td class=n>56.3</td><td class=n>88.6</td><td class=n>48.0</td><td class=n>168.0</td><td class=n>-55.9</td></tr><tr><td>B1 Carry-forward (current delay persists)</td><td class=n>38.6</td><td class=n>64.5</td><td class=n>22.5</td><td class=n>88.7</td><td class=n>-31.4</td></tr><tr><td>B2 Propagation prior (lane-level)</td><td class=n>35.0</td><td class=n>59.1</td><td class=n>20.4</td><td class=n>81.8</td><td class=n>-21.3</td></tr><tr><td>Operator rulebook projection (no ML)</td><td class=n>24.5</td><td class=n>50.8</td><td class=n>1.5</td><td class=n>72.0</td><td class=n>-16.8</td></tr><tr class="hl"><td>CASCADE (rulebook + residual GBM, P50)</td><td class=n>24.5</td><td class=n>50.8</td><td class=n>1.5</td><td class=n>72.0</td><td class=n>-16.8</td></tr></table>
-<p>MAE improvement, bootstrapped over the 20 test <i>voyages</i> (the independent unit): <b>37%</b> vs carry-forward (95% CI 25%–48%) and
-<b>30%</b> vs the propagation prior (CI 19%–43%). Against the <b>rulebook alone</b> CASCADE is -0.0%
+<tr><th>Model</th><th class=n>MAE</th><th class=n>RMSE</th><th class=n>MedAE</th><th class=n>P90 AE</th><th class=n>Bias</th></tr><tr><td>B0 Schedule (assume on plan)</td><td class=n>56.3</td><td class=n>88.6</td><td class=n>48.0</td><td class=n>168.0</td><td class=n>-55.9</td></tr><tr><td>B1 Carry-forward (current delay persists)</td><td class=n>38.6</td><td class=n>64.5</td><td class=n>22.5</td><td class=n>88.7</td><td class=n>-31.4</td></tr><tr><td>B2 Propagation prior (lane-level)</td><td class=n>35.0</td><td class=n>59.1</td><td class=n>20.4</td><td class=n>81.8</td><td class=n>-21.3</td></tr><tr><td>Operator rulebook projection (no ML)</td><td class=n>24.2</td><td class=n>50.6</td><td class=n>0.8</td><td class=n>72.0</td><td class=n>-17.9</td></tr><tr class="hl"><td>CASCADE (rulebook + residual GBM, P50)</td><td class=n>24.2</td><td class=n>50.6</td><td class=n>1.5</td><td class=n>72.0</td><td class=n>-17.9</td></tr></table>
+<p>MAE improvement, bootstrapped over the 20 test <i>voyages</i> (the independent unit): <b>37%</b> vs carry-forward (95% CI 25%–49%) and
+<b>31%</b> vs the propagation prior (CI 19%–45%). Against the <b>rulebook alone</b> CASCADE is -0.0%
 (CI -0.3% to 0.3%): with λ = 0.0 the gain over the baselines is the rulebook's. The negative bias reflects the Q4 shift.
-<b>Original targets not (fully) met:</b> G2b brier p(late > 24 h) (unmet); G3 p10-p90 coverage in every checkpoint group (partly); G4 future-delay driver top-1 vs cause ledger (unmet); G6a late shipments alerted >= 48 h before planned delivery (unmet); G6b promise changes / raw p50 day changes (unmet) — full table in the model card.</p>
+<b>Original targets not (fully) met:</b> G2b brier p(late > 24 h) (unmet); G3 p10-p90 coverage in every checkpoint group (partly); G4 future-delay driver top-1 vs cause ledger (unmet); G6a late shipments alerted >= 48 h before planned delivery (unmet); G6b promise changes / raw p50 day changes (unmet); G7 one-command run time (unmet) — full table in the model card.</p>
 
-<figure><img src="file:///home/user/AIQON/reports/figures/convergence.png" style="width:60%">
+<figure><img src="file:///D:/ATQON-ml/reports/figures/convergence.png" style="width:60%">
 <figcaption>Figure 1 · ETA convergence. The error of the final-delay forecast falls as milestones arrive (MAE 52.5 h at booking →
 0.6 h at gate-out). The spike at the hub is the missed-connection cliff: it is resolved only once the hub departure is known.</figcaption></figure>
 
 <div class=two>
 <div>
 <table><caption>Table 3 · Uncertainty and P(late)</caption>
-<tr><th>Checkpoint group</th><th class=n>P10–P90 coverage</th><th class=n>Mean width</th></tr><tr><td>Pre-departure</td><td class=n>82%</td><td class=n>6.8 days</td></tr><tr><td>At sea</td><td class=n>74%</td><td class=n>3.9 days</td></tr><tr><td>At port</td><td class=n>84%</td><td class=n>2.3 days</td></tr><tr><td>Post-customs</td><td class=n>91%</td><td class=n>11 h</td></tr><tr class="hl"><td>Overall</td><td class=n>81%</td><td class=n>3.5 days</td></tr></table>
+<tr><th>Checkpoint group</th><th class=n>P10–P90 coverage</th><th class=n>Mean width</th></tr><tr><td>Pre-departure</td><td class=n>77%</td><td class=n>6.1 days</td></tr><tr><td>At sea</td><td class=n>79%</td><td class=n>4.8 days</td></tr><tr><td>At port</td><td class=n>81%</td><td class=n>2.2 days</td></tr><tr><td>Post-customs</td><td class=n>96%</td><td class=n>11 h</td></tr><tr class="hl"><td>Overall</td><td class=n>82%</td><td class=n>3.6 days</td></tr></table>
 <table><tr><th>P(late &gt; 24 h)</th><th class=n>Brier</th><th class=n>PR-AUC</th><th class=n>ROC-AUC</th></tr>
-<tr><td>All snapshots (base rate 53%)</td><td class=n>0.185</td><td class=n>0.85</td><td class=n>0.81</td></tr>
-<tr><td>After destination arrival</td><td class=n>0.148</td><td class=n>0.89</td><td class=n>0.86</td></tr>
+<tr><td>All snapshots (base rate 53%)</td><td class=n>0.179</td><td class=n>0.87</td><td class=n>0.84</td></tr>
+<tr><td>After destination arrival</td><td class=n>0.120</td><td class=n>0.93</td><td class=n>0.91</td></tr>
 </table>
-<p class=small>Calibration ECE 0.095. On temporal validation the blend of classifier and quantile-implied P(late) lowered Brier from
-0.216 (quantile-only) and 0.159 (classifier-only) to 0.153.</p>
+<p class=small>Calibration ECE 0.114. Out-of-fold Brier of the P(late) stack: 0.116.</p>
 </div>
 <div>
 <table><caption>Table 4 · Explanation fidelity vs simulator ground truth</caption>
 <tr><th>Root-cause stage (351 pre-arrival snapshots)</th><th class=n>Accuracy</th></tr>
-<tr class=hl><td>CASCADE stage ranking (rulebook at λ = 0), top-1 · top-2</td><td class=n>42% · 68%</td></tr>
+<tr class=hl><td>CASCADE stage ranking (rulebook at λ = 0), top-1 · top-2</td><td class=n>42% · 69%</td></tr>
 <tr><td>… top-1 on major delays only</td><td class=n>50%</td></tr>
-<tr><td>Reconciled stage forecast, top-1</td><td class=n>45%</td></tr>
+<tr><td>Reconciled stage forecast, top-1</td><td class=n>43%</td></tr>
 <tr><td>Lane-history explainer, top-1</td><td class=n>26%</td></tr>
 <tr><td>Random future stage</td><td class=n>18%</td></tr>
 </table>
@@ -148,15 +147,15 @@ Spearman over 190 shipment × stage pairs: 0.47. True Φ is largest at Hub arriv
 <div class=two>
 <div>
 <table><caption>Table 5 · Ablations and robustness to missing milestones</caption>
-<tr><th>Variant</th><th class=n>MAE</th><th class=n>Coverage</th></tr><tr><td>Full model</td><td class=n>24.5 h</td><td class=n>81%</td></tr><tr><td>− propagation / projection features</td><td class=n>34.5 h</td><td class=n>69%</td></tr><tr><td>− route / port / carrier priors</td><td class=n>24.5 h</td><td class=n>82%</td></tr><tr><td>− data-quality (missingness) flags</td><td class=n>24.5 h</td><td class=n>80%</td></tr></table>
-<table><tr><th>Extra milestones dropped</th><th class=n>MAE</th><th class=n>MAE B1</th><th class=n>Coverage</th></tr><tr><td class=n>0%</td><td class=n>24.1 h</td><td class=n>38.5 h</td><td class=n>80%</td></tr><tr><td class=n>10%</td><td class=n>24.4 h</td><td class=n>38.2 h</td><td class=n>82%</td></tr><tr><td class=n>30%</td><td class=n>28.6 h</td><td class=n>39.9 h</td><td class=n>81%</td></tr><tr><td class=n>50%</td><td class=n>32.3 h</td><td class=n>42.1 h</td><td class=n>82%</td></tr></table>
-<p class=small>Only removing propagation features hurts; under heavy missingness CASCADE stays ahead of carry-forward. <b>Wrong-assumption sensitivity</b> (6 worlds with changed simulator mechanics): gain vs carry-forward 30%–50%, CASCADE/rulebook MAE ratio 0.81–1.00, coverage 77%–85%. Where the rulebook is wrong (<i>hub congestion slowdown x2</i>) validation picks λ = 1.0: 23.8 h vs 29.4 h.</p>
+<tr><th>Variant</th><th class=n>MAE</th><th class=n>Coverage</th></tr><tr><td>Full model</td><td class=n>24.2 h</td><td class=n>82%</td></tr><tr><td>− propagation / projection features</td><td class=n>33.9 h</td><td class=n>68%</td></tr><tr><td>− route / port / carrier priors</td><td class=n>24.2 h</td><td class=n>83%</td></tr><tr><td>− data-quality (missingness) flags</td><td class=n>24.2 h</td><td class=n>80%</td></tr></table>
+<table><tr><th>Extra milestones dropped</th><th class=n>MAE</th><th class=n>MAE B1</th><th class=n>Coverage</th></tr><tr><td class=n>0%</td><td class=n>24.2 h</td><td class=n>38.5 h</td><td class=n>83%</td></tr><tr><td class=n>10%</td><td class=n>23.6 h</td><td class=n>38.2 h</td><td class=n>84%</td></tr><tr><td class=n>30%</td><td class=n>25.1 h</td><td class=n>39.9 h</td><td class=n>84%</td></tr><tr><td class=n>50%</td><td class=n>26.4 h</td><td class=n>42.1 h</td><td class=n>85%</td></tr></table>
+<p class=small>Only removing propagation features hurts; under heavy missingness CASCADE stays ahead of carry-forward. <b>Wrong-assumption sensitivity</b> (6 worlds with changed simulator mechanics): gain vs carry-forward 29%–50%, CASCADE/rulebook MAE ratio 0.82–1.00, coverage 81%–86%. Where the rulebook is wrong (<i>hub congestion slowdown x2</i>) validation picks λ = 0.75: 23.8 h vs 29.1 h.</p>
 </div>
 <div>
 <table><caption>Table 6 · Stability over 5 simulator seeds (42, 7, 11, 23, 99)</caption>
-<tr><th>Metric</th><th class=n>Seed 42</th><th class=n>Mean ± sd</th></tr><tr><td>MAE vs carry-forward</td><td class=n>37%</td><td class=n>28% ± 6%</td></tr><tr><td>MAE vs propagation prior</td><td class=n>30%</td><td class=n>22% ± 7%</td></tr><tr><td>P10–P90 coverage</td><td class=n>81%</td><td class=n>81% ± 2%</td></tr><tr><td>Brier P(late)</td><td class=n>0.185</td><td class=n>0.165 ± 0.019</td></tr><tr><td>PR-AUC P(late)</td><td class=n>0.85</td><td class=n>0.87 ± 0.02</td></tr><tr><td>Root cause top-1</td><td class=n>42%</td><td class=n>47% ± 4%</td></tr><tr><td>Lift vs lane-history</td><td class=n>+16 pp</td><td class=n>+9 pp ± 6 pp</td></tr><tr><td>Propagation Spearman</td><td class=n>0.47</td><td class=n>0.34 ± 0.08</td></tr><tr><td>Advisor Spearman</td><td class=n>0.45</td><td class=n>0.46 ± 0.15</td></tr></table>
+<tr><th>Metric</th><th class=n>Seed 42</th><th class=n>Mean ± sd</th></tr><tr><td>MAE vs carry-forward</td><td class=n>37%</td><td class=n>34% ± 3%</td></tr><tr><td>MAE vs propagation prior</td><td class=n>31%</td><td class=n>28% ± 5%</td></tr><tr><td>P10–P90 coverage</td><td class=n>82%</td><td class=n>81% ± 2%</td></tr><tr><td>Brier P(late)</td><td class=n>0.179</td><td class=n>0.155 ± 0.024</td></tr><tr><td>PR-AUC P(late)</td><td class=n>0.87</td><td class=n>0.88 ± 0.02</td></tr><tr><td>Root cause top-1</td><td class=n>42%</td><td class=n>49% ± 5%</td></tr><tr><td>Lift vs lane-history</td><td class=n>+16 pp</td><td class=n>+11 pp ± 7 pp</td></tr><tr><td>Propagation Spearman</td><td class=n>0.47</td><td class=n>0.34 ± 0.08</td></tr><tr><td>Advisor Spearman</td><td class=n>0.45</td><td class=n>0.46 ± 0.15</td></tr></table>
 <p class=small>Seed 42 is the most favourable of the 5 seeds for the MAE gain; the mean is the fairer
-estimate. Weakest claim: root-cause lift over the lane-history explainer (+9 pp ± 6 pp),
+estimate. Weakest claim: root-cause lift over the lane-history explainer (+11 pp ± 7 pp),
 positive on average but not reliably large.</p></div>
 </div>
 
@@ -168,24 +167,24 @@ positive on average but not reliably large.</p></div>
 <div>
 <p class=small style="margin-top:1mm">Advisor ranking vs truth: Spearman 0.45, direction agreement 73% (n = 131).
 Largest miss: Weekend customs (28 h predicted vs 6 h true).
-<b>Decision replay:</b> late-alert recall 100%, precision 86%, false-positive rate 16%;
-10.6 alerts per 100 shipment-days; median lead 3.6 d before <i>actual</i> delivery. The promise date holds in 92% of cases, with 0.60
+<b>Decision replay:</b> late-alert recall 100%, precision 84%, false-positive rate 19%;
+9.7 alerts per 100 shipment-days; median lead 13.9 d before <i>actual</i> delivery. The promise date holds in 91% of cases, with 0.58
 reversals per shipment vs 0.85 for the raw ETA.
-<b>Latency:</b> predict + explain p50 1.4 ms, p95 2.4 ms (in-process, sequential, 4-thread laptop CPU, LightGBM 4.7.0).</p>
+<b>Latency:</b> predict + explain p50 5.4 ms, p95 6.3 ms (in-process, sequential, 28-thread laptop CPU, LightGBM 4.7.0).</p>
 </div>
 </div>
 
 <h3>Worked example: SHP-000174 (CNSHA-MYTPP-NLRTM), as of 2025-10-10 09:32 UTC</h3>
 <div class=two>
-<figure style="margin-top:0"><img src="file:///home/user/AIQON/report/figures/waterfall_compact.png" style="width:100%">
+<figure style="margin-top:0"><img src="file:///D:/ATQON-ml/report/figures/waterfall_compact.png" style="width:100%">
 <figcaption>Figure 2 · Additive waterfall: realised delay (solid) + projected stage contributions (hatched) = P50 (168 h).</figcaption></figure>
 <div>
-<div class=quote>SHP-000174 is expected 7.0 days late (likely 4.3 days–10.4 days late); 83% chance of more than 24 h late. Already 46 h behind plan. Main driver: Transshipment — projected to reach Tanjung Pelepas after the connection cut-off (buffer short by 36 h) (+126 h). Also contributing: Customs — customs release projected to fall outside office hours / on a non-working day at Rotterdam (+12 h). Suggested action: Check the next sailing from the hub and consider re-booking or priority loading. Confidence is reduced: 2 milestone(s) missing from the feed.</div>
+<div class=quote>SHP-000174 is expected 7.0 days late (likely 5.0 days–10.4 days late); 99% chance of more than 24 h late. Already 46 h behind plan. Main driver: Transshipment — projected to reach Tanjung Pelepas after the connection cut-off (buffer short by 36 h) (+126 h). Also contributing: Customs — customs release projected to fall outside office hours / on a non-working day at Rotterdam (+12 h). Suggested action: Check the next sailing from the hub and consider re-booking or priority loading. Confidence is reduced: 2 milestone(s) missing from the feed.</div>
 <p class=small>The main driver (Transshipment, 126 h) is a projected missed connection: one more sailing headway.
-The cause ledger agrees: the true root cause is <b>Transshipment</b>. Expected cost of delay $778 (P90 $986).</p>
+The cause ledger agrees: the true root cause is <b>Transshipment</b>. Expected cost of delay $766 (P90 $968).</p>
 </div>
 </div>
 
 <h2>5 · Limitations and next steps</h2>
-<p><b>Synthetic</b> mechanisms, not fitted to real data (revisions and feed corrections are simulated); <b>associational</b> counterfactuals (advisor Spearman 0.45 vs true interventions); <b>small n</b>: 62 test shipments in 20 voyages, so CIs are wide. <b>Alert timing:</b> the LATE threshold (P(late) ≥ 0.7, actionable F1 on training folds) warns 32% of late test shipments ≥ 48 h ahead (60% ± 15% over seeds). <b>Next:</b> an AIS/EDI adapter, survival models, drift-triggered recalibration.</p>
+<p><b>Synthetic</b> mechanisms, not fitted to real data (revisions and feed corrections are simulated); <b>associational</b> counterfactuals (advisor Spearman 0.45 vs true interventions); <b>small n</b>: 62 test shipments in 20 voyages, so CIs are wide. <b>Alert timing:</b> the LATE threshold (P(late) ≥ 0.7, actionable F1 on training folds) warns 61% of late test shipments ≥ 48 h ahead (71% ± 14% over seeds). <b>Next:</b> an AIS/EDI adapter, survival models, drift-triggered recalibration.</p>
 </body></html>

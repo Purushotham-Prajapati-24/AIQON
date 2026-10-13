@@ -1,0 +1,7 @@
+baseline                     MAE 24.2 h (rulebook 24.2, B1 38.6) - vs B1 37% - coverage 82% - lambda 0.0
+berth_window_penalty_x2      MAE 27.9 h (rulebook 28.0, B1 42.0) - vs B1 34% - coverage 85% - lambda 0.0
+no_speed_recovery            MAE 28.7 h (rulebook 29.0, B1 43.3) - vs B1 34% - coverage 81% - lambda 0.75
+weather_impact_x1.5          MAE 25.5 h (rulebook 25.4, B1 38.9) - vs B1 35% - coverage 82% - lambda 0.0
+hub_congestion_slowdown_x2   MAE 23.8 h (rulebook 29.1, B1 47.1) - vs B1 50% - coverage 86% - lambda 0.75
+connection_headway_x2        MAE 33.3 h (rulebook 33.3, B1 47.1) - vs B1 29% - coverage 83% - lambda 0.0
+reporting_latency_x3         MAE 24.5 h (rulebook 24.6, B1 39.2) - vs B1 38% - coverage 83% - lambda 0.0

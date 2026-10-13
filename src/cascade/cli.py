@@ -39,7 +39,7 @@ def generate_data(seed: int = 42, n: int = 300, out: Path = ROOT / "data") -> No
 def run_all(
     seed: int = 42,
     n: int = 300,
-    version: str = "1.2.0",
+    version: str = "1.3.0",
     fast: bool = False,
     force: bool = False,
     train_config: Path = ROOT / "configs" / "train.yaml",

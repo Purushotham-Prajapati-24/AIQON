@@ -161,8 +161,12 @@ def test_late_alert_needs_the_tuned_probability_and_counts_duplicates():
 def test_alert_threshold_is_chosen_out_of_fold(trained):
     sel = trained.selection["late_alert_threshold"]
     assert set(sel) == {"0.0", "0.5", "0.6", "0.7", "0.8", "0.9"}
-    best = max(sel, key=lambda k: (round(sel[k]["f1_actionable"], 4), float(k)))
-    assert trained.model.late_alert_p == float(best)
+    # the strictest threshold within ALERT_F1_TOL of the best actionable F1
+    from cascade.models.train import ALERT_F1_TOL
+
+    top = max(v["f1_actionable"] for v in sel.values())
+    best = max(float(k) for k, v in sel.items() if v["f1_actionable"] >= top - ALERT_F1_TOL)
+    assert trained.model.late_alert_p == best
     # a late shipment only counts as caught if alerted >= 48 h before planned delivery
     for v in sel.values():
         assert v["recall_ge_48h"] <= v["recall"] + 1e-12

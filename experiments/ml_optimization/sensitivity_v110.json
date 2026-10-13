@@ -1,0 +1,116 @@
+{
+ "seed": 42,
+ "n_shipments": 300,
+ "variants": {
+  "baseline": {},
+  "berth_window_penalty_x2": {
+   "mech": {
+    "BERTH_LAMBDA": 1.6
+   }
+  },
+  "no_speed_recovery": {
+   "mech": {
+    "RECOVERY_KAPPA": 0.0
+   }
+  },
+  "weather_impact_x1.5": {
+   "mech": {
+    "WEATHER_H_PER_DAY": 2.4
+   }
+  },
+  "hub_congestion_slowdown_x2": {
+   "mech": {
+    "HUB_GAMMA": 2.4
+   }
+  },
+  "connection_headway_x2": {
+   "headway_x": 2.0
+  },
+  "reporting_latency_x3": {
+   "sim": {
+    "latency_median_tier1_h": 1.5,
+    "latency_median_tier2_h": 6.0,
+    "latency_median_tier3_h": 18.0
+   }
+  }
+ },
+ "results": {
+  "baseline": {
+   "mae_cascade_h": 24.511007691488906,
+   "mae_rulebook_h": 24.514009888785388,
+   "mae_B1_h": 38.52814033087847,
+   "mae_improvement_vs_B1": 0.3638154481117144,
+   "mae_ratio_cascade_vs_rulebook": 0.9998775313663452,
+   "coverage_p10_p90_overall": 0.8027586206896552,
+   "brier_tau24": 0.18072112837036472,
+   "attribution_top1": 0.4188034188034188,
+   "shrink": 0.0
+  },
+  "berth_window_penalty_x2": {
+   "mae_cascade_h": 27.868077563709047,
+   "mae_rulebook_h": 27.918864880942422,
+   "mae_B1_h": 41.93492871329676,
+   "mae_improvement_vs_B1": 0.3354447373873176,
+   "mae_ratio_cascade_vs_rulebook": 0.9981808960554108,
+   "coverage_p10_p90_overall": 0.8342541436464088,
+   "brier_tau24": 0.1740836738911018,
+   "attribution_top1": 0.4074074074074074,
+   "shrink": 0.0
+  },
+  "no_speed_recovery": {
+   "mae_cascade_h": 28.747820771004335,
+   "mae_rulebook_h": 29.224218193444745,
+   "mae_B1_h": 43.18117441109121,
+   "mae_improvement_vs_B1": 0.3342510674369159,
+   "mae_ratio_cascade_vs_rulebook": 0.9836985400503453,
+   "coverage_p10_p90_overall": 0.7624309392265194,
+   "brier_tau24": 0.17776931501655135,
+   "attribution_top1": 0.4381720430107527,
+   "shrink": 0.75
+  },
+  "weather_impact_x1.5": {
+   "mae_cascade_h": 25.85978590433906,
+   "mae_rulebook_h": 25.75333177399418,
+   "mae_B1_h": 38.8538787956811,
+   "mae_improvement_vs_B1": 0.33443489541091664,
+   "mae_ratio_cascade_vs_rulebook": 1.0041336061399395,
+   "coverage_p10_p90_overall": 0.8063623789764869,
+   "brier_tau24": 0.17854051596105658,
+   "attribution_top1": 0.4431818181818182,
+   "shrink": 0.0
+  },
+  "hub_congestion_slowdown_x2": {
+   "mae_cascade_h": 23.3480626791433,
+   "mae_rulebook_h": 29.22581600350108,
+   "mae_B1_h": 47.025523693857025,
+   "mae_improvement_vs_B1": 0.5035023356434567,
+   "mae_ratio_cascade_vs_rulebook": 0.7988848857580688,
+   "coverage_p10_p90_overall": 0.8703448275862069,
+   "brier_tau24": 0.14858617520118467,
+   "attribution_top1": 0.5879120879120879,
+   "shrink": 1.0
+  },
+  "connection_headway_x2": {
+   "mae_cascade_h": 32.89807916454781,
+   "mae_rulebook_h": 32.897077224956305,
+   "mae_B1_h": 47.08612139241385,
+   "mae_improvement_vs_B1": 0.3013211071182412,
+   "mae_ratio_cascade_vs_rulebook": 1.0000304567966525,
+   "coverage_p10_p90_overall": 0.8577348066298343,
+   "brier_tau24": 0.178804842878471,
+   "attribution_top1": 0.39886039886039887,
+   "shrink": 0.0
+  },
+  "reporting_latency_x3": {
+   "mae_cascade_h": 25.938057855153218,
+   "mae_rulebook_h": 26.052248051631228,
+   "mae_B1_h": 39.1517785960733,
+   "mae_improvement_vs_B1": 0.33749988416223176,
+   "mae_ratio_cascade_vs_rulebook": 0.9956168774283239,
+   "coverage_p10_p90_overall": 0.7857142857142857,
+   "brier_tau24": 0.18547061957205935,
+   "attribution_top1": 0.4083333333333333,
+   "shrink": 0.0
+  }
+ }
+}

@@ -1,0 +1,348 @@
+{
+ "seeds": "42,7,11,23,99",
+ "summary": {
+  "mae_cascade_h": {
+   "mean": 26.09737364585498,
+   "sd": 4.0483469553966644
+  },
+  "mae_B1_h": {
+   "mean": 36.05109444784214,
+   "sd": 4.973715630412217
+  },
+  "mae_B2_h": {
+   "mean": 33.43196382811318,
+   "sd": 4.2920203742381675
+  },
+  "mae_improvement_vs_B1": {
+   "mean": 0.27522735035887347,
+   "sd": 0.057671616515555926
+  },
+  "mae_improvement_vs_B2": {
+   "mean": 0.21894906199247416,
+   "sd": 0.06843054647739844
+  },
+  "mae_rulebook_h": {
+   "mean": 26.10522533150217,
+   "sd": 4.410707429291745
+  },
+  "mae_improvement_vs_rulebook": {
+   "mean": -0.0016552635478415568,
+   "sd": 0.0202595731634356
+  },
+  "mae_ratio_cascade_vs_rulebook": {
+   "mean": 1.0016552635478417,
+   "sd": 0.0202595731634356
+  },
+  "shrink": {
+   "mean": 0.25,
+   "sd": 0.31622776601683794
+  },
+  "eta_floor_binding_share": {
+   "mean": 0.008928708517495108,
+   "sd": 0.0022476781554831623
+  },
+  "coverage_p10_p90_overall": {
+   "mean": 0.8118835597023624,
+   "sd": 0.025960357021623495
+  },
+  "brier_tau24": {
+   "mean": 0.16630519228159008,
+   "sd": 0.018370186050284197
+  },
+  "pr_auc_tau24": {
+   "mean": 0.8666218928019565,
+   "sd": 0.01846321372211876
+  },
+  "pr_auc_tau24_at_arrival": {
+   "mean": 0.912837944645332,
+   "sd": 0.042448867878638434
+  },
+  "attribution_top1": {
+   "mean": 0.4690241729280615,
+   "sd": 0.042091413989852965
+  },
+  "attribution_top2": {
+   "mean": 0.675880043892328,
+   "sd": 0.02733695434097724
+  },
+  "attribution_top1_major": {
+   "mean": 0.5354103556544688,
+   "sd": 0.060674637672934684
+  },
+  "attribution_lift_vs_lane_prior": {
+   "mean": 0.08505703394141474,
+   "sd": 0.05567249317910425
+  },
+  "propagation_spearman": {
+   "mean": 0.3494949657538764,
+   "sd": 0.06460853283650546
+  },
+  "advisor_spearman": {
+   "mean": 0.451173020118528,
+   "sd": 0.15613910215428325
+  },
+  "alert_lead_ge_48h_share": {
+   "mean": 0.8628076463560335,
+   "sd": 0.11520344691241599
+  },
+  "promise_flip_ratio": {
+   "mean": 0.8548866363521537,
+   "sd": 0.026334057937154494
+  },
+  "late_alert_false_positive_rate": {
+   "mean": 0.42040989570700943,
+   "sd": 0.1597444986521259
+  },
+  "alerts_per_100_shipment_days": {
+   "mean": 9.269008178518316,
+   "sd": 0.5966792581686492
+  },
+  "attribution_ambiguous_share": {
+   "mean": 0.21299510539555527,
+   "sd": 0.0584175296945235
+  },
+  "promise_hit_rate": {
+   "mean": 0.8656749672468239,
+   "sd": 0.023755075709918964
+  },
+  "promise_reversals_per_shipment": {
+   "mean": 0.5426170750337856,
+   "sd": 0.1067907145960895
+  },
+  "raw_eta_reversals_per_shipment": {
+   "mean": 0.6589114686946521,
+   "sd": 0.11811290453822691
+  },
+  "latency_p95_ms": {
+   "mean": 1.7999119957676153,
+   "sd": 0.2887921970371009
+  }
+ },
+ "runs": [
+  {
+   "mae_cascade_h": 24.511007691488906,
+   "mae_B1_h": 38.52814033087847,
+   "mae_B2_h": 34.92036965275976,
+   "mae_improvement_vs_B1": 0.3638154481117144,
+   "mae_improvement_vs_B1_ci95": [
+    0.2908484983364751,
+    0.4409398913389528
+   ],
+   "mae_improvement_vs_B2": 0.2980885387176364,
+   "mae_improvement_vs_B1_ci95_voyage": [
+    0.24333982109140895,
+    0.4761965787454404
+   ],
+   "mae_rulebook_h": 24.514009888785388,
+   "mae_improvement_vs_rulebook": 0.0001224686336548375,
+   "mae_improvement_vs_rulebook_ci95_voyage": [
+    -0.0034044798366399064,
+    0.0031464783082329846
+   ],
+   "mae_ratio_cascade_vs_rulebook": 0.9998775313663452,
+   "shrink": 0.0,
+   "n_test_voyages": 20,
+   "eta_floor_binding_share": 0.006896551724137931,
+   "coverage_p10_p90_overall": 0.8027586206896552,
+   "brier_tau24": 0.18072112837036472,
+   "pr_auc_tau24": 0.8556633449023431,
+   "pr_auc_tau24_at_arrival": 0.9105282471988928,
+   "attribution_top1": 0.4188034188034188,
+   "attribution_top2": 0.6866096866096866,
+   "attribution_top1_major": 0.5,
+   "attribution_lift_vs_lane_prior": 0.1566951566951567,
+   "propagation_spearman": 0.4613635372827144,
+   "advisor_spearman": 0.43602409093813566,
+   "alert_lead_ge_48h_share": 0.967741935483871,
+   "promise_flip_ratio": 0.8333333333333334,
+   "late_alert_false_positive_rate": 0.25806451612903225,
+   "alerts_per_100_shipment_days": 8.634985605852977,
+   "attribution_ambiguous_share": 0.25071225071225073,
+   "promise_hit_rate": 0.8891129032258064,
+   "promise_reversals_per_shipment": 0.6290322580645161,
+   "raw_eta_reversals_per_shipment": 0.7903225806451613,
+   "latency_p95_ms": 1.61774497537408,
+   "identity_violations": 0
+  },
+  {
+   "mae_cascade_h": 21.45669883575733,
+   "mae_B1_h": 31.40141367109988,
+   "mae_B2_h": 30.737887023684056,
+   "mae_improvement_vs_B1": 0.3166964054390684,
+   "mae_improvement_vs_B1_ci95": [
+    0.17740867218416648,
+    0.43537926457198867
+   ],
+   "mae_improvement_vs_B2": 0.30194620016578944,
+   "mae_improvement_vs_B1_ci95_voyage": [
+    0.14361195309003066,
+    0.44900672130211705
+   ],
+   "mae_rulebook_h": 21.451936881076815,
+   "mae_improvement_vs_rulebook": -0.0002219825047460322,
+   "mae_improvement_vs_rulebook_ci95_voyage": [
+    -0.004780406479659572,
+    0.004702321770447979
+   ],
+   "mae_ratio_cascade_vs_rulebook": 1.000221982504746,
+   "shrink": 0.0,
+   "n_test_voyages": 22,
+   "eta_floor_binding_share": 0.005763688760806916,
+   "coverage_p10_p90_overall": 0.8602305475504323,
+   "brier_tau24": 0.13072165636100613,
+   "pr_auc_tau24": 0.8880979683558916,
+   "pr_auc_tau24_at_arrival": 0.9700287485122416,
+   "attribution_top1": 0.5311475409836065,
+   "attribution_top2": 0.7213114754098361,
+   "attribution_top1_major": 0.5695364238410596,
+   "attribution_lift_vs_lane_prior": 0.09836065573770486,
+   "propagation_spearman": 0.3542748141562326,
+   "advisor_spearman": 0.637365250250888,
+   "alert_lead_ge_48h_share": 0.9166666666666666,
+   "promise_flip_ratio": 0.853448275862069,
+   "late_alert_false_positive_rate": 0.23684210526315788,
+   "alerts_per_100_shipment_days": 9.186093546512383,
+   "attribution_ambiguous_share": 0.14754098360655737,
+   "promise_hit_rate": 0.890252176139273,
+   "promise_reversals_per_shipment": 0.5967741935483871,
+   "raw_eta_reversals_per_shipment": 0.6935483870967742,
+   "latency_p95_ms": 1.5512599959038198,
+   "identity_violations": 0
+  },
+  {
+   "mae_cascade_h": 26.133032946684025,
+   "mae_B1_h": 34.89148059960351,
+   "mae_B2_h": 31.91212628862301,
+   "mae_improvement_vs_B1": 0.25101966160240885,
+   "mae_improvement_vs_B1_ci95": [
+    0.14300712189735923,
+    0.35580786171025097
+   ],
+   "mae_improvement_vs_B2": 0.1810939606365023,
+   "mae_improvement_vs_B1_ci95_voyage": [
+    0.1126481612581536,
+    0.3634761362556788
+   ],
+   "mae_rulebook_h": 25.20595029629631,
+   "mae_improvement_vs_rulebook": -0.0367803093908321,
+   "mae_improvement_vs_rulebook_ci95_voyage": [
+    -0.14452562928639795,
+    0.03555691803166611
+   ],
+   "mae_ratio_cascade_vs_rulebook": 1.036780309390832,
+   "shrink": 0.75,
+   "n_test_voyages": 19,
+   "eta_floor_binding_share": 0.0113314447592068,
+   "coverage_p10_p90_overall": 0.8101983002832861,
+   "brier_tau24": 0.16953351248975057,
+   "pr_auc_tau24": 0.8523152183806713,
+   "pr_auc_tau24_at_arrival": 0.8385357171563208,
+   "attribution_top1": 0.45454545454545453,
+   "attribution_top2": 0.6493506493506493,
+   "attribution_top1_major": 0.4913294797687861,
+   "attribution_lift_vs_lane_prior": 0.12662337662337658,
+   "propagation_spearman": 0.35671840039793734,
+   "advisor_spearman": 0.2595538634599575,
+   "alert_lead_ge_48h_share": 0.9629629629629629,
+   "promise_flip_ratio": 0.9038461538461539,
+   "late_alert_false_positive_rate": 0.6,
+   "alerts_per_100_shipment_days": 10.01688950537672,
+   "attribution_ambiguous_share": 0.1525974025974026,
+   "promise_hit_rate": 0.873758320532514,
+   "promise_reversals_per_shipment": 0.3870967741935484,
+   "raw_eta_reversals_per_shipment": 0.532258064516129,
+   "latency_p95_ms": 2.172125037759541,
+   "identity_violations": 0
+  },
+  {
+   "mae_cascade_h": 33.59336390851368,
+   "mae_B1_h": 44.38944869767193,
+   "mae_B2_h": 40.98380882252695,
+   "mae_improvement_vs_B1": 0.24321286039590906,
+   "mae_improvement_vs_B1_ci95": [
+    0.10750741134586679,
+    0.3423521475516537
+   ],
+   "mae_improvement_vs_B2": 0.18032596594465566,
+   "mae_improvement_vs_B1_ci95_voyage": [
+    0.04055039301438815,
+    0.40584005857582034
+   ],
+   "mae_rulebook_h": 34.51246151894978,
+   "mae_improvement_vs_rulebook": 0.02663089127767515,
+   "mae_improvement_vs_rulebook_ci95_voyage": [
+    -0.02036114362219595,
+    0.06075029427953702
+   ],
+   "mae_ratio_cascade_vs_rulebook": 0.9733691087223248,
+   "shrink": 0.5,
+   "n_test_voyages": 22,
+   "eta_floor_binding_share": 0.0111731843575419,
+   "coverage_p10_p90_overall": 0.7821229050279329,
+   "brier_tau24": 0.17985634426785038,
+   "pr_auc_tau24": 0.8471707410645941,
+   "pr_auc_tau24_at_arrival": 0.9190845341891878,
+   "attribution_top1": 0.503957783641161,
+   "attribution_top2": 0.6754617414248021,
+   "attribution_top1_major": 0.6387665198237885,
+   "attribution_lift_vs_lane_prior": 0.03693931398416889,
+   "propagation_spearman": 0.30501744824152865,
+   "advisor_spearman": 0.30323567285248726,
+   "alert_lead_ge_48h_share": 0.8,
+   "promise_flip_ratio": 0.8303571428571429,
+   "late_alert_false_positive_rate": 0.6071428571428571,
+   "alerts_per_100_shipment_days": 8.616564383993378,
+   "attribution_ambiguous_share": 0.3007915567282322,
+   "promise_hit_rate": 0.8337994457042076,
+   "promise_reversals_per_shipment": 0.4444444444444444,
+   "raw_eta_reversals_per_shipment": 0.5079365079365079,
+   "latency_p95_ms": 2.1306549839209765,
+   "identity_violations": 0
+  },
+  {
+   "mae_cascade_h": 24.792764846830952,
+   "mae_B1_h": 31.0449889399569,
+   "mae_B2_h": 28.60562735297213,
+   "mae_improvement_vs_B1": 0.20139237624526685,
+   "mae_improvement_vs_B1_ci95": [
+    0.09502364624966222,
+    0.29483253803752313
+   ],
+   "mae_improvement_vs_B2": 0.13329064449778694,
+   "mae_improvement_vs_B1_ci95_voyage": [
+    0.06615295652073314,
+    0.33041823926537606
+   ],
+   "mae_rulebook_h": 24.841768072402562,
+   "mae_improvement_vs_rulebook": 0.0019726142450403605,
+   "mae_improvement_vs_rulebook_ci95_voyage": [
+    -0.0013204308532823506,
+    0.005770788306617974
+   ],
+   "mae_ratio_cascade_vs_rulebook": 0.9980273857549596,
+   "shrink": 0.0,
+   "n_test_voyages": 21,
+   "eta_floor_binding_share": 0.009478672985781991,
+   "coverage_p10_p90_overall": 0.8041074249605056,
+   "brier_tau24": 0.17069331991897868,
+   "pr_auc_tau24": 0.8898621913062823,
+   "pr_auc_tau24_at_arrival": 0.9260124761700169,
+   "attribution_top1": 0.43666666666666665,
+   "attribution_top2": 0.6466666666666666,
+   "attribution_top1_major": 0.4774193548387097,
+   "attribution_lift_vs_lane_prior": 0.006666666666666654,
+   "propagation_spearman": 0.270100628690969,
+   "advisor_spearman": 0.6196862230911715,
+   "alert_lead_ge_48h_share": 0.6666666666666666,
+   "promise_flip_ratio": 0.853448275862069,
+   "late_alert_false_positive_rate": 0.4,
+   "alerts_per_100_shipment_days": 9.890507850856126,
+   "attribution_ambiguous_share": 0.21333333333333335,
+   "promise_hit_rate": 0.8414519906323185,
+   "promise_reversals_per_shipment": 0.6557377049180327,
+   "raw_eta_reversals_per_shipment": 0.7704918032786885,
+   "latency_p95_ms": 1.5277749858796594,
+   "identity_violations": 0
+  }
+ ]
+}

@@ -869,7 +869,10 @@ def run_all(ctx: EvalContext, rows: pd.DataFrame, cfg: TrainConfig, fast: bool =
             "shrink": ctx.result.model.shrink,
             "late_blend": ctx.result.model.late_blend,
             "late_alert_p": ctx.result.model.late_alert_p,
-            **{k: {str(kk): vv for kk, vv in v.items()} for k, v in ctx.result.selection.items()},
+            **{
+                k: {str(kk): vv for kk, vv in v.items()} if isinstance(v, dict) else v
+                for k, v in ctx.result.selection.items()
+            },
         },
     }
     out["splits"] = split_counts(ctx, rows)

@@ -1,0 +1,90 @@
+pooled dev: 55133 train rows, 14037 test rows, late rate 0.40
+
+== missingness (train) ==
+hours_since_last_event    0.091 
+
+== near-constant numeric features (top value share > 0.95) ==
+  overdue_h                        0.958
+
+== exact duplicate feature rows (train): 0 (0.0%)
+
+== target distributions ==
+  y_total      mean    36.1 sd   50.2 skew  1.63 kurt    2.6 | q01   -24.0 q50   24.0 q99   192.0
+  y_remaining  mean    17.8 sd   39.9 skew  2.02 kurt    5.3 | q01   -39.6 q50    2.4 q99   168.0
+  resid        mean     9.6 sd   33.9 skew  1.89 kurt    7.9 | q01   -72.0 q50    0.0 q99   147.0
+  share |resid| < 1 h (rulebook exactly right): 0.53
+
+== 'outliers' by a textbook 5*MAD rule on the residual ==
+  MAD 0.44 h -> 40.7% of rows flagged (zero-inflated residual: these are real inspections / missed connections, so rows are NOT deleted)
+
+== rulebook vs carry-forward by checkpoint x snapshot kind (train) ==
+                      n  rule_mae  carry_mae  err_share
+checkpoint kind                                        
+0.0        booked  4778     29.63      36.83       0.15
+           mid      215     44.06      54.58       0.01
+1.0        event   4079     28.58      36.38       0.12
+           mid      751     32.42      42.29       0.03
+2.0        event   4114     22.03      31.30       0.10
+           mid     4884     22.36      31.79       0.12
+3.0        event   2686     25.74      37.85       0.07
+           mid     3042     25.67      39.23       0.08
+4.0        event   2659     17.81      24.29       0.05
+           mid     3229     16.58      23.86       0.06
+5.0        event   4142     12.79      22.65       0.06
+           mid     4707     12.64      22.60       0.06
+6.0        event   4056     11.32      19.51       0.05
+           mid     3750     10.74      19.78       0.04
+7.0        event   4043      1.41       5.34       0.01
+8.0        event   3998      0.81       5.19       0.00
+
+== overdue next milestone: rulebook vs carry by checkpoint x EDI tier (train) ==
+                               n  rule_mae  carry_mae  median_resid
+checkpoint carrier_edi_tier                                        
+1.0        1.0                15      11.9       12.9           0.0
+           2.0                43      20.8       29.7           0.0
+           3.0                38      37.2       39.8           0.0
+2.0        1.0                49      22.9       22.3           0.0
+           2.0                89      20.9       25.1           0.0
+           3.0                69      25.5       29.3           0.0
+3.0        1.0               155      37.8       67.5          24.0
+           2.0               183      43.4       87.7           1.6
+           3.0               102      45.1       86.7           3.7
+4.0        1.0                40      11.6       17.9           0.0
+           2.0                71      14.9       19.4           0.0
+           3.0                63      17.1       22.4           0.0
+5.0        1.0               246      14.5       26.9           0.0
+           2.0               303      12.7       20.0           0.0
+           3.0               176      13.2       21.4           0.0
+6.0        1.0               214      12.6       28.1           0.0
+           2.0               205      12.4       28.1           0.0
+           3.0                90       9.0       28.2           0.0
+7.0        1.0                 3       1.7       11.4           0.0
+           2.0                35       3.0        7.5           0.0
+           3.0                98       1.5        7.3           0.0
+8.0        1.0                 4       6.9       10.6           6.9
+           2.0                11       0.0       10.0           0.0
+           3.0                14       2.0        8.6           0.0
+
+== rulebook component vs its own future stage increment ==
+  proj_inc_origin_h      corr  0.23  slope  0.89  mean proj    0.1 vs truth    2.3
+  proj_inc_ocean_h       corr  0.49  slope  0.55  mean proj   -1.6 vs truth    0.1
+  proj_inc_hub_h         corr  0.66  slope  1.07  mean proj    3.9 vs truth    4.4
+  proj_inc_port_h        corr  0.58  slope  0.98  mean proj    3.2 vs truth    5.7
+  proj_inc_customs_h     corr  0.46  slope  0.68  mean proj    1.9 vs truth    4.8
+  proj_inc_inland_h      corr  0.56  slope  0.60  mean proj    0.7 vs truth    0.6
+
+== collinear numeric pairs (|r| > 0.95) ==
+  has_transshipment              planned_ts_buffer_h            0.998
+  frac_plan_elapsed              remaining_planned_h            0.965
+  queue_excess_h                 proj_inc_port_h                0.963
+  customs_calendar_shift_h       proj_inc_customs_h             0.987
+
+== train -> test shift (standardised mean difference, top 8) ==
+rho_origin                    0.591
+rho_dest_fcst                 0.566
+queue_excess_h                0.396
+proj_inc_port_h               0.368
+holidays_in_customs_window    0.198
+storm_flag                    0.195
+proj_inc_ocean_h              0.188
+weather_fcst_remaining        0.188

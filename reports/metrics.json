@@ -2,11 +2,11 @@
  "accuracy": {
   "overall": {
    "cascade": {
-    "mae": 24.484831019134276,
-    "rmse": 50.80929346867259,
+    "mae": 24.219262554988507,
+    "rmse": 50.62182577704606,
     "medae": 1.4584304048321428,
     "p90ae": 72.0,
-    "bias": -16.798347711711784,
+    "bias": -17.85412532882922,
     "n": 725
    },
    "B0_schedule": {
@@ -34,11 +34,11 @@
     "n": 725
    },
    "physics_rulebook": {
-    "mae": 24.479706761684596,
-    "rmse": 50.83015433926557,
-    "medae": 1.4584304048321428,
+    "mae": 24.2148791754777,
+    "rmse": 50.64224524985698,
+    "medae": 0.8163407212650782,
     "p90ae": 72.0,
-    "bias": -16.835973748682758,
+    "bias": -17.89528409351034,
     "n": 725
    },
    "B3_carrier_plan": {
@@ -53,14 +53,14 @@
   "by_checkpoint_mae": {
    "cascade": {
     "0": 52.47336543191203,
-    "1": 45.005411973622245,
-    "2": 34.9530301049414,
-    "3": 40.47450309106885,
+    "1": 46.505411973622245,
+    "2": 34.48244186964728,
+    "3": 38.34792081258783,
     "4": 23.102474568762723,
-    "5": 12.753953362381507,
-    "6": 8.233451576340332,
-    "7": 1.0604058275995598,
-    "8": 0.6214847498914426
+    "5": 12.177953362381508,
+    "6": 8.249754832619223,
+    "7": 1.073594402719798,
+    "8": 0.5742069807750957
    },
    "B0_schedule": {
     "0": 64.26950966960035,
@@ -97,11 +97,11 @@
    },
    "physics_rulebook": {
     "0": 52.47336543191203,
-    "1": 45.005411973622245,
-    "2": 34.9530301049414,
-    "3": 40.47450309106885,
+    "1": 46.505411973622245,
+    "2": 34.48244186964728,
+    "3": 38.34792081258783,
     "4": 23.102474568762723,
-    "5": 12.753953362381507,
+    "5": 12.177953362381508,
     "6": 8.322600909643779,
     "7": 0.9311277773113398,
     "8": 0.5288869855947951
@@ -120,257 +120,257 @@
   },
   "bootstrap_vs_B1": {
    "mae_model": [
-    18.002937090514475,
-    32.539940196771
+    17.788621219744034,
+    32.11258617652152
    ],
    "mae_baseline": [
     29.778182858793876,
     48.68177252224022
    ],
    "improvement": [
-    0.2911622860652391,
-    0.44246747028481126
+    0.297446499442655,
+    0.449647834117679
    ],
    "n_clusters": 62
   },
   "bootstrap_vs_B2": {
    "mae_model": [
-    18.002937090514475,
-    32.539940196771
+    17.788621219744034,
+    32.11258617652152
    ],
    "mae_baseline": [
     27.234011080663503,
     44.09502636344474
    ],
    "improvement": [
-    0.2163646544500364,
-    0.38150329116086623
+    0.2253134895621076,
+    0.394618331336632
    ],
    "n_clusters": 62
   },
   "bootstrap_voyage": {
    "vs_B1": {
     "mae_model": [
-     16.275340813749022,
-     33.99624188968725
+     15.706433656572463,
+     33.97154328589612
     ],
     "mae_baseline": [
      26.921131593327953,
      51.592372050332614
     ],
     "improvement": [
-     0.24644443514170294,
-     0.47693356979750795
+     0.2543177277724605,
+     0.48695729285052264
     ],
     "n_clusters": 20
    },
    "vs_B2": {
     "mae_model": [
-     16.275340813749022,
-     33.99624188968725
+     15.706433656572463,
+     33.97154328589612
     ],
     "mae_baseline": [
      24.782831694672144,
      47.02918029212209
     ],
     "improvement": [
-     0.1894302585637831,
-     0.4309726915367902
+     0.1914638641143406,
+     0.45025767927051713
     ],
     "n_clusters": 20
    },
    "vs_rulebook": {
     "mae_model": [
-     16.275340813749022,
-     33.99624188968725
+     15.706433656572463,
+     33.97154328589612
     ],
     "mae_baseline": [
-     16.235812288360034,
-     34.037830128044476
+     15.684775720582344,
+     34.02412727630962
     ],
     "improvement": [
-     -0.003291553305636896,
-     0.0026088562783238623
+     -0.0032842786180933836,
+     0.0027419230023927816
     ],
     "n_clusters": 20
    }
   },
-  "improvement_vs_B1": 0.3655417411594296,
-  "improvement_vs_B2": 0.3003195403982062,
-  "improvement_vs_rulebook": -0.00020932674968565657,
+  "improvement_vs_B1": 0.3724232305694736,
+  "improvement_vs_B2": 0.3079084457455229,
+  "improvement_vs_rulebook": -0.00018102008599929498,
   "coverage_p10_p90": {
-   "overall": 0.8055172413793104,
-   "at_port": 0.8364485981308412,
-   "at_sea": 0.7362637362637363,
-   "post_customs": 0.9056603773584906,
-   "pre_departure": 0.8181818181818182
+   "overall": 0.8206896551724138,
+   "at_port": 0.8130841121495327,
+   "at_sea": 0.7948717948717948,
+   "post_customs": 0.9622641509433962,
+   "pre_departure": 0.7727272727272727
   },
   "coverage_detail": {
    "overall": {
-    "coverage": 0.8055172413793104,
-    "width_h": 82.9852610474101,
+    "coverage": 0.8206896551724138,
+    "width_h": 86.5643051175384,
     "n_snapshots": 725,
     "n_shipments": 62,
     "n_voyages": 20,
     "ci95_voyage": [
-     0.7410939422524814,
-     0.8698654294689868
+     0.7534205240358738,
+     0.8856112680826789
     ]
    },
    "at_port": {
-    "coverage": 0.8364485981308412,
-    "width_h": 54.713263610596606,
+    "coverage": 0.8130841121495327,
+    "width_h": 52.14116371393228,
     "n_snapshots": 214,
     "n_shipments": 60,
     "n_voyages": 20,
     "ci95_voyage": [
-     0.7199460580912863,
-     0.937526187150838
+     0.7134367650901489,
+     0.8982319634018299
     ]
    },
    "at_sea": {
-    "coverage": 0.7362637362637363,
-    "width_h": 93.79930396193593,
+    "coverage": 0.7948717948717948,
+    "width_h": 114.24877110475666,
     "n_snapshots": 273,
     "n_shipments": 57,
     "n_voyages": 20,
     "ci95_voyage": [
-     0.6588678532448996,
-     0.8265387250306483
+     0.7119191267257828,
+     0.8805133795526555
     ]
    },
    "post_customs": {
-    "coverage": 0.9056603773584906,
-    "width_h": 11.324341914206016,
+    "coverage": 0.9622641509433962,
+    "width_h": 11.230560864849064,
     "n_snapshots": 106,
     "n_shipments": 60,
     "n_voyages": 20,
     "ci95_voyage": [
-     0.8425558151609553,
-     0.9626254759432329
+     0.9292906945561813,
+     0.9908256880733946
     ]
    },
    "pre_departure": {
-    "coverage": 0.8181818181818182,
-    "width_h": 164.0006486529569,
+    "coverage": 0.7727272727272727,
+    "width_h": 145.61028948607014,
     "n_snapshots": 132,
     "n_shipments": 62,
     "n_voyages": 20,
     "ci95_voyage": [
-     0.6728780450436648,
-     0.937535782442748
+     0.6127016129032258,
+     0.9140832779255319
     ]
    }
   },
   "interval_width_h": {
-   "overall": 82.9852610474101,
-   "at_port": 54.713263610596606,
-   "at_sea": 93.79930396193593,
-   "post_customs": 11.324341914206016,
-   "pre_departure": 164.0006486529569
+   "overall": 86.5643051175384,
+   "at_port": 52.14116371393228,
+   "at_sea": 114.24877110475666,
+   "post_customs": 11.230560864849064,
+   "pre_departure": 145.61028948607014
   },
   "eta_floor": {
    "frac": 0.5,
    "binding_share": 0.006896551724137931,
    "mean_adjust_h": 0.05010519798053228,
-   "mae_without_floor": 24.46480290770593,
-   "coverage_without_floor": 0.8110344827586207
+   "mae_without_floor": 24.199234443560158,
+   "coverage_without_floor": 0.8248275862068966
   },
   "p80": {
    "calibrated": true,
-   "coverage": 0.8220689655172414,
-   "coverage_normal_approx": 0.7572413793103449,
+   "coverage": 0.8303448275862069,
+   "coverage_normal_approx": 0.7696551724137931,
    "by_group": {
-    "at_port": 0.8504672897196262,
-    "at_sea": 0.7655677655677655,
-    "post_customs": 0.9150943396226415,
-    "pre_departure": 0.8181818181818182
+    "at_port": 0.8130841121495327,
+    "at_sea": 0.8168498168498168,
+    "post_customs": 0.9716981132075472,
+    "pre_departure": 0.7727272727272727
    },
    "ci95_voyage": [
-    0.7606523620926813,
-    0.8802578162454626
+    0.7616553284479897,
+    0.9014969764430971
    ]
   },
   "classification": {
    "tau_24": {
     "overall": {
-     "brier": 0.18451588325300103,
+     "brier": 0.1788634247463176,
      "base_rate": 0.5337931034482759,
      "n": 725,
-     "pr_auc": 0.8484819329800435,
-     "roc_auc": 0.8109566839441616
+     "pr_auc": 0.8711005679682454,
+     "roc_auc": 0.8402863783006895
     },
     "checkpoint_2": {
-     "brier": 0.24245261625346848,
+     "brier": 0.2560830294206691,
      "base_rate": 0.47058823529411764,
      "n": 102,
-     "pr_auc": 0.6002330623511027,
-     "roc_auc": 0.648533950617284
+     "pr_auc": 0.5900255971655202,
+     "roc_auc": 0.6786265432098766
     },
     "checkpoint_5": {
-     "brier": 0.14799710847940087,
+     "brier": 0.11996701461348404,
      "base_rate": 0.512,
      "n": 125,
-     "pr_auc": 0.8915879726527016,
-     "roc_auc": 0.8591188524590164
+     "pr_auc": 0.9321826847321171,
+     "roc_auc": 0.9098360655737704
     }
    },
    "tau_48": {
     "overall": {
-     "brier": 0.1417006958788861,
+     "brier": 0.14131954639752653,
      "base_rate": 0.3724137931034483,
      "n": 725,
-     "pr_auc": 0.7846018764323132,
-     "roc_auc": 0.8631664631664632
+     "pr_auc": 0.7846232645337101,
+     "roc_auc": 0.8618030118030118
     },
     "checkpoint_2": {
-     "brier": 0.1960898548640511,
+     "brier": 0.1940879563539729,
      "base_rate": 0.3137254901960784,
      "n": 102,
-     "pr_auc": 0.5006701573473544,
-     "roc_auc": 0.6995535714285713
+     "pr_auc": 0.5088616929079417,
+     "roc_auc": 0.7026785714285714
     },
     "checkpoint_5": {
-     "brier": 0.06541770157291878,
+     "brier": 0.06723750399717457,
      "base_rate": 0.376,
      "n": 125,
-     "pr_auc": 0.9308510638297874,
+     "pr_auc": 0.9308510638297873,
      "roc_auc": 0.973404255319149
     }
    }
   },
   "reliability": {
    "bin_mean_pred": [
-    0.05857124830165833,
-    0.1844263493860508,
-    0.3126014701893955,
-    0.43810912144136993,
-    0.5605021296205485,
-    0.6785019539596213,
-    0.811172812014881,
-    0.9562089343926513
+    0.06198457011020925,
+    0.18081302610697134,
+    0.3066622981794058,
+    0.44992783524663754,
+    0.5588096349081965,
+    0.687196277436162,
+    0.8206641348977086,
+    0.9732214673908856
    ],
    "bin_frac_pos": [
-    0.15625,
-    0.30935251798561153,
-    0.30952380952380953,
-    0.6153846153846154,
-    0.5714285714285714,
-    0.8518518518518519,
-    0.9,
-    1.0
+    0.19170984455958548,
+    0.30327868852459017,
+    0.5492957746478874,
+    0.6111111111111112,
+    0.6538461538461539,
+    0.8571428571428571,
+    0.8085106382978723,
+    0.9747899159663865
    ],
    "bin_n": [
-    96,
-    139,
-    84,
-    130,
-    91,
-    54,
-    60,
-    71
+    193,
+    122,
+    71,
+    72,
+    52,
+    49,
+    47,
+    119
    ],
-   "ece": 0.09495204542737976
+   "ece": 0.11425807253277541
   },
   "n_test_rows": 725,
   "n_test_shipments": 62,
@@ -382,14 +382,14 @@
   "n_shipments": 58,
   "explainer_source": "rulebook",
   "accuracy": {
-   "shap_top1": 0.4188034188034188,
-   "shap_top2": 0.6837606837606838,
-   "stage_forecast_top1": 0.452991452991453,
+   "shap_top1": 0.42450142450142453,
+   "shap_top2": 0.6894586894586895,
+   "stage_forecast_top1": 0.42735042735042733,
    "lane_prior_top1": 0.2621082621082621,
    "random_top1": 0.18233618233618235,
-   "shap_top1_major_delays": 0.5,
-   "lift_vs_lane_prior": 0.1566951566951567,
-   "shap_top1_unambiguous": 0.49049429657794674
+   "shap_top1_major_delays": 0.504950495049505,
+   "lift_vs_lane_prior": 0.16239316239316243,
+   "shap_top1_unambiguous": 0.49809885931558934
   },
   "ambiguity": {
    "share_margin_lt_6h": 0.25071225071225073,
@@ -412,19 +412,19 @@
    "2": {
     "n": 82,
     "top1": 0.3780487804878049,
-    "top2": 0.7560975609756098,
+    "top2": 0.7682926829268293,
     "lane_prior_top1": 0.3170731707317073
    },
    "3": {
     "n": 69,
-    "top1": 0.4782608695652174,
+    "top1": 0.5072463768115942,
     "top2": 0.8115942028985508,
     "lane_prior_top1": 0.2753623188405797
    },
    "4": {
     "n": 77,
     "top1": 0.4805194805194805,
-    "top2": 0.7662337662337663,
+    "top2": 0.7792207792207793,
     "lane_prior_top1": 0.2857142857142857
    }
   },
@@ -479,8 +479,8 @@
     "NONE": 6,
     "OCEAN": 3,
     "ORIGIN": 1,
-    "PORT": 73,
-    "TRANSSHIPMENT": 18
+    "PORT": 75,
+    "TRANSSHIPMENT": 16
    },
    "TRANSSHIPMENT": {
     "CUSTOMS": 2,
@@ -496,8 +496,8 @@
  "propagation_fidelity": {
   "delta_h": 12.0,
   "n": 190,
-  "spearman": 0.4697041791925958,
-  "mae": 1.629878138091155,
+  "spearman": 0.4663890634100757,
+  "mae": 1.6301313914496809,
   "by_event": {
    "ARRIVE_DEST_PORT": {
     "phi_hat": 1.23,
@@ -512,7 +512,7 @@
     "phi_true": 1.897
    },
    "DISCHARGED": {
-    "phi_hat": 0.822,
+    "phi_hat": 0.823,
     "phi_true": 0.76
    }
   },
@@ -530,8 +530,8 @@
    },
    "6.0": {
     "n": 190,
-    "spearman": 0.30242960671789365,
-    "mae": 2.1835727818928246,
+    "spearman": 0.3029179754400277,
+    "mae": 2.183587227152115,
     "phi_true_median": 0.0,
     "phi_true_iqr": [
      0.0,
@@ -541,8 +541,8 @@
    },
    "12.0": {
     "n": 190,
-    "spearman": 0.4697041791925958,
-    "mae": 1.629878138091155,
+    "spearman": 0.4663890634100757,
+    "mae": 1.6301313914496809,
     "phi_true_median": 0.0,
     "phi_true_iqr": [
      0.0,
@@ -552,8 +552,8 @@
    },
    "24.0": {
     "n": 190,
-    "spearman": 0.5825190029687045,
-    "mae": 0.9060313164627254,
+    "spearman": 0.584445085948504,
+    "mae": 0.9057619819774462,
     "phi_true_median": 1.0,
     "phi_true_iqr": [
      0.0,
@@ -587,8 +587,8 @@
    },
    "no_pending_connection": {
     "n": 116,
-    "spearman": 0.5010902463465567,
-    "mae": 0.8235984634843719,
+    "spearman": 0.49371138618213967,
+    "mae": 0.8240132750198886,
     "phi_true_median": 0.0,
     "phi_true_iqr": [
      0.0,
@@ -699,8 +699,8 @@
    },
    "no_pending_connection|6.0": {
     "n": 116,
-    "spearman": 0.2389252814602318,
-    "mae": 1.5317160418582976,
+    "spearman": 0.24133345210310747,
+    "mae": 1.5317397021967907,
     "phi_true_median": 0.0,
     "phi_true_iqr": [
      0.0,
@@ -710,8 +710,8 @@
    },
    "no_pending_connection|12.0": {
     "n": 116,
-    "spearman": 0.5010902463465567,
-    "mae": 0.8235984634843719,
+    "spearman": 0.49371138618213967,
+    "mae": 0.8240132750198886,
     "phi_true_median": 0.0,
     "phi_true_iqr": [
      0.0,
@@ -721,8 +721,8 @@
    },
    "no_pending_connection|24.0": {
     "n": 116,
-    "spearman": 0.684990478830794,
-    "mae": 0.4221824439694611,
+    "spearman": 0.6874924830847677,
+    "mae": 0.4217412926573658,
     "phi_true_median": 1.0,
     "phi_true_iqr": [
      1.0,
@@ -868,7 +868,7 @@
    {
     "lane_id": "CNYTN-LKCMB-BEANR",
     "event": "DISCHARGED",
-    "phi_hat": 0.0,
+    "phi_hat": 0.016,
     "phi_true": 0.0,
     "n": 3
    },
@@ -1056,43 +1056,43 @@
   }
  },
  "decision": {
-  "promise_changes_per_shipment": 1.8870967741935485,
-  "raw_eta_day_changes_per_shipment": 2.0483870967741935,
-  "promise_flip_ratio": 0.9212598425196851,
-  "promise_hit_rate": 0.9240591397849464,
+  "promise_changes_per_shipment": 1.7258064516129032,
+  "raw_eta_day_changes_per_shipment": 2.032258064516129,
+  "promise_flip_ratio": 0.8492063492063492,
+  "promise_hit_rate": 0.9137800819252432,
   "raw_eta_reversals_per_shipment": 0.8548387096774194,
-  "promise_reversals_per_shipment": 0.5967741935483871,
+  "promise_reversals_per_shipment": 0.5806451612903226,
   "late_alert_recall": 1.0,
-  "late_alert_precision": 0.8611111111111112,
-  "alert_lead_ge_48h_share": 0.3225806451612903,
-  "median_alert_lead_h": 33.674521050988005,
-  "alerts_per_shipment": 4.209677419354839,
-  "late_alert_false_positive_rate": 0.16129032258064516,
-  "alerts_per_100_shipment_days": 10.630807750602015,
-  "late_alerts_per_100_shipment_days": 1.466318310427864,
+  "late_alert_precision": 0.8378378378378378,
+  "alert_lead_ge_48h_share": 0.6129032258064516,
+  "median_alert_lead_h": 130.61591253522784,
+  "alerts_per_shipment": 3.8548387096774195,
+  "late_alert_false_positive_rate": 0.1935483870967742,
+  "alerts_per_100_shipment_days": 9.734724338673875,
+  "late_alerts_per_100_shipment_days": 1.5070493746064157,
   "lead_to_actual_h_p10_p50_p90": [
    29.041835139140858,
-   85.58071123555874,
-   715.4630155932246
+   334.2634024105264,
+   989.4592199760282
   ],
   "lead_to_planned_h_p10_p50_p90": [
-   -49.602827087858714,
-   33.674521050988005,
-   621.4656469778756
+   -48.4769398098324,
+   130.61591253522784,
+   831.8970968856338
   ],
-  "duplicates_suppressed": 51,
+  "duplicates_suppressed": 58,
   "late_alert_p_threshold": 0.7,
   "n_late": 31,
   "n_on_time": 31,
   "note": "LATE alert = first TIER_ESCALATION_LATE (P50 delay > tau and P(late) >= the threshold chosen on out-of-fold training predictions) in a replay from booking."
  },
  "group_importance": {
-  "ORIGIN": 0.39697805908980754,
-  "OCEAN": 3.4494649842836953,
-  "TRANSSHIPMENT": 8.591430656121712,
-  "PORT": 9.990159636821954,
-  "CUSTOMS": 12.156041795603162,
-  "INLAND": 6.392729803239749,
+  "ORIGIN": 0.35225024266943206,
+  "OCEAN": 3.3155014940112673,
+  "TRANSSHIPMENT": 7.6925433476914735,
+  "PORT": 9.83887219589347,
+  "CUSTOMS": 12.103765707296324,
+  "INLAND": 6.3416938526686915,
   "CONTEXT": 0.0,
   "DATA_QUALITY": 0.0
  },
@@ -1101,87 +1101,101 @@
   "late_blend": 0.5,
   "late_alert_p": 0.7,
   "shrink_mae": {
-   "0.0": 24.520889814245592,
-   "0.25": 24.736283131939388,
-   "0.5": 24.977080461443705,
-   "0.75": 25.23453699155401,
-   "1.0": 25.50678061030736
+   "0.0": 23.57730007065585,
+   "0.25": 23.783219734144627,
+   "0.5": 24.03989353268411,
+   "0.75": 24.303881335297888,
+   "1.0": 24.579312513468803
   },
   "late_blend_brier": {
-   "0.0": 0.21567875167055087,
-   "0.5": 0.1529296588433565,
-   "1.0": 0.15884399458596832
+   "0.0": 0.21425339593760886,
+   "0.5": 0.1558219223902524,
+   "1.0": 0.16110245582197688
   },
   "temporal_offsets": {
-   "__global__": 13.841721513193704,
-   "at_port": 5.915520690742632,
-   "at_sea": 20.663304986740172,
+   "__global__": 14.81903331580616,
+   "at_port": 9.020204203412263,
+   "at_sea": 32.39328319231111,
    "post_customs": 0.0,
-   "pre_departure": 52.35107865435721
+   "pre_departure": 42.011236956877184
   },
   "temporal_offsets80": {
-   "__global__": 38.16967070224749,
-   "at_port": -1.3731259915941756,
-   "at_sea": 55.25315661066381,
-   "post_customs": 4.561234462659898,
-   "pre_departure": 116.7615889907019
+   "__global__": 31.590276138093344,
+   "at_port": 1.4437397223017214,
+   "at_sea": 53.646738211586865,
+   "post_customs": 3.543440052211543,
+   "pre_departure": 118.98886299019243
   },
+  "shrink_mae_oof": {
+   "0.0": 17.21253495665251,
+   "0.25": 17.197300733493577,
+   "0.5": 17.366632279734038,
+   "0.75": 17.613400827660396,
+   "1.0": 17.925031115063316
+  },
+  "shrink_temporal_only": 0.0,
   "oof_offsets": {
-   "__global__": 9.528581920508152,
-   "at_port": 10.110700258330406,
-   "at_sea": 11.974485944518834,
-   "post_customs": 0.6109793536145114,
-   "pre_departure": 16.362117068588987
+   "__global__": 5.0557916675319134,
+   "at_port": 3.9691135963316846,
+   "at_sea": 10.945511768372683,
+   "post_customs": 0.32166817784045243,
+   "pre_departure": 10.033237015071222
   },
   "oof_offsets80": {
-   "__global__": 20.583143661806435,
-   "at_port": 14.546914393220252,
-   "at_sea": 23.53899846728777,
-   "post_customs": 3.7912139893983725,
-   "pre_departure": 52.476662415942386
+   "__global__": 14.86129557510318,
+   "at_port": 8.766710377771215,
+   "at_sea": 21.8003556084458,
+   "post_customs": 1.6892841985452152,
+   "pre_departure": 44.31670900516046
   },
+  "late_stack": [
+   -0.2064225283990649,
+   0.3868556994619584,
+   0.41827680645901133
+  ],
+  "late_brier_oof": 0.11632592797892037,
   "late_alert_threshold": {
    "0.0": {
-    "precision": 0.582089552238806,
-    "recall": 0.9285714285714286,
-    "recall_ge_48h": 0.7619047619047619,
-    "f1_actionable": 0.6599682707562136,
-    "fpr": 0.36363636363636365
+    "precision": 0.6528925619834711,
+    "recall": 0.9404761904761905,
+    "recall_ge_48h": 0.75,
+    "f1_actionable": 0.6980854197349043,
+    "fpr": 0.2727272727272727
    },
    "0.5": {
-    "precision": 0.652542372881356,
-    "recall": 0.9166666666666666,
-    "recall_ge_48h": 0.7261904761904762,
-    "f1_actionable": 0.6873993853358701,
-    "fpr": 0.2662337662337662
+    "precision": 0.7572815533980582,
+    "recall": 0.9285714285714286,
+    "recall_ge_48h": 0.75,
+    "f1_actionable": 0.753623188405797,
+    "fpr": 0.16233766233766234
    },
    "0.6": {
-    "precision": 0.7378640776699029,
-    "recall": 0.9047619047619048,
-    "recall_ge_48h": 0.7023809523809523,
-    "f1_actionable": 0.7196854185057379,
-    "fpr": 0.17532467532467533
+    "precision": 0.7938144329896907,
+    "recall": 0.9166666666666666,
+    "recall_ge_48h": 0.7142857142857143,
+    "f1_actionable": 0.751953125,
+    "fpr": 0.12987012987012986
    },
    "0.7": {
-    "precision": 0.8085106382978723,
-    "recall": 0.9047619047619048,
-    "recall_ge_48h": 0.6547619047619048,
-    "f1_actionable": 0.7235589406266228,
-    "fpr": 0.11688311688311688
+    "precision": 0.8461538461538461,
+    "recall": 0.9166666666666666,
+    "recall_ge_48h": 0.6904761904761905,
+    "f1_actionable": 0.7604290822407629,
+    "fpr": 0.09090909090909091
    },
    "0.8": {
-    "precision": 0.8795180722891566,
-    "recall": 0.8690476190476191,
-    "recall_ge_48h": 0.5833333333333334,
-    "f1_actionable": 0.7014413177762526,
-    "fpr": 0.06493506493506493
+    "precision": 0.875,
+    "recall": 0.9166666666666666,
+    "recall_ge_48h": 0.5952380952380952,
+    "f1_actionable": 0.708502024291498,
+    "fpr": 0.07142857142857142
    },
    "0.9": {
-    "precision": 0.9661016949152542,
-    "recall": 0.6785714285714286,
-    "recall_ge_48h": 0.38095238095238093,
-    "f1_actionable": 0.5464349910125823,
-    "fpr": 0.012987012987012988
+    "precision": 0.935064935064935,
+    "recall": 0.8571428571428571,
+    "recall_ge_48h": 0.47619047619047616,
+    "f1_actionable": 0.6310254163014899,
+    "fpr": 0.032467532467532464
    }
   }
  },
@@ -1221,15 +1235,15 @@
    "status": "stable"
   },
   "rho_dest_fcst": {
-   "psi": 1.2180084954711698,
+   "psi": 1.212323528818163,
    "status": "drift"
   },
   "rho_hub_fcst": {
-   "psi": 0.9139581759644486,
+   "psi": 0.915940649907701,
    "status": "drift"
   },
   "weather_fcst_remaining": {
-   "psi": 0.2630392681087789,
+   "psi": 0.2611222835177351,
    "status": "drift"
   },
   "overdue_h": {
@@ -1237,7 +1251,7 @@
    "status": "stable"
   },
   "ts_buffer_remaining_h": {
-   "psi": 0.045334196793927355,
+   "psi": 0.04807178735177798,
    "status": "stable"
   },
   "n_missing_past": {
@@ -1256,40 +1270,40 @@
     "n_shipments": 61,
     "n_voyages": 20,
     "suppressed": false,
-    "mae": 40.89362288495742,
+    "mae": 41.194563323828895,
     "mae_B1": 55.21890166653885,
-    "coverage": 0.7429467084639498,
-    "brier": 0.27602216680949665
+    "coverage": 0.7617554858934169,
+    "brier": 0.2995372071199828
    },
    "168-504 h": {
     "n_snapshots": 61,
     "n_shipments": 44,
     "n_voyages": 20,
     "suppressed": false,
-    "mae": 31.902128235573013,
+    "mae": 29.148029874917274,
     "mae_B1": 42.471206760226806,
-    "coverage": 0.8032786885245902,
-    "brier": 0.15051761687947102
+    "coverage": 0.8524590163934426,
+    "brier": 0.11609956235835187
    },
    "<48 h": {
     "n_snapshots": 193,
     "n_shipments": 60,
     "n_voyages": 20,
     "suppressed": false,
-    "mae": 6.286024173011916,
+    "mae": 6.034536419096465,
     "mae_B1": 20.551181780730115,
-    "coverage": 0.8549222797927462,
-    "brier": 0.06803037388843299
+    "coverage": 0.8704663212435233,
+    "brier": 0.041321259563843686
    },
    "48-168 h": {
     "n_snapshots": 152,
     "n_shipments": 55,
     "n_voyages": 19,
     "suppressed": false,
-    "mae": 10.178975663221559,
+    "mae": 9.705291452695244,
     "mae_B1": 25.046319595006576,
-    "coverage": 0.875,
-    "brier": 0.1540230747110595
+    "coverage": 0.868421052631579,
+    "brier": 0.12543774651397666
    }
   },
   "route": {
@@ -1298,10 +1312,10 @@
     "n_shipments": 45,
     "n_voyages": 16,
     "suppressed": false,
-    "mae": 28.52042711288944,
+    "mae": 28.318701199136996,
     "mae_B1": 45.344744694244376,
-    "coverage": 0.7721739130434783,
-    "brier": 0.1931989969278973
+    "coverage": 0.7947826086956522,
+    "brier": 0.1951780038589797
    },
    "direct": {
     "n_snapshots": 150,
@@ -1316,62 +1330,62 @@
     "n_shipments": 32,
     "n_voyages": 9,
     "suppressed": false,
-    "mae": 29.536463744495357,
+    "mae": 29.849220136562202,
     "mae_B1": 47.468852737296764,
-    "coverage": 0.7456359102244389,
-    "brier": 0.22637259003421645
+    "coverage": 0.7605985037406484,
+    "brier": 0.22697766140766854
    },
    "tier 2": {
     "n_snapshots": 160,
     "n_shipments": 13,
     "n_voyages": 5,
     "suppressed": false,
-    "mae": 10.576117566079661,
+    "mae": 9.079718501315904,
     "mae_B1": 17.100579175503277,
-    "coverage": 0.90625,
-    "brier": 0.16309910872068506
+    "coverage": 0.9625,
+    "brier": 0.16264053491293926
    },
    "tier 3": {
     "n_snapshots": 164,
     "n_shipments": 17,
     "n_voyages": 6,
     "suppressed": false,
-    "mae": 25.702449492420534,
+    "mae": 25.223616569479763,
     "mae_B1": 37.85298347795802,
-    "coverage": 0.8536585365853658,
-    "brier": 0.10306554487436198
+    "coverage": 0.8292682926829268,
+    "brier": 0.07704545811301772
    }
   },
   "dest_congestion": {
    "busy (70-85%)": {
-    "n_snapshots": 508,
+    "n_snapshots": 509,
     "n_shipments": 62,
     "n_voyages": 20,
     "suppressed": false,
-    "mae": 26.50236253695965,
-    "mae_B1": 35.40361452878993,
-    "coverage": 0.7933070866141733,
-    "brier": 0.2122159233291956
+    "mae": 26.493866048610016,
+    "mae_B1": 35.38191868027934,
+    "coverage": 0.8172888015717092,
+    "brier": 0.21287022157804117
    },
    "normal (<=70%)": {
-    "n_snapshots": 66,
-    "n_shipments": 25,
-    "n_voyages": 12,
+    "n_snapshots": 65,
+    "n_shipments": 24,
+    "n_voyages": 11,
     "suppressed": false,
-    "mae": 26.952128989948132,
-    "mae_B1": 26.484186206279475,
-    "coverage": 0.8484848484848485,
-    "brier": 0.11312504613552885
+    "mae": 23.24879641676112,
+    "mae_B1": 26.516859415039136,
+    "coverage": 0.8307692307692308,
+    "brier": 0.10472917215207422
    },
    "congested (>85%)": {
     "n_snapshots": 151,
     "n_shipments": 27,
     "n_voyages": 11,
     "suppressed": false,
-    "mae": 16.61895236265079,
+    "mae": 16.969640837978137,
     "mae_B1": 54.609267787297426,
     "coverage": 0.8278145695364238,
-    "brier": 0.12253028650496364
+    "brier": 0.0961433375362416
    }
   },
   "missing_events": {
@@ -1380,20 +1394,20 @@
     "n_shipments": 62,
     "n_voyages": 20,
     "suppressed": false,
-    "mae": 28.497250254873165,
+    "mae": 28.643158408565387,
     "mae_B1": 42.04334825345381,
-    "coverage": 0.7793240556660039,
-    "brier": 0.22391052840443304
+    "coverage": 0.8091451292246521,
+    "brier": 0.22288273453936686
    },
    "some missing": {
     "n_snapshots": 222,
     "n_shipments": 36,
     "n_voyages": 17,
     "suppressed": false,
-    "mae": 15.393628876897067,
+    "mae": 14.195750778640898,
     "mae_B1": 30.771115921776477,
-    "coverage": 0.8648648648648649,
-    "brier": 0.0952568449143962
+    "coverage": 0.8468468468468469,
+    "brier": 0.07912597958458896
    }
   },
   "lane": {
@@ -1473,45 +1487,45 @@
  },
  "robustness": {
   "0.0": {
-   "mae": 24.06715050554192,
+   "mae": 24.166159826077287,
    "mae_B1": 38.522579491561686,
-   "coverage": 0.8
+   "coverage": 0.8262068965517242
   },
   "0.1": {
-   "mae": 24.427056925331268,
+   "mae": 23.59723350719425,
    "mae_B1": 38.23384303244199,
-   "coverage": 0.8165938864628821
+   "coverage": 0.8413391557496361
   },
   "0.3": {
-   "mae": 28.589544121055148,
+   "mae": 25.061566203706718,
    "mae_B1": 39.88499845092297,
-   "coverage": 0.809220985691574
+   "coverage": 0.8394276629570747
   },
   "0.5": {
-   "mae": 32.32471163313942,
+   "mae": 26.43043101544163,
    "mae_B1": 42.10925447887525,
-   "coverage": 0.8189964157706093
+   "coverage": 0.8458781362007168
   }
  },
  "embargo": {
   "cutoff_h": 6034.5,
   "n_train_shipments_dropped": 28,
   "n_train_shipments_kept": 210,
-  "mae": 24.488631241095657,
-  "coverage": 0.7751724137931034,
+  "mae": 24.28499709277612,
+  "coverage": 0.7420689655172413,
   "shrink": 0.0
  },
  "ablations": {
   "no_propagation_features": {
-   "mae": 34.45451487675258,
-   "coverage": 0.6896551724137931
+   "mae": 33.884677703354384,
+   "coverage": 0.6772413793103448
   },
   "no_priors": {
-   "mae": 24.520180631826154,
-   "coverage": 0.8151724137931035
+   "mae": 24.234615757219053,
+   "coverage": 0.8275862068965517
   },
   "no_data_quality": {
-   "mae": 24.47561628249572,
+   "mae": 24.213890691959847,
    "coverage": 0.8027586206896552
   }
  },
@@ -1521,75 +1535,75 @@
   "identity_max_error_h": {
    "a": 7.105427357601002e-15,
    "b": 0.0,
-   "c": 1.382431946694851e-10
+   "c": 1.2732925824820995e-10
   },
-  "latency_p50_ms": 1.447513500011155,
-  "latency_p95_ms": 2.3876243499955754
+  "latency_p50_ms": 5.448100011562929,
+  "latency_p95_ms": 6.339990021660921
  },
  "headline": {
-  "mae_cascade_h": 24.484831019134276,
+  "mae_cascade_h": 24.219262554988507,
   "mae_B1_h": 38.59171297396089,
   "mae_B2_h": 34.99430444730331,
   "mae_B3_carrier_plan_h": 38.73155515081433,
-  "mae_improvement_vs_B1": 0.3655417411594296,
+  "mae_improvement_vs_B1": 0.3724232305694736,
   "mae_improvement_vs_B1_ci95": [
-   0.2911622860652391,
-   0.44246747028481126
+   0.297446499442655,
+   0.449647834117679
   ],
-  "mae_improvement_vs_B2": 0.3003195403982062,
+  "mae_improvement_vs_B2": 0.3079084457455229,
   "mae_improvement_vs_B1_ci95_voyage": [
-   0.24644443514170294,
-   0.47693356979750795
+   0.2543177277724605,
+   0.48695729285052264
   ],
-  "mae_rulebook_h": 24.479706761684596,
-  "mae_improvement_vs_rulebook": -0.00020932674968565657,
+  "mae_rulebook_h": 24.2148791754777,
+  "mae_improvement_vs_rulebook": -0.00018102008599929498,
   "mae_improvement_vs_rulebook_ci95_voyage": [
-   -0.003291553305636896,
-   0.0026088562783238623
+   -0.0032842786180933836,
+   0.0027419230023927816
   ],
-  "mae_ratio_cascade_vs_rulebook": 1.0002093267496857,
+  "mae_ratio_cascade_vs_rulebook": 1.0001810200859993,
   "shrink": 0.0,
   "n_test_voyages": 20,
   "eta_floor_binding_share": 0.006896551724137931,
-  "coverage_p10_p90_overall": 0.8055172413793104,
-  "brier_tau24": 0.18451588325300103,
-  "pr_auc_tau24": 0.8484819329800435,
-  "pr_auc_tau24_at_arrival": 0.8915879726527016,
-  "attribution_top1": 0.4188034188034188,
-  "attribution_top2": 0.6837606837606838,
-  "attribution_top1_major": 0.5,
-  "attribution_lift_vs_lane_prior": 0.1566951566951567,
-  "propagation_spearman": 0.4697041791925958,
+  "coverage_p10_p90_overall": 0.8206896551724138,
+  "brier_tau24": 0.1788634247463176,
+  "pr_auc_tau24": 0.8711005679682454,
+  "pr_auc_tau24_at_arrival": 0.9321826847321171,
+  "attribution_top1": 0.42450142450142453,
+  "attribution_top2": 0.6894586894586895,
+  "attribution_top1_major": 0.504950495049505,
+  "attribution_lift_vs_lane_prior": 0.16239316239316243,
+  "propagation_spearman": 0.4663890634100757,
   "advisor_spearman": 0.4470866719192708,
-  "alert_lead_ge_48h_share": 0.3225806451612903,
-  "promise_flip_ratio": 0.9212598425196851,
-  "late_alert_false_positive_rate": 0.16129032258064516,
-  "alerts_per_100_shipment_days": 10.630807750602015,
+  "alert_lead_ge_48h_share": 0.6129032258064516,
+  "promise_flip_ratio": 0.8492063492063492,
+  "late_alert_false_positive_rate": 0.1935483870967742,
+  "alerts_per_100_shipment_days": 9.734724338673875,
   "attribution_ambiguous_share": 0.25071225071225073,
-  "promise_hit_rate": 0.9240591397849464,
-  "promise_reversals_per_shipment": 0.5967741935483871,
+  "promise_hit_rate": 0.9137800819252432,
+  "promise_reversals_per_shipment": 0.5806451612903226,
   "raw_eta_reversals_per_shipment": 0.8548387096774194,
-  "latency_p95_ms": 2.3876243499955754,
+  "latency_p95_ms": 6.339990021660921,
   "identity_violations": 0
  },
  "gates": {
   "mae_improvement_vs_B1": {
-   "value": 0.3655417411594296,
+   "value": 0.3724232305694736,
    "rule": ">= 0.15",
    "pass": true
   },
   "coverage_p10_p90_overall": {
-   "value": 0.8055172413793104,
+   "value": 0.8206896551724138,
    "rule": "between (0.7, 0.9)",
    "pass": true
   },
   "brier_tau24": {
-   "value": 0.18451588325300103,
+   "value": 0.1788634247463176,
    "rule": "<= 0.2",
    "pass": true
   },
   "attribution_lift_vs_lane_prior": {
-   "value": 0.1566951566951567,
+   "value": 0.16239316239316243,
    "rule": ">= 0.1",
    "pass": true
   },
@@ -1599,14 +1613,14 @@
    "pass": true
   },
   "latency_p95_ms": {
-   "value": 2.3876243499955754,
+   "value": 6.339990021660921,
    "rule": "< 50.0",
    "pass": true
   }
  },
  "info_gates": {
   "mae_ratio_cascade_vs_rulebook": {
-   "value": 1.0002093267496857,
+   "value": 1.0001810200859993,
    "rule": "<= 1.01",
    "pass": true
   }
@@ -1614,7 +1628,7 @@
  "meta": {
   "seed": 42,
   "n_shipments": 300,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "late_rate": 0.38333333333333336,
   "n_rows": 3390,
   "train_config": {
@@ -1633,15 +1647,18 @@
    "alpha": 0.2,
    "eta_floor_min_remaining_frac": 0.5,
    "seed": 0,
-   "exclude_features": []
+   "exclude_features": [],
+   "shrink_rule": "combined",
+   "band": "direct",
+   "late_model": "stack"
   },
-  "runtime_s": 60.2,
+  "runtime_s": 197.0,
   "world_now_h": 7471.541501720844,
   "environment": {
-   "platform": "Linux-6.18.44-fc-v114-x86_64-with-glibc2.39",
-   "processor": "x86_64",
-   "cpu_count": 4,
-   "python": "3.12.3",
+   "platform": "Windows-11-10.0.26300-SP0",
+   "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+   "cpu_count": 28,
+   "python": "3.12.10",
    "lightgbm": "4.7.0",
    "latency_method": "in-process Engine.predict(explain=True), sequential, single thread, 200 repeats of one request after the evaluation warm-up; no HTTP"
   }
@@ -1652,7 +1669,7 @@
    "metric": "MAE improvement vs carry-forward",
    "original_target": ">= 25% (stretch 40%)",
    "revised_gate": ">= 15%",
-   "value": 0.3655417411594296,
+   "value": 0.3724232305694736,
    "status": "met"
   },
   {
@@ -1660,7 +1677,7 @@
    "metric": "PR-AUC P(late) at destination arrival",
    "original_target": ">= 0.75 (stretch 0.85)",
    "revised_gate": "-",
-   "value": 0.8915879726527016,
+   "value": 0.9321826847321171,
    "status": "met"
   },
   {
@@ -1668,7 +1685,7 @@
    "metric": "Brier P(late > 24 h)",
    "original_target": "<= 0.15",
    "revised_gate": "<= 0.20",
-   "value": 0.18451588325300103,
+   "value": 0.1788634247463176,
    "status": "unmet"
   },
   {
@@ -1677,10 +1694,10 @@
    "original_target": "80% +/- 5 pp each",
    "revised_gate": "70-90% overall",
    "value": {
-    "at_port": 0.8364485981308412,
-    "at_sea": 0.7362637362637363,
-    "post_customs": 0.9056603773584906,
-    "pre_departure": 0.8181818181818182
+    "at_port": 0.8130841121495327,
+    "at_sea": 0.7948717948717948,
+    "post_customs": 0.9622641509433962,
+    "pre_departure": 0.7727272727272727
    },
    "status": "partly"
   },
@@ -1689,7 +1706,7 @@
    "metric": "Future-delay driver top-1 vs cause ledger",
    "original_target": ">= 70% (stretch 80%)",
    "revised_gate": "lift >= 10 pp vs lane history",
-   "value": 0.4188034188034188,
+   "value": 0.42450142450142453,
    "status": "unmet"
   },
   {
@@ -1697,7 +1714,7 @@
    "metric": "Latency p95 predict + explain (in-process)",
    "original_target": "< 50 ms",
    "revised_gate": "< 50 ms",
-   "value": 2.3876243499955754,
+   "value": 6.339990021660921,
    "status": "met"
   },
   {
@@ -1705,7 +1722,7 @@
    "metric": "Late shipments alerted >= 48 h before planned delivery",
    "original_target": ">= 70%",
    "revised_gate": "-",
-   "value": 0.3225806451612903,
+   "value": 0.6129032258064516,
    "status": "unmet"
   },
   {
@@ -1713,7 +1730,7 @@
    "metric": "Promise changes / raw P50 day changes",
    "original_target": "<= 0.40",
    "revised_gate": "hit rate + reversals (reported)",
-   "value": 0.9212598425196851,
+   "value": 0.8492063492063492,
    "status": "unmet"
   },
   {
@@ -1721,30 +1738,30 @@
    "metric": "One-command run time",
    "original_target": "< 180 s",
    "revised_gate": "-",
-   "value": 60.2,
-   "status": "met"
+   "value": 197.0,
+   "status": "unmet"
   }
  ],
  "example": {
   "shipment_id": "SHP-000174",
   "lane_id": "CNSHA-MYTPP-NLRTM",
-  "model_version": "1.2.0",
+  "model_version": "1.3.0",
   "as_of": "2025-10-10T09:32:03.670880Z",
   "checkpoint": "AFTER_ARRIVE_TS",
   "planned_delivery": "2025-11-05T07:00:00Z",
   "eta": {
-   "p10": "2025-11-09T15:07:09.208081Z",
+   "p10": "2025-11-10T06:15:17.733494Z",
    "p50": "2025-11-12T07:00:00Z",
-   "p90": "2025-11-15T15:49:32.672139Z"
+   "p90": "2025-11-15T16:54:20.714622Z"
   },
   "delay_hours": {
    "observed": 45.9,
-   "p10": 104.12,
+   "p10": 119.25,
    "p50": 168.0,
-   "p80": 243.46,
-   "p90": 248.83
+   "p80": 249.91,
+   "p90": 249.91
   },
-  "p_late": 0.8267,
+  "p_late": 0.9899,
   "risk_tier": "LATE",
   "data_quality": {
    "last_milestone": "ARRIVE_TS",
@@ -1764,20 +1781,20 @@
   },
   "stage_forecast_hours": {
    "ORIGIN": 0.0,
-   "OCEAN": -9.9,
-   "TRANSSHIPMENT": 86.48,
-   "PORT": 11.37,
-   "CUSTOMS": 27.6,
-   "INLAND": 6.54
+   "OCEAN": -15.81,
+   "TRANSSHIPMENT": 125.09,
+   "PORT": -1.12,
+   "CUSTOMS": 16.58,
+   "INLAND": -2.64
   },
   "cost_usd": {
-   "p10": 614.0,
-   "p50": 778.0,
+   "p10": 645.0,
+   "p50": 766.0,
    "p50_demurrage": 0.0,
-   "p50_detention": 12.0,
+   "p50_detention": 0.0,
    "p50_missed_appointment": 350,
    "p50_inventory_carry": 416.0,
-   "p90": 986.0
+   "p90": 968.0
   },
   "promise": null,
   "flags": {
@@ -1798,12 +1815,12 @@
    "delay_vs_current_plan_h": 168.0
   },
   "timing_ms": {
-   "explain": 0.167,
-   "features": 0.115,
-   "inference": 1.054,
-   "total": 1.456
+   "explain": 0.497,
+   "features": 0.224,
+   "inference": 2.149,
+   "total": 3.001
   },
-  "narrative": "SHP-000174 is expected 7.0 days late (likely 4.3 days\u201310.4 days late); 83% chance of more than 24 h late. Already 46 h behind plan. Main driver: Transshipment \u2014 projected to reach Tanjung Pelepas after the connection cut-off (buffer short by 36 h) (+126 h). Also contributing: Customs \u2014 customs release projected to fall outside office hours / on a non-working day at Rotterdam (+12 h). Suggested action: Check the next sailing from the hub and consider re-booking or priority loading. Confidence is reduced: 2 milestone(s) missing from the feed.",
+  "narrative": "SHP-000174 is expected 7.0 days late (likely 5.0 days\u201310.4 days late); 99% chance of more than 24 h late. Already 46 h behind plan. Main driver: Transshipment \u2014 projected to reach Tanjung Pelepas after the connection cut-off (buffer short by 36 h) (+126 h). Also contributing: Customs \u2014 customs release projected to fall outside office hours / on a non-working day at Rotterdam (+12 h). Suggested action: Check the next sailing from the hub and consider re-booking or priority loading. Confidence is reduced: 2 milestone(s) missing from the feed.",
   "explanation": {
    "mode": "rulebook",
    "shrink": 0.0,

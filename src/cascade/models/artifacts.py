@@ -79,6 +79,9 @@ def save_bundle(model: CascadeModel, out_dir: Path, extra_manifest: dict | None 
         "shrink": model.shrink,
         "late_blend": model.late_blend,
         "eta_floor_frac": model.eta_floor_frac,
+        "resid_pools": model.resid_pools,
+        "late_stack": model.late_stack,
+        "band_mode": model.band_mode,
         "version": model.version,
         "feature_names": list(FEATURE_NAMES),
     }
@@ -133,6 +136,11 @@ def load_bundle(path: Path, verify: bool = True) -> Bundle:
         shrink=state["shrink"],
         late_blend=state["late_blend"],
         eta_floor_frac=state.get("eta_floor_frac", 0.5),
+        resid_pools=state.get(
+            "resid_pools", {}
+        ),  # absent in <= v1.2 bundles -> the old P(late) blend
+        late_stack=state.get("late_stack", []),
+        band_mode=state.get("band_mode", "shifted"),  # <= v1.2 bundles
         version=state["version"],
     )
     return Bundle(model=model, manifest=manifest, path=path)

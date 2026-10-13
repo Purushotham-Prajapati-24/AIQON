@@ -1,0 +1,9 @@
+mae_cascade_h                    upstream v1.2.0  26.086  v1.3.0  23.937  better in 5/5
+mae_improvement_vs_B1            upstream v1.2.0   0.277  v1.3.0   0.336  better in 5/5
+brier_tau24                      upstream v1.2.0   0.165  v1.3.0   0.155  better in 4/5
+pr_auc_tau24                     upstream v1.2.0   0.868  v1.3.0   0.884  better in 5/5
+coverage_p10_p90_overall         upstream v1.2.0   0.811  v1.3.0   0.814  better in -/5
+alert_lead_ge_48h_share          upstream v1.2.0   0.599  v1.3.0   0.711  better in 3/5
+late_alert_false_positive_rate   upstream v1.2.0   0.250  v1.3.0   0.263  better in 2/5
+promise_hit_rate                 upstream v1.2.0   0.905  v1.3.0   0.907  better in 3/5
+attribution_top1                 upstream v1.2.0   0.470  v1.3.0   0.493  better in 5/5

@@ -1,0 +1,23 @@
+HOLDOUT seeds 42,7,11,23,99  (mean ± sd over seeds; paired better-count)
+  mae_cascade_h                    v1.1   26.097 ±  4.526   v1.2   23.937 ±  3.547   better in 5/5
+  mae_improvement_vs_B1            v1.1    0.275 ±  0.064   v1.2    0.336 ±  0.036   better in 5/5
+  mae_rulebook_h                   v1.1   26.105 ±  4.931   v1.2   23.971 ±  3.559   better in 5/5
+  coverage_p10_p90_overall         v1.1    0.812 ±  0.029   v1.2    0.814 ±  0.028   better in -/5
+  brier_tau24                      v1.1    0.166 ±  0.021   v1.2    0.155 ±  0.027   better in 4/5
+  pr_auc_tau24                     v1.1    0.867 ±  0.021   v1.2    0.884 ±  0.017   better in 5/5
+  pr_auc_tau24_at_arrival          v1.1    0.913 ±  0.047   v1.2    0.922 ±  0.033   better in 3/5
+  alert_lead_ge_48h_share          v1.1    0.863 ±  0.129   v1.2    0.711 ±  0.152   better in 0/5
+  late_alert_false_positive_rate   v1.1    0.420 ±  0.179   v1.2    0.263 ±  0.073   better in 5/5
+  alerts_per_100_shipment_days     v1.1    9.269 ±  0.667   v1.2    8.895 ±  0.664   better in 4/5
+  promise_hit_rate                 v1.1    0.866 ±  0.027   v1.2    0.907 ±  0.021   better in 5/5
+  promise_flip_ratio               v1.1    0.855 ±  0.029   v1.2    0.819 ±  0.042   better in 3/5
+  attribution_top1                 v1.1    0.469 ±  0.047   v1.2    0.493 ±  0.055   better in 5/5
+
+SENSITIVITY worlds (changed simulator mechanics), seed 42
+  baseline                       MAE  24.51 ->  24.22   Brier 0.181 -> 0.179   cov 0.80 -> 0.82
+  berth_window_penalty_x2        MAE  27.87 ->  27.89   Brier 0.174 -> 0.168   cov 0.83 -> 0.85
+  no_speed_recovery              MAE  28.75 ->  28.73   Brier 0.178 -> 0.174   cov 0.76 -> 0.81
+  weather_impact_x1.5            MAE  25.86 ->  25.49   Brier 0.179 -> 0.156   cov 0.81 -> 0.82
+  hub_congestion_slowdown_x2     MAE  23.35 ->  23.78   Brier 0.149 -> 0.145   cov 0.87 -> 0.86
+  connection_headway_x2          MAE  32.90 ->  33.30   Brier 0.179 -> 0.202   cov 0.86 -> 0.83
+  reporting_latency_x3           MAE  25.94 ->  24.46   Brier 0.185 -> 0.186   cov 0.79 -> 0.83

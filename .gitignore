@@ -33,3 +33,7 @@ docs/Submission.md
 claude1.md
 reports/sensitivity/
 CASCADE_Deep_Product_and_Technical_Review.docx
+
+# ML optimisation experiment caches (reproducible from experiments/ml_optimization)
+experiments/ml_optimization/cache*/
+experiments/ml_optimization/sweep_holds.json

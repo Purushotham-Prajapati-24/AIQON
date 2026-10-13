@@ -141,3 +141,15 @@ The code for the items above landed after v1.1.0 was published, so the v1.1.0 bu
 | PSI drift | Training reference in the bundle; train→test PSI in metrics; live `/v1/monitoring/drift` from the ledger | Congestion forecasts drift into the Q4 test season (PSI 1.2 at destination), as designed |
 | Reliability | Bundle checksums ignore line endings; committed bundle tested in CI on Ubuntu and Windows (issue #4) | A fresh clone serves on any OS |
 
+
+## 10. v1.3.0 — data cleaning and model study (2026-10-13)
+
+Developed on 20 fresh development worlds (seeds 101–120), confirmed once on the 5 canonical seeds; protocol, every model tried and all numbers in [`experiments/ml_optimization/`](../experiments/ml_optimization/README.md). The previous bundle is kept as git tag `model-v1.2.0`.
+
+* **Data cleaning (`features/snapshot.py`).** A missing EDI report was being read as lateness. At the hub there was no cap at all, so a missing hub-departure report became up to ~550 h of phantom hub delay. Silence past one headway at the hub, or past a 12 h grace window for ocean arrivals, discharge and gate-out (24 h at origin departure), is now a reporting gap (caps tuned on the training split). No rows are deleted: the "outliers" are real inspections and missed connections.
+* **λ.** Average of the temporal-slice and out-of-fold MAE curves, and a ≥ 1% gain is required; λ = 0 on all five seeds.
+* **P(late).** Logistic stack of the empirical residual distribution around the rulebook (per checkpoint) and the monotone classifier, fit on voyage-grouped out-of-fold predictions.
+* **Band.** P10/P80/P90 come from the learned quantiles directly; λ shrinks only the P50 (with λ = 0 the old band subtracted the unused learned median).
+* **Alerts.** The actionable-F1 threshold of v1.2.0 now takes the strictest threshold within 0.01 of the best (the curve is flat; its exact maximum is noise).
+* **Holdout, upstream v1.2.0 → v1.3.0 (5 seeds):** MAE 26.09 → 23.94 h (better on 5/5), Brier 0.165 → 0.155, PR-AUC 0.868 → 0.884 (5/5), alerted ≥ 48 h ahead 60% → 71%, late-alert false-positive rate 25% → 26%.
+* **Known limitation.** The hub cap trusts the network's headway: in the sensitivity world with doubled connection headways MAE is 1.2% worse and Brier 0.179 → 0.202.

@@ -21,7 +21,12 @@ from cascade.models.predictor import (
     PHYS_COLS,
     QUANTILES,
     CascadeModel,
+    assemble_quantiles,
+    empirical_exceedance,
+    logit,
     quantile_implied_exceedance,
+    residual_pools,
+    stack_probability,
 )
 
 
@@ -43,6 +48,9 @@ class TrainConfig:
     eta_floor_min_remaining_frac: float = 0.5  # heuristic ETA floor (0 = only ETA >= as_of)
     seed: int = 0
     exclude_features: tuple[str, ...] = field(default_factory=tuple)
+    shrink_rule: str = "combined"  # λ from temporal slice + voyage-grouped OOF | "temporal"
+    band: str = "direct"  # P10/P80/P90 from the learned quantiles | "shifted" (<= v1.2)
+    late_model: str = "stack"  # P(late): empirical+classifier logistic stack | "blend" (<= v1.2)
 
 
 def _params(
@@ -157,7 +165,7 @@ class TrainResult:
 
 def select_on_temporal_validation(
     rows: pd.DataFrame, ships: pd.DataFrame, ledger: pd.DataFrame, cfg: TrainConfig
-) -> tuple[float, float, dict]:
+) -> tuple[float, float, dict, dict]:
     """Choose (shrink, late_blend) on a *temporal* validation slice of the training data.
 
     The latest 20% of training voyages play "the future"; models fit on the earlier 80% are
@@ -192,39 +200,83 @@ def select_on_temporal_validation(
     grid = SHRINK_GRID if cfg.target_mode == "residual" else (1.0,)
     curve = {lam: float(np.abs(base + lam * g["q50"] - y).mean()) for lam in grid}
     shrink = min(curve, key=lambda k: (round(curve[k], 6), -k))
-    q = np.sort(np.vstack([base + shrink * g["q50"] + (g[k] - g["q50"]) for k in BAND]), axis=0)
-    q80 = base + shrink * g["q50"] + (g["q80"] - g["q50"])
+    qd = assemble_quantiles(base, g, shrink, cfg.band)
+    q = np.sort(np.vstack([qd[k] for k in BAND]), axis=0)
     p_q = quantile_implied_exceedance(q[0], q[1], q[2], cfg.late_threshold_h)
     brier = {w: float(np.mean((w * clf + (1 - w) * p_q - y_late) ** 2)) for w in (0.0, 0.5, 1.0)}
     blend = min(brier, key=lambda k: brier[k])
-    # drift-aware conformal: offsets that would have covered the *later* period
-    rem = y - cur
-    temporal_offsets = cqr_offsets(
-        rem, q[0] - cur, q[2] - cur, va.checkpoint.to_numpy(), cfg.alpha, min_group=25
-    )
-    temporal_offsets80 = upper_offsets(
-        rem, q80 - cur, va.checkpoint.to_numpy(), 1.0 - cfg.alpha / 2.0, min_group=25
-    )
+    tv = {"y": y, "cur": cur, "base": base, "g": g, "cp": va.checkpoint.to_numpy()}
     return (
         shrink,
         blend,
-        {
-            "shrink_mae": curve,
-            "late_blend_brier": brier,
-            "temporal_offsets": temporal_offsets,
-            "temporal_offsets80": temporal_offsets80,
-        },
+        {"shrink_mae": curve, "late_blend_brier": brier, **temporal_offsets(tv, shrink, cfg)},
+        tv,
     )
+
+
+def temporal_offsets(tv: dict, shrink: float, cfg: TrainConfig) -> dict:
+    """Drift-aware conformal: offsets that would have covered the *later* (temporal) slice."""
+    y, cur, base, g, cp = tv["y"], tv["cur"], tv["base"], tv["g"], tv["cp"]
+    qd = assemble_quantiles(base, g, shrink, cfg.band)
+    q = np.sort(np.vstack([qd[k] for k in BAND]), axis=0)
+    q80 = qd["q80"]
+    rem = y - cur
+    return {
+        "temporal_offsets": cqr_offsets(rem, q[0] - cur, q[2] - cur, cp, cfg.alpha, min_group=25),
+        "temporal_offsets80": upper_offsets(
+            rem, q80 - cur, cp, 1.0 - cfg.alpha / 2.0, min_group=25
+        ),
+    }
+
+
+SHRINK_MARGIN = 0.01  # a learned correction must cut validation MAE by >= 1% to be trusted
+
+
+def combine_shrink(
+    temporal: dict[float, float], oof: dict[float, float], margin: float = SHRINK_MARGIN
+) -> float:
+    """λ minimising the mean *relative* MAE on the temporal slice and the voyage-grouped OOF.
+
+    The temporal slice (~16 voyages) sees drift but is noisy; the OOF covers every training
+    voyage. λ > 0 only if the averaged gain clears `margin`: on 20 development worlds every
+    smaller "gain" failed to carry over to the out-of-time test (experiments/ml_optimization).
+    """
+    rel = {
+        lam: 0.5 * (temporal[lam] / max(temporal[0.0], 1e-9) + oof[lam] / max(oof[0.0], 1e-9))
+        for lam in temporal
+    }
+    best = min(rel, key=lambda k: (round(rel[k], 4), k))
+    return best if rel[best] <= 1.0 - margin else 0.0
+
+
+def fit_logistic(Z: np.ndarray, y: np.ndarray, l2: float = 1.0) -> list[float]:
+    """L2-regularised logistic regression (intercept unpenalised) by L-BFGS."""
+    from scipy.optimize import minimize
+
+    Z1 = np.c_[np.ones(len(Z)), Z]
+
+    def loss(b: np.ndarray) -> tuple[float, np.ndarray]:
+        z = Z1 @ b
+        p = 1.0 / (1.0 + np.exp(-z))
+        reg = np.r_[0.0, b[1:]]
+        return (
+            float(np.sum(np.logaddexp(0.0, z) - y * z) + l2 * np.sum(reg**2)),
+            Z1.T @ (p - y) + 2.0 * l2 * reg,
+        )
+
+    res = minimize(loss, np.zeros(Z1.shape[1]), jac=True, method="L-BFGS-B")
+    return [float(v) for v in res.x]
 
 
 ALERT_P_GRID = (0.0, 0.5, 0.6, 0.7, 0.8, 0.9)
 ACTIONABLE_LEAD_H = (
     48.0  # PRD G6: a LATE alert is useful only if it fires >= 48 h before planned delivery
 )
+ALERT_F1_TOL = 0.01  # actionable-F1 differences below this are noise (~240 shipments)
 
 
 def select_late_alert_threshold(
-    rows: pd.DataFrame, oof: pd.DataFrame, iso, late_blend: float, cfg: TrainConfig
+    rows: pd.DataFrame, oof: pd.DataFrame, p_late: np.ndarray, cfg: TrainConfig
 ) -> tuple[float, dict]:
     """Pick the P(late) threshold for the LATE alert on voyage-grouped out-of-fold predictions.
 
@@ -232,13 +284,12 @@ def select_late_alert_threshold(
     shipment and maximises shipment-level *actionable* F1 for 'eventually late': precision counts
     every alert, but a late shipment only counts as caught if its first LATE alert fired at least
     ``ACTIONABLE_LEAD_H`` before planned delivery. Plain F1 rewarded a high threshold that alerted
-    reliably but too late to act (issue #6). Test data is never used.
+    reliably but too late to act (issue #6). Among thresholds within
+    ``ALERT_F1_TOL`` of the best, the strictest (fewest false alarms) wins: the curve is flat
+    over a wide range and its exact maximum is noise. Test data is never used.
     """
     cur = rows.current_delay_h.to_numpy(float)
     q = np.sort(np.vstack([oof[k].to_numpy(float) for k in BAND]), axis=0) + cur
-    p_clf = iso.predict(oof.clf_raw.to_numpy(float))
-    p_q = quantile_implied_exceedance(q[0], q[1], q[2], cfg.late_threshold_h)
-    p_late = late_blend * p_clf + (1.0 - late_blend) * p_q
     df = pd.DataFrame(
         {
             "sid": rows.shipment_id.to_numpy(),
@@ -271,7 +322,8 @@ def select_late_alert_threshold(
             "f1_actionable": f1,
             "fpr": fpr,
         }
-    best = max(ALERT_P_GRID, key=lambda th: (round(curve[str(th)]["f1_actionable"], 4), th))
+    top = max(curve[str(th)]["f1_actionable"] for th in ALERT_P_GRID)
+    best = max(th for th in ALERT_P_GRID if curve[str(th)]["f1_actionable"] >= top - ALERT_F1_TOL)
     return float(best), curve
 
 
@@ -286,10 +338,15 @@ def train(
     rows = rows[rows.shipment_id.isin(splits.train_ids)].copy()
     ships = shipments[shipments.shipment_id.isin(splits.train_ids)]
     fold = rows.shipment_id.map(splits.fold_of).to_numpy()
-    shrink, late_blend, curve = select_on_temporal_validation(rows, ships, ledger, cfg)
+    shrink_tmp, late_blend, curve, tv = select_on_temporal_validation(rows, ships, ledger, cfg)
+    residual = cfg.target_mode == "residual"
 
-    # ---- cross-fitting with nested priors (feeds CQR, isotonic, stage weights) --------
+    # ---- cross-fitting with nested priors (feeds λ, CQR, P(late) stack, stage weights) ----
     oof = pd.DataFrame(index=rows.index)
+    raw = {name: np.zeros(len(rows)) for name in QUANTILES}
+    base = np.zeros(len(rows))
+    p_emp = np.zeros(len(rows))
+    pos = pd.Series(np.arange(len(rows)), index=rows.index)
     for k in range(splits.n_folds):
         tr = priors_oof(rows[fold != k], ships, ledger, splits.fold_of, exclude={k})
         va = apply_priors(
@@ -297,21 +354,38 @@ def train(
         )
         b = fit_boosters(tr, cfg)
         Xv = _X(va, cfg)
-        base = (
-            va[list(PHYS_COLS)].sum(axis=1).to_numpy(float)
-            if cfg.target_mode == "residual"
-            else 0.0
-        )
-        g = {name: b[name].predict(Xv) for name in QUANTILES}
-        lam = shrink if cfg.target_mode == "residual" else 1.0
+        i = pos[va.index].to_numpy()
+        rule_va = va[list(PHYS_COLS)].sum(axis=1).to_numpy(float)
+        base[i] = rule_va if residual else 0.0
         for name in QUANTILES:
-            oof.loc[va.index, name] = base + lam * g["q50"] + (g[name] - g["q50"])
+            raw[name][i] = b[name].predict(Xv)
         oof.loc[va.index, "clf_raw"] = b["clf"].predict(Xv)
+        rule_tr = tr[list(PHYS_COLS)].sum(axis=1).to_numpy(float)
+        pools = residual_pools(tr.y_remaining.to_numpy(float) - rule_tr, tr.checkpoint.to_numpy())
+        need = cfg.late_threshold_h - va.current_delay_h.to_numpy(float) - rule_va
+        p_emp[i] = empirical_exceedance(pools, va.checkpoint.to_numpy(), need)
         if cfg.stage_models:
             for grp in PHYSICAL_GROUPS:
                 oof.loc[va.index, f"stage_{grp.value}"] = b[f"stage_{grp.value}"].predict(Xv)
 
     y = rows.y_remaining.to_numpy(float)
+    # λ: the temporal slice alone (~16 voyages) is noisy; also weigh the voyage-grouped OOF
+    oof_curve = {
+        lam: float(np.abs(base + lam * raw["q50"] - y).mean()) for lam in curve["shrink_mae"]
+    }
+    curve["shrink_mae_oof"] = oof_curve
+    curve["shrink_temporal_only"] = shrink_tmp
+    if not residual:
+        shrink = 1.0
+    elif cfg.shrink_rule == "combined":
+        shrink = combine_shrink(curve["shrink_mae"], oof_curve)
+    else:
+        shrink = shrink_tmp
+    if shrink != shrink_tmp:
+        curve.update(temporal_offsets(tv, shrink, cfg))
+    for name, v in assemble_quantiles(base, raw, shrink, cfg.band).items():
+        oof[name] = v
+
     oof_offsets = cqr_offsets(
         y, oof.q10.to_numpy(), oof.q90.to_numpy(), rows.checkpoint.to_numpy(), cfg.alpha
     )
@@ -324,10 +398,23 @@ def train(
     tmp80 = curve.get("temporal_offsets80", {})
     offsets80 = {g: max(v, tmp80.get(g, tmp80.get("__global__", v))) for g, v in oof80.items()}
     curve["oof_offsets80"] = oof80
-    iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(
-        oof.clf_raw, rows.y_late
-    )
-    late_alert_p, alert_curve = select_late_alert_threshold(rows, oof, iso, late_blend, cfg)
+    clf_oof = oof.clf_raw.to_numpy(float)
+    y_late = rows.y_late.to_numpy(float)
+    iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(clf_oof, y_late)
+    # P(late): logistic stack of the empirical residual distribution around the rulebook and
+    # the classifier, fit on voyage-grouped out-of-fold predictions of both
+    late_stack: list[float] = []
+    if cfg.late_model == "stack" and residual:
+        late_stack = fit_logistic(np.c_[logit(p_emp), logit(clf_oof)], y_late)
+        p_late_oof = stack_probability(late_stack, p_emp, clf_oof)
+    else:
+        q = np.sort(np.vstack([oof[k].to_numpy(float) for k in BAND]), axis=0)
+        q = q + rows.current_delay_h.to_numpy(float)
+        p_q = quantile_implied_exceedance(q[0], q[1], q[2], cfg.late_threshold_h)
+        p_late_oof = late_blend * iso.predict(clf_oof) + (1.0 - late_blend) * p_q
+    curve["late_stack"] = late_stack
+    curve["late_brier_oof"] = float(np.mean((p_late_oof - y_late) ** 2))
+    late_alert_p, alert_curve = select_late_alert_threshold(rows, oof, p_late_oof, cfg)
     curve["late_alert_threshold"] = alert_curve
     stage_w = {}
     if cfg.stage_models:
@@ -354,6 +441,13 @@ def train(
         offsets80=offsets80,
         late_alert_p=late_alert_p,
         drift_ref=drift_reference(_X(train_rows, cfg)),
+        resid_pools=residual_pools(
+            y - rows[list(PHYS_COLS)].sum(axis=1).to_numpy(float), rows.checkpoint.to_numpy()
+        )
+        if late_stack
+        else {},
+        late_stack=late_stack,
+        band_mode=cfg.band,
         version=version,
     )
     oof["y_remaining"] = y

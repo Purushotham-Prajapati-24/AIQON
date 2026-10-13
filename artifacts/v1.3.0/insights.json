@@ -1,0 +1,1631 @@
+{
+ "headline": {
+  "mae_cascade_h": 24.219262554988507,
+  "mae_B1_h": 38.59171297396089,
+  "mae_B2_h": 34.99430444730331,
+  "mae_B3_carrier_plan_h": 38.73155515081433,
+  "mae_improvement_vs_B1": 0.3724232305694736,
+  "mae_improvement_vs_B1_ci95": [
+   0.297446499442655,
+   0.449647834117679
+  ],
+  "mae_improvement_vs_B2": 0.3079084457455229,
+  "mae_improvement_vs_B1_ci95_voyage": [
+   0.2543177277724605,
+   0.48695729285052264
+  ],
+  "mae_rulebook_h": 24.2148791754777,
+  "mae_improvement_vs_rulebook": -0.00018102008599929498,
+  "mae_improvement_vs_rulebook_ci95_voyage": [
+   -0.0032842786180933836,
+   0.0027419230023927816
+  ],
+  "mae_ratio_cascade_vs_rulebook": 1.0001810200859993,
+  "shrink": 0.0,
+  "n_test_voyages": 20,
+  "eta_floor_binding_share": 0.006896551724137931,
+  "coverage_p10_p90_overall": 0.8206896551724138,
+  "brier_tau24": 0.1788634247463176,
+  "pr_auc_tau24": 0.8711005679682454,
+  "pr_auc_tau24_at_arrival": 0.9321826847321171,
+  "attribution_top1": 0.42450142450142453,
+  "attribution_top2": 0.6894586894586895,
+  "attribution_top1_major": 0.504950495049505,
+  "attribution_lift_vs_lane_prior": 0.16239316239316243,
+  "propagation_spearman": 0.4663890634100757,
+  "advisor_spearman": 0.4470866719192708,
+  "alert_lead_ge_48h_share": 0.6129032258064516,
+  "promise_flip_ratio": 0.8492063492063492,
+  "late_alert_false_positive_rate": 0.1935483870967742,
+  "alerts_per_100_shipment_days": 9.734724338673875,
+  "attribution_ambiguous_share": 0.25071225071225073,
+  "promise_hit_rate": 0.9137800819252432,
+  "promise_reversals_per_shipment": 0.5806451612903226,
+  "raw_eta_reversals_per_shipment": 0.8548387096774194,
+  "latency_p95_ms": 6.339990021660921,
+  "identity_violations": 0
+ },
+ "accuracy": {
+  "overall": {
+   "cascade": {
+    "mae": 24.219262554988507,
+    "rmse": 50.62182577704606,
+    "medae": 1.4584304048321428,
+    "p90ae": 72.0,
+    "bias": -17.85412532882922,
+    "n": 725
+   },
+   "B0_schedule": {
+    "mae": 56.2575935233925,
+    "rmse": 88.55425020631539,
+    "medae": 48.0,
+    "p90ae": 168.0,
+    "bias": -55.91722324077623,
+    "n": 725
+   },
+   "B1_carry_forward": {
+    "mae": 38.59171297396089,
+    "rmse": 64.54824698795922,
+    "medae": 22.479128016106188,
+    "p90ae": 88.73489459495886,
+    "bias": -31.443071099523564,
+    "n": 725
+   },
+   "B2_propagation_prior": {
+    "mae": 34.99430444730331,
+    "rmse": 59.11698452186252,
+    "medae": 20.371817055038747,
+    "p90ae": 81.75277116601835,
+    "bias": -21.332234258706634,
+    "n": 725
+   },
+   "physics_rulebook": {
+    "mae": 24.2148791754777,
+    "rmse": 50.64224524985698,
+    "medae": 0.8163407212650782,
+    "p90ae": 72.0,
+    "bias": -17.89528409351034,
+    "n": 725
+   },
+   "B3_carrier_plan": {
+    "mae": 38.73155515081433,
+    "rmse": 64.30274556831681,
+    "medae": 22.716480848741412,
+    "p90ae": 88.73489459495886,
+    "bias": -29.78726964143117,
+    "n": 725
+   }
+  },
+  "by_checkpoint_mae": {
+   "cascade": {
+    "0": 52.47336543191203,
+    "1": 46.505411973622245,
+    "2": 34.48244186964728,
+    "3": 38.34792081258783,
+    "4": 23.102474568762723,
+    "5": 12.177953362381508,
+    "6": 8.249754832619223,
+    "7": 1.073594402719798,
+    "8": 0.5742069807750957
+   },
+   "B0_schedule": {
+    "0": 64.26950966960035,
+    "1": 55.17598792377325,
+    "2": 45.17006743987087,
+    "3": 66.97872741536415,
+    "4": 61.742875229737336,
+    "5": 58.48733767024812,
+    "6": 49.311364954587596,
+    "7": 51.996366285636576,
+    "8": 53.69120624942285
+   },
+   "B1_carry_forward": {
+    "0": 64.26950966960035,
+    "1": 55.559527410652635,
+    "2": 44.73311692802885,
+    "3": 67.84449489136843,
+    "4": 34.32299152111944,
+    "5": 35.13455275565691,
+    "6": 20.459183326407715,
+    "7": 7.358398574687417,
+    "8": 7.000730572236437
+   },
+   "B2_propagation_prior": {
+    "0": 54.765665290663755,
+    "1": 48.98167606361386,
+    "2": 40.268027588694,
+    "3": 66.06735168869774,
+    "4": 29.782716658339695,
+    "5": 30.287874208411623,
+    "6": 21.05410960181241,
+    "7": 7.506345599473743,
+    "8": 7.324845997336972
+   },
+   "physics_rulebook": {
+    "0": 52.47336543191203,
+    "1": 46.505411973622245,
+    "2": 34.48244186964728,
+    "3": 38.34792081258783,
+    "4": 23.102474568762723,
+    "5": 12.177953362381508,
+    "6": 8.322600909643779,
+    "7": 0.9311277773113398,
+    "8": 0.5288869855947951
+   },
+   "B3_carrier_plan": {
+    "0": 64.26950966960035,
+    "1": 54.62092860315943,
+    "2": 44.71531732527739,
+    "3": 67.8045673210293,
+    "4": 35.3031835864236,
+    "5": 34.19728916069907,
+    "6": 20.103029221817238,
+    "7": 10.353806517308913,
+    "8": 8.345968732503836
+   }
+  },
+  "bootstrap_vs_B1": {
+   "mae_model": [
+    17.788621219744034,
+    32.11258617652152
+   ],
+   "mae_baseline": [
+    29.778182858793876,
+    48.68177252224022
+   ],
+   "improvement": [
+    0.297446499442655,
+    0.449647834117679
+   ],
+   "n_clusters": 62
+  },
+  "bootstrap_vs_B2": {
+   "mae_model": [
+    17.788621219744034,
+    32.11258617652152
+   ],
+   "mae_baseline": [
+    27.234011080663503,
+    44.09502636344474
+   ],
+   "improvement": [
+    0.2253134895621076,
+    0.394618331336632
+   ],
+   "n_clusters": 62
+  },
+  "bootstrap_voyage": {
+   "vs_B1": {
+    "mae_model": [
+     15.706433656572463,
+     33.97154328589612
+    ],
+    "mae_baseline": [
+     26.921131593327953,
+     51.592372050332614
+    ],
+    "improvement": [
+     0.2543177277724605,
+     0.48695729285052264
+    ],
+    "n_clusters": 20
+   },
+   "vs_B2": {
+    "mae_model": [
+     15.706433656572463,
+     33.97154328589612
+    ],
+    "mae_baseline": [
+     24.782831694672144,
+     47.02918029212209
+    ],
+    "improvement": [
+     0.1914638641143406,
+     0.45025767927051713
+    ],
+    "n_clusters": 20
+   },
+   "vs_rulebook": {
+    "mae_model": [
+     15.706433656572463,
+     33.97154328589612
+    ],
+    "mae_baseline": [
+     15.684775720582344,
+     34.02412727630962
+    ],
+    "improvement": [
+     -0.0032842786180933836,
+     0.0027419230023927816
+    ],
+    "n_clusters": 20
+   }
+  },
+  "improvement_vs_B1": 0.3724232305694736,
+  "improvement_vs_B2": 0.3079084457455229,
+  "improvement_vs_rulebook": -0.00018102008599929498,
+  "coverage_p10_p90": {
+   "overall": 0.8206896551724138,
+   "at_port": 0.8130841121495327,
+   "at_sea": 0.7948717948717948,
+   "post_customs": 0.9622641509433962,
+   "pre_departure": 0.7727272727272727
+  },
+  "coverage_detail": {
+   "overall": {
+    "coverage": 0.8206896551724138,
+    "width_h": 86.5643051175384,
+    "n_snapshots": 725,
+    "n_shipments": 62,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.7534205240358738,
+     0.8856112680826789
+    ]
+   },
+   "at_port": {
+    "coverage": 0.8130841121495327,
+    "width_h": 52.14116371393228,
+    "n_snapshots": 214,
+    "n_shipments": 60,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.7134367650901489,
+     0.8982319634018299
+    ]
+   },
+   "at_sea": {
+    "coverage": 0.7948717948717948,
+    "width_h": 114.24877110475666,
+    "n_snapshots": 273,
+    "n_shipments": 57,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.7119191267257828,
+     0.8805133795526555
+    ]
+   },
+   "post_customs": {
+    "coverage": 0.9622641509433962,
+    "width_h": 11.230560864849064,
+    "n_snapshots": 106,
+    "n_shipments": 60,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.9292906945561813,
+     0.9908256880733946
+    ]
+   },
+   "pre_departure": {
+    "coverage": 0.7727272727272727,
+    "width_h": 145.61028948607014,
+    "n_snapshots": 132,
+    "n_shipments": 62,
+    "n_voyages": 20,
+    "ci95_voyage": [
+     0.6127016129032258,
+     0.9140832779255319
+    ]
+   }
+  },
+  "interval_width_h": {
+   "overall": 86.5643051175384,
+   "at_port": 52.14116371393228,
+   "at_sea": 114.24877110475666,
+   "post_customs": 11.230560864849064,
+   "pre_departure": 145.61028948607014
+  },
+  "eta_floor": {
+   "frac": 0.5,
+   "binding_share": 0.006896551724137931,
+   "mean_adjust_h": 0.05010519798053228,
+   "mae_without_floor": 24.199234443560158,
+   "coverage_without_floor": 0.8248275862068966
+  },
+  "p80": {
+   "calibrated": true,
+   "coverage": 0.8303448275862069,
+   "coverage_normal_approx": 0.7696551724137931,
+   "by_group": {
+    "at_port": 0.8130841121495327,
+    "at_sea": 0.8168498168498168,
+    "post_customs": 0.9716981132075472,
+    "pre_departure": 0.7727272727272727
+   },
+   "ci95_voyage": [
+    0.7616553284479897,
+    0.9014969764430971
+   ]
+  },
+  "classification": {
+   "tau_24": {
+    "overall": {
+     "brier": 0.1788634247463176,
+     "base_rate": 0.5337931034482759,
+     "n": 725,
+     "pr_auc": 0.8711005679682454,
+     "roc_auc": 0.8402863783006895
+    },
+    "checkpoint_2": {
+     "brier": 0.2560830294206691,
+     "base_rate": 0.47058823529411764,
+     "n": 102,
+     "pr_auc": 0.5900255971655202,
+     "roc_auc": 0.6786265432098766
+    },
+    "checkpoint_5": {
+     "brier": 0.11996701461348404,
+     "base_rate": 0.512,
+     "n": 125,
+     "pr_auc": 0.9321826847321171,
+     "roc_auc": 0.9098360655737704
+    }
+   },
+   "tau_48": {
+    "overall": {
+     "brier": 0.14131954639752653,
+     "base_rate": 0.3724137931034483,
+     "n": 725,
+     "pr_auc": 0.7846232645337101,
+     "roc_auc": 0.8618030118030118
+    },
+    "checkpoint_2": {
+     "brier": 0.1940879563539729,
+     "base_rate": 0.3137254901960784,
+     "n": 102,
+     "pr_auc": 0.5088616929079417,
+     "roc_auc": 0.7026785714285714
+    },
+    "checkpoint_5": {
+     "brier": 0.06723750399717457,
+     "base_rate": 0.376,
+     "n": 125,
+     "pr_auc": 0.9308510638297873,
+     "roc_auc": 0.973404255319149
+    }
+   }
+  },
+  "reliability": {
+   "bin_mean_pred": [
+    0.06198457011020925,
+    0.18081302610697134,
+    0.3066622981794058,
+    0.44992783524663754,
+    0.5588096349081965,
+    0.687196277436162,
+    0.8206641348977086,
+    0.9732214673908856
+   ],
+   "bin_frac_pos": [
+    0.19170984455958548,
+    0.30327868852459017,
+    0.5492957746478874,
+    0.6111111111111112,
+    0.6538461538461539,
+    0.8571428571428571,
+    0.8085106382978723,
+    0.9747899159663865
+   ],
+   "bin_n": [
+    193,
+    122,
+    71,
+    72,
+    52,
+    49,
+    47,
+    119
+   ],
+   "ece": 0.11425807253277541
+  },
+  "n_test_rows": 725,
+  "n_test_shipments": 62,
+  "n_test_voyages": 20
+ },
+ "propagation": {
+  "delta_h": 12.0,
+  "n": 190,
+  "spearman": 0.4663890634100757,
+  "mae": 1.6301313914496809,
+  "by_event": {
+   "ARRIVE_DEST_PORT": {
+    "phi_hat": 1.23,
+    "phi_true": 1.585
+   },
+   "ARRIVE_TS": {
+    "phi_hat": 1.795,
+    "phi_true": 2.386
+   },
+   "DEPART_ORIGIN": {
+    "phi_hat": 1.667,
+    "phi_true": 1.897
+   },
+   "DISCHARGED": {
+    "phi_hat": 0.823,
+    "phi_true": 0.76
+   }
+  },
+  "by_delta": {
+   "1.0": {
+    "n": 190,
+    "spearman": 0.06710734021443907,
+    "mae": 2.4350744563649833,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "6.0": {
+    "n": 190,
+    "spearman": 0.3029179754400277,
+    "mae": 2.183587227152115,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "12.0": {
+    "n": 190,
+    "spearman": 0.4663890634100757,
+    "mae": 1.6301313914496809,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     2.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "24.0": {
+    "n": 190,
+    "spearman": 0.584445085948504,
+    "mae": 0.9057619819774462,
+    "phi_true_median": 1.0,
+    "phi_true_iqr": [
+     0.0,
+     2.0
+    ],
+    "phi_hat_median": 1.0
+   }
+  },
+  "by_condition": {
+   "comfortable_buffer": {
+    "n": 50,
+    "spearman": 0.44087844345310984,
+    "mae": 1.975395406210952,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "near_cutoff": {
+    "n": 24,
+    "spearman": 0.1446383722831989,
+    "mae": 4.807068923441029,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     7.614504584667088
+    ],
+    "phi_hat_median": 4.0
+   },
+   "no_pending_connection": {
+    "n": 116,
+    "spearman": 0.49371138618213967,
+    "mae": 0.8240132750198886,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     2.0
+    ],
+    "phi_hat_median": 0.0
+   }
+  },
+  "by_condition_delta": {
+   "comfortable_buffer|1.0": {
+    "n": 50,
+    "spearman": null,
+    "mae": 0.9600000000000002,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "comfortable_buffer|6.0": {
+    "n": 50,
+    "spearman": -0.02506714453789598,
+    "mae": 1.2,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "comfortable_buffer|12.0": {
+    "n": 50,
+    "spearman": 0.44087844345310984,
+    "mae": 1.975395406210952,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "comfortable_buffer|24.0": {
+    "n": 50,
+    "spearman": 0.711030815127754,
+    "mae": 1.2038404063167232,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     1.75
+    ],
+    "phi_hat_median": 0.0
+   },
+   "near_cutoff|1.0": {
+    "n": 24,
+    "spearman": -0.13648777260815353,
+    "mae": 11.152672779556118,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "near_cutoff|6.0": {
+    "n": 24,
+    "spearman": 0.4767626297962112,
+    "mae": 7.383323654336423,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     12.305345559112235
+    ],
+    "phi_hat_median": 4.0
+   },
+   "near_cutoff|12.0": {
+    "n": 24,
+    "spearman": 0.1446383722831989,
+    "mae": 4.807068923441029,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     7.614504584667088
+    ],
+    "phi_hat_median": 4.0
+   },
+   "near_cutoff|24.0": {
+    "n": 24,
+    "spearman": 0.15892813447994325,
+    "mae": 2.6241985963176737,
+    "phi_true_median": 2.1479696151659105,
+    "phi_true_iqr": [
+     0.0,
+     6.25
+    ],
+    "phi_hat_median": 2.0
+   },
+   "no_pending_connection|1.0": {
+    "n": 116,
+    "spearman": 0.2220545193501462,
+    "mae": 1.2672413793103448,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "no_pending_connection|6.0": {
+    "n": 116,
+    "spearman": 0.24133345210310747,
+    "mae": 1.5317397021967907,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     0.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "no_pending_connection|12.0": {
+    "n": 116,
+    "spearman": 0.49371138618213967,
+    "mae": 0.8240132750198886,
+    "phi_true_median": 0.0,
+    "phi_true_iqr": [
+     0.0,
+     2.0
+    ],
+    "phi_hat_median": 0.0
+   },
+   "no_pending_connection|24.0": {
+    "n": 116,
+    "spearman": 0.6874924830847677,
+    "mae": 0.4217412926573658,
+    "phi_true_median": 1.0,
+    "phi_true_iqr": [
+     1.0,
+     2.0
+    ],
+    "phi_hat_median": 1.0
+   }
+  },
+  "matrix": [
+   {
+    "lane_id": "CNSHA-MYTPP-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": -0.993,
+    "phi_true": -1.943,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-MYTPP-NLRTM",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 0.0,
+    "n": 1
+   },
+   {
+    "lane_id": "CNSHA-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.667,
+    "phi_true": 1.333,
+    "n": 3
+   },
+   {
+    "lane_id": "CNSHA-NLRTM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.667,
+    "phi_true": 1.333,
+    "n": 3
+   },
+   {
+    "lane_id": "CNSHA-NLRTM",
+    "event": "DISCHARGED",
+    "phi_hat": 0.667,
+    "phi_true": 1.333,
+    "n": 3
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 6.0,
+    "phi_true": 4.825,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 0.0,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.0,
+    "phi_true": 0.0,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-SGSIN-NLRTM",
+    "event": "DISCHARGED",
+    "phi_hat": 2.0,
+    "phi_true": 0.825,
+    "n": 2
+   },
+   {
+    "lane_id": "CNSHA-USLAX",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.333,
+    "phi_true": 1.0,
+    "n": 6
+   },
+   {
+    "lane_id": "CNSHA-USLAX",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 2.0,
+    "phi_true": 0.8,
+    "n": 5
+   },
+   {
+    "lane_id": "CNSHA-USLAX",
+    "event": "DISCHARGED",
+    "phi_hat": 0.8,
+    "phi_true": 0.4,
+    "n": 5
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.5,
+    "phi_true": 1.5,
+    "n": 4
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "ARRIVE_TS",
+    "phi_hat": 0.0,
+    "phi_true": 1.0,
+    "n": 4
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.0,
+    "phi_true": 1.0,
+    "n": 4
+   },
+   {
+    "lane_id": "CNYTN-AEJEA-DEHAM",
+    "event": "DISCHARGED",
+    "phi_hat": 0.4,
+    "phi_true": 0.4,
+    "n": 5
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.0,
+    "phi_true": 0.169,
+    "n": 5
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "ARRIVE_TS",
+    "phi_hat": -1.6,
+    "phi_true": 5.354,
+    "n": 5
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 0.667,
+    "phi_true": 4.923,
+    "n": 3
+   },
+   {
+    "lane_id": "CNYTN-LKCMB-BEANR",
+    "event": "DISCHARGED",
+    "phi_hat": 0.016,
+    "phi_true": 0.0,
+    "n": 3
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.0,
+    "phi_true": 0.907,
+    "n": 3
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "ARRIVE_TS",
+    "phi_hat": 12.667,
+    "phi_true": 4.667,
+    "n": 3
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 4.667,
+    "phi_true": 4.667,
+    "n": 3
+   },
+   {
+    "lane_id": "INNSA-AEJEA-GBFXT",
+    "event": "DISCHARGED",
+    "phi_hat": 0.0,
+    "phi_true": 0.36,
+    "n": 2
+   },
+   {
+    "lane_id": "INNSA-DEHAM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 1.222,
+    "phi_true": 0.911,
+    "n": 5
+   },
+   {
+    "lane_id": "INNSA-DEHAM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.0,
+    "phi_true": 0.0,
+    "n": 2
+   },
+   {
+    "lane_id": "INNSA-DEHAM",
+    "event": "DISCHARGED",
+    "phi_hat": 1.0,
+    "phi_true": 0.0,
+    "n": 2
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 2.8,
+    "phi_true": 4.4,
+    "n": 5
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "ARRIVE_TS",
+    "phi_hat": -0.8,
+    "phi_true": 0.0,
+    "n": 5
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.333,
+    "phi_true": 0.0,
+    "n": 6
+   },
+   {
+    "lane_id": "INNSA-LKCMB-NLRTM",
+    "event": "DISCHARGED",
+    "phi_hat": 0.0,
+    "phi_true": 1.084,
+    "n": 4
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 2.0,
+    "phi_true": 1.883,
+    "n": 13
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "ARRIVE_TS",
+    "phi_hat": 1.538,
+    "phi_true": 1.562,
+    "n": 13
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.333,
+    "phi_true": 1.692,
+    "n": 12
+   },
+   {
+    "lane_id": "KRPUS-SGSIN-GBFXT",
+    "event": "DISCHARGED",
+    "phi_hat": 1.5,
+    "phi_true": 1.015,
+    "n": 12
+   },
+   {
+    "lane_id": "KRPUS-USLAX",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 2.0,
+    "phi_true": 3.0,
+    "n": 2
+   },
+   {
+    "lane_id": "KRPUS-USLAX",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 1.333,
+    "phi_true": 0.667,
+    "n": 3
+   },
+   {
+    "lane_id": "KRPUS-USLAX",
+    "event": "DISCHARGED",
+    "phi_hat": 2.0,
+    "phi_true": 0.643,
+    "n": 2
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "ARRIVE_DEST_PORT",
+    "phi_hat": 0.571,
+    "phi_true": 1.143,
+    "n": 7
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "ARRIVE_TS",
+    "phi_hat": 4.0,
+    "phi_true": 4.667,
+    "n": 6
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "DEPART_ORIGIN",
+    "phi_hat": 4.4,
+    "phi_true": 5.6,
+    "n": 5
+   },
+   {
+    "lane_id": "VNSGN-SGSIN-BEANR",
+    "event": "DISCHARGED",
+    "phi_hat": 0.301,
+    "phi_true": 1.135,
+    "n": 6
+   }
+  ]
+ },
+ "attribution": {
+  "n": 351,
+  "n_major": 202,
+  "n_shipments": 58,
+  "explainer_source": "rulebook",
+  "accuracy": {
+   "shap_top1": 0.42450142450142453,
+   "shap_top2": 0.6894586894586895,
+   "stage_forecast_top1": 0.42735042735042733,
+   "lane_prior_top1": 0.2621082621082621,
+   "random_top1": 0.18233618233618235,
+   "shap_top1_major_delays": 0.504950495049505,
+   "lift_vs_lane_prior": 0.16239316239316243,
+   "shap_top1_unambiguous": 0.49809885931558934
+  },
+  "ambiguity": {
+   "share_margin_lt_6h": 0.25071225071225073,
+   "share_margin_lt_12h": 0.49572649572649574,
+   "n_unambiguous": 263
+  },
+  "by_checkpoint": {
+   "0": {
+    "n": 61,
+    "top1": 0.3770491803278688,
+    "top2": 0.5081967213114754,
+    "lane_prior_top1": 0.18032786885245902
+   },
+   "1": {
+    "n": 62,
+    "top1": 0.3709677419354839,
+    "top2": 0.5161290322580645,
+    "lane_prior_top1": 0.22580645161290322
+   },
+   "2": {
+    "n": 82,
+    "top1": 0.3780487804878049,
+    "top2": 0.7682926829268293,
+    "lane_prior_top1": 0.3170731707317073
+   },
+   "3": {
+    "n": 69,
+    "top1": 0.5072463768115942,
+    "top2": 0.8115942028985508,
+    "lane_prior_top1": 0.2753623188405797
+   },
+   "4": {
+    "n": 77,
+    "top1": 0.4805194805194805,
+    "top2": 0.7792207792207793,
+    "lane_prior_top1": 0.2857142857142857
+   }
+  },
+  "true_root_distribution": {
+   "PORT": 149,
+   "CUSTOMS": 95,
+   "TRANSSHIPMENT": 51,
+   "ORIGIN": 36,
+   "INLAND": 12,
+   "OCEAN": 8
+  },
+  "confusion_true_rows": {
+   "CUSTOMS": {
+    "CUSTOMS": 17,
+    "INLAND": 3,
+    "NONE": 1,
+    "OCEAN": 2,
+    "ORIGIN": 3,
+    "PORT": 47,
+    "TRANSSHIPMENT": 22
+   },
+   "INLAND": {
+    "CUSTOMS": 2,
+    "INLAND": 3,
+    "NONE": 0,
+    "OCEAN": 0,
+    "ORIGIN": 0,
+    "PORT": 3,
+    "TRANSSHIPMENT": 4
+   },
+   "OCEAN": {
+    "CUSTOMS": 0,
+    "INLAND": 0,
+    "NONE": 0,
+    "OCEAN": 2,
+    "ORIGIN": 0,
+    "PORT": 0,
+    "TRANSSHIPMENT": 6
+   },
+   "ORIGIN": {
+    "CUSTOMS": 4,
+    "INLAND": 1,
+    "NONE": 0,
+    "OCEAN": 2,
+    "ORIGIN": 5,
+    "PORT": 8,
+    "TRANSSHIPMENT": 16
+   },
+   "PORT": {
+    "CUSTOMS": 31,
+    "INLAND": 17,
+    "NONE": 6,
+    "OCEAN": 3,
+    "ORIGIN": 1,
+    "PORT": 75,
+    "TRANSSHIPMENT": 16
+   },
+   "TRANSSHIPMENT": {
+    "CUSTOMS": 2,
+    "INLAND": 0,
+    "NONE": 0,
+    "OCEAN": 0,
+    "ORIGIN": 0,
+    "PORT": 2,
+    "TRANSSHIPMENT": 47
+   }
+  }
+ },
+ "advisor": {
+  "n": 131,
+  "spearman": 0.4470866719192708,
+  "sign_agreement": 0.7251908396946565,
+  "by_action": {
+   "hub_priority": {
+    "model_hours_saved": 17.14,
+    "true_hours_saved": 34.29
+   },
+   "prefile_docs": {
+    "model_hours_saved": 3.0,
+    "true_hours_saved": 18.44
+   },
+   "priority_berth": {
+    "model_hours_saved": 10.45,
+    "true_hours_saved": 21.32
+   },
+   "rail_to_truck": {
+    "model_hours_saved": 28.41,
+    "true_hours_saved": 27.16
+   },
+   "weekend_customs": {
+    "model_hours_saved": 27.69,
+    "true_hours_saved": 5.54
+   }
+  }
+ },
+ "decision": {
+  "promise_changes_per_shipment": 1.7258064516129032,
+  "raw_eta_day_changes_per_shipment": 2.032258064516129,
+  "promise_flip_ratio": 0.8492063492063492,
+  "promise_hit_rate": 0.9137800819252432,
+  "raw_eta_reversals_per_shipment": 0.8548387096774194,
+  "promise_reversals_per_shipment": 0.5806451612903226,
+  "late_alert_recall": 1.0,
+  "late_alert_precision": 0.8378378378378378,
+  "alert_lead_ge_48h_share": 0.6129032258064516,
+  "median_alert_lead_h": 130.61591253522784,
+  "alerts_per_shipment": 3.8548387096774195,
+  "late_alert_false_positive_rate": 0.1935483870967742,
+  "alerts_per_100_shipment_days": 9.734724338673875,
+  "late_alerts_per_100_shipment_days": 1.5070493746064157,
+  "lead_to_actual_h_p10_p50_p90": [
+   29.041835139140858,
+   334.2634024105264,
+   989.4592199760282
+  ],
+  "lead_to_planned_h_p10_p50_p90": [
+   -48.4769398098324,
+   130.61591253522784,
+   831.8970968856338
+  ],
+  "duplicates_suppressed": 58,
+  "late_alert_p_threshold": 0.7,
+  "n_late": 31,
+  "n_on_time": 31,
+  "note": "LATE alert = first TIER_ESCALATION_LATE (P50 delay > tau and P(late) >= the threshold chosen on out-of-fold training predictions) in a replay from booking."
+ },
+ "group_importance": {
+  "ORIGIN": 0.35225024266943206,
+  "OCEAN": 3.3155014940112673,
+  "TRANSSHIPMENT": 7.6925433476914735,
+  "PORT": 9.83887219589347,
+  "CUSTOMS": 12.103765707296324,
+  "INLAND": 6.3416938526686915,
+  "CONTEXT": 0.0,
+  "DATA_QUALITY": 0.0
+ },
+ "robustness": {
+  "0.0": {
+   "mae": 24.166159826077287,
+   "mae_B1": 38.522579491561686,
+   "coverage": 0.8262068965517242
+  },
+  "0.1": {
+   "mae": 23.59723350719425,
+   "mae_B1": 38.23384303244199,
+   "coverage": 0.8413391557496361
+  },
+  "0.3": {
+   "mae": 25.061566203706718,
+   "mae_B1": 39.88499845092297,
+   "coverage": 0.8394276629570747
+  },
+  "0.5": {
+   "mae": 26.43043101544163,
+   "mae_B1": 42.10925447887525,
+   "coverage": 0.8458781362007168
+  }
+ },
+ "ablations": {
+  "no_propagation_features": {
+   "mae": 33.884677703354384,
+   "coverage": 0.6772413793103448
+  },
+  "no_priors": {
+   "mae": 24.234615757219053,
+   "coverage": 0.8275862068965517
+  },
+  "no_data_quality": {
+   "mae": 24.213890691959847,
+   "coverage": 0.8027586206896552
+  }
+ },
+ "embargo": {
+  "cutoff_h": 6034.5,
+  "n_train_shipments_dropped": 28,
+  "n_train_shipments_kept": 210,
+  "mae": 24.28499709277612,
+  "coverage": 0.7420689655172413,
+  "shrink": 0.0
+ },
+ "gates": {
+  "mae_improvement_vs_B1": {
+   "value": 0.3724232305694736,
+   "rule": ">= 0.15",
+   "pass": true
+  },
+  "coverage_p10_p90_overall": {
+   "value": 0.8206896551724138,
+   "rule": "between (0.7, 0.9)",
+   "pass": true
+  },
+  "brier_tau24": {
+   "value": 0.1788634247463176,
+   "rule": "<= 0.2",
+   "pass": true
+  },
+  "attribution_lift_vs_lane_prior": {
+   "value": 0.16239316239316243,
+   "rule": ">= 0.1",
+   "pass": true
+  },
+  "identity_violations": {
+   "value": 0,
+   "rule": "<= 0",
+   "pass": true
+  },
+  "latency_p95_ms": {
+   "value": 6.339990021660921,
+   "rule": "< 50.0",
+   "pass": true
+  }
+ },
+ "info_gates": {
+  "mae_ratio_cascade_vs_rulebook": {
+   "value": 1.0001810200859993,
+   "rule": "<= 1.01",
+   "pass": true
+  }
+ },
+ "targets": [
+  {
+   "id": "G1",
+   "metric": "MAE improvement vs carry-forward",
+   "original_target": ">= 25% (stretch 40%)",
+   "revised_gate": ">= 15%",
+   "value": 0.3724232305694736,
+   "status": "met"
+  },
+  {
+   "id": "G2",
+   "metric": "PR-AUC P(late) at destination arrival",
+   "original_target": ">= 0.75 (stretch 0.85)",
+   "revised_gate": "-",
+   "value": 0.9321826847321171,
+   "status": "met"
+  },
+  {
+   "id": "G2b",
+   "metric": "Brier P(late > 24 h)",
+   "original_target": "<= 0.15",
+   "revised_gate": "<= 0.20",
+   "value": 0.1788634247463176,
+   "status": "unmet"
+  },
+  {
+   "id": "G3",
+   "metric": "P10-P90 coverage in every checkpoint group",
+   "original_target": "80% +/- 5 pp each",
+   "revised_gate": "70-90% overall",
+   "value": {
+    "at_port": 0.8130841121495327,
+    "at_sea": 0.7948717948717948,
+    "post_customs": 0.9622641509433962,
+    "pre_departure": 0.7727272727272727
+   },
+   "status": "partly"
+  },
+  {
+   "id": "G4",
+   "metric": "Future-delay driver top-1 vs cause ledger",
+   "original_target": ">= 70% (stretch 80%)",
+   "revised_gate": "lift >= 10 pp vs lane history",
+   "value": 0.42450142450142453,
+   "status": "unmet"
+  },
+  {
+   "id": "G5",
+   "metric": "Latency p95 predict + explain (in-process)",
+   "original_target": "< 50 ms",
+   "revised_gate": "< 50 ms",
+   "value": 6.339990021660921,
+   "status": "met"
+  },
+  {
+   "id": "G6a",
+   "metric": "Late shipments alerted >= 48 h before planned delivery",
+   "original_target": ">= 70%",
+   "revised_gate": "-",
+   "value": 0.6129032258064516,
+   "status": "unmet"
+  },
+  {
+   "id": "G6b",
+   "metric": "Promise changes / raw P50 day changes",
+   "original_target": "<= 0.40",
+   "revised_gate": "hit rate + reversals (reported)",
+   "value": 0.8492063492063492,
+   "status": "unmet"
+  },
+  {
+   "id": "G7",
+   "metric": "One-command run time",
+   "original_target": "< 180 s",
+   "revised_gate": "-",
+   "value": 197.0,
+   "status": "unmet"
+  }
+ ],
+ "splits": {
+  "train": {
+   "voyages": 83,
+   "shipments": 238,
+   "snapshots": 2665
+  },
+  "selection_slice": {
+   "voyages": 18,
+   "shipments": 50,
+   "snapshots": 585
+  },
+  "test": {
+   "voyages": 20,
+   "shipments": 62,
+   "snapshots": 725
+  }
+ },
+ "slices": {
+  "horizon": {
+   ">504 h": {
+    "n_snapshots": 319,
+    "n_shipments": 61,
+    "n_voyages": 20,
+    "suppressed": false,
+    "mae": 41.194563323828895,
+    "mae_B1": 55.21890166653885,
+    "coverage": 0.7617554858934169,
+    "brier": 0.2995372071199828
+   },
+   "168-504 h": {
+    "n_snapshots": 61,
+    "n_shipments": 44,
+    "n_voyages": 20,
+    "suppressed": false,
+    "mae": 29.148029874917274,
+    "mae_B1": 42.471206760226806,
+    "coverage": 0.8524590163934426,
+    "brier": 0.11609956235835187
+   },
+   "<48 h": {
+    "n_snapshots": 193,
+    "n_shipments": 60,
+    "n_voyages": 20,
+    "suppressed": false,
+    "mae": 6.034536419096465,
+    "mae_B1": 20.551181780730115,
+    "coverage": 0.8704663212435233,
+    "brier": 0.041321259563843686
+   },
+   "48-168 h": {
+    "n_snapshots": 152,
+    "n_shipments": 55,
+    "n_voyages": 19,
+    "suppressed": false,
+    "mae": 9.705291452695244,
+    "mae_B1": 25.046319595006576,
+    "coverage": 0.868421052631579,
+    "brier": 0.12543774651397666
+   }
+  },
+  "route": {
+   "transshipment": {
+    "n_snapshots": 575,
+    "n_shipments": 45,
+    "n_voyages": 16,
+    "suppressed": false,
+    "mae": 28.318701199136996,
+    "mae_B1": 45.344744694244376,
+    "coverage": 0.7947826086956522,
+    "brier": 0.1951780038589797
+   },
+   "direct": {
+    "n_snapshots": 150,
+    "n_shipments": 17,
+    "n_voyages": 4,
+    "suppressed": true
+   }
+  },
+  "edi_tier": {
+   "tier 1": {
+    "n_snapshots": 401,
+    "n_shipments": 32,
+    "n_voyages": 9,
+    "suppressed": false,
+    "mae": 29.849220136562202,
+    "mae_B1": 47.468852737296764,
+    "coverage": 0.7605985037406484,
+    "brier": 0.22697766140766854
+   },
+   "tier 2": {
+    "n_snapshots": 160,
+    "n_shipments": 13,
+    "n_voyages": 5,
+    "suppressed": false,
+    "mae": 9.079718501315904,
+    "mae_B1": 17.100579175503277,
+    "coverage": 0.9625,
+    "brier": 0.16264053491293926
+   },
+   "tier 3": {
+    "n_snapshots": 164,
+    "n_shipments": 17,
+    "n_voyages": 6,
+    "suppressed": false,
+    "mae": 25.223616569479763,
+    "mae_B1": 37.85298347795802,
+    "coverage": 0.8292682926829268,
+    "brier": 0.07704545811301772
+   }
+  },
+  "dest_congestion": {
+   "busy (70-85%)": {
+    "n_snapshots": 509,
+    "n_shipments": 62,
+    "n_voyages": 20,
+    "suppressed": false,
+    "mae": 26.493866048610016,
+    "mae_B1": 35.38191868027934,
+    "coverage": 0.8172888015717092,
+    "brier": 0.21287022157804117
+   },
+   "normal (<=70%)": {
+    "n_snapshots": 65,
+    "n_shipments": 24,
+    "n_voyages": 11,
+    "suppressed": false,
+    "mae": 23.24879641676112,
+    "mae_B1": 26.516859415039136,
+    "coverage": 0.8307692307692308,
+    "brier": 0.10472917215207422
+   },
+   "congested (>85%)": {
+    "n_snapshots": 151,
+    "n_shipments": 27,
+    "n_voyages": 11,
+    "suppressed": false,
+    "mae": 16.969640837978137,
+    "mae_B1": 54.609267787297426,
+    "coverage": 0.8278145695364238,
+    "brier": 0.0961433375362416
+   }
+  },
+  "missing_events": {
+   "none": {
+    "n_snapshots": 503,
+    "n_shipments": 62,
+    "n_voyages": 20,
+    "suppressed": false,
+    "mae": 28.643158408565387,
+    "mae_B1": 42.04334825345381,
+    "coverage": 0.8091451292246521,
+    "brier": 0.22288273453936686
+   },
+   "some missing": {
+    "n_snapshots": 222,
+    "n_shipments": 36,
+    "n_voyages": 17,
+    "suppressed": false,
+    "mae": 14.195750778640898,
+    "mae_B1": 30.771115921776477,
+    "coverage": 0.8468468468468469,
+    "brier": 0.07912597958458896
+   }
+  },
+  "lane": {
+   "INNSA-AEJEA-GBFXT": {
+    "n_snapshots": 41,
+    "n_shipments": 3,
+    "n_voyages": 1,
+    "suppressed": true
+   },
+   "VNSGN-SGSIN-BEANR": {
+    "n_snapshots": 88,
+    "n_shipments": 7,
+    "n_voyages": 3,
+    "suppressed": true
+   },
+   "CNSHA-SGSIN-NLRTM": {
+    "n_snapshots": 25,
+    "n_shipments": 2,
+    "n_voyages": 1,
+    "suppressed": true
+   },
+   "CNSHA-USLAX": {
+    "n_snapshots": 57,
+    "n_shipments": 6,
+    "n_voyages": 1,
+    "suppressed": true
+   },
+   "CNYTN-AEJEA-DEHAM": {
+    "n_snapshots": 66,
+    "n_shipments": 5,
+    "n_voyages": 2,
+    "suppressed": true
+   },
+   "KRPUS-SGSIN-GBFXT": {
+    "n_snapshots": 188,
+    "n_shipments": 14,
+    "n_voyages": 4,
+    "suppressed": true
+   },
+   "CNSHA-MYTPP-NLRTM": {
+    "n_snapshots": 19,
+    "n_shipments": 2,
+    "n_voyages": 1,
+    "suppressed": true
+   },
+   "INNSA-LKCMB-NLRTM": {
+    "n_snapshots": 75,
+    "n_shipments": 6,
+    "n_voyages": 2,
+    "suppressed": true
+   },
+   "CNYTN-LKCMB-BEANR": {
+    "n_snapshots": 73,
+    "n_shipments": 6,
+    "n_voyages": 2,
+    "suppressed": true
+   },
+   "INNSA-DEHAM": {
+    "n_snapshots": 40,
+    "n_shipments": 5,
+    "n_voyages": 1,
+    "suppressed": true
+   },
+   "KRPUS-USLAX": {
+    "n_snapshots": 23,
+    "n_shipments": 3,
+    "n_voyages": 1,
+    "suppressed": true
+   },
+   "CNSHA-NLRTM": {
+    "n_snapshots": 30,
+    "n_shipments": 3,
+    "n_voyages": 1,
+    "suppressed": true
+   }
+  }
+ },
+ "feed": {
+  "reported_milestones": 2137,
+  "messages": 2393,
+  "latency_h_p50_p90": [
+   1.1499365110166764,
+   5.965621993708376
+  ],
+  "duplicated_milestones": 104,
+  "corrected_milestones": 145,
+  "correction_size_h_median": 4.123922773871527,
+  "shipments_with_revisions": 239,
+  "revisions_per_shipment": 1.5933333333333333
+ },
+ "drift": {
+  "current_delay_h": {
+   "psi": 0.07541020983114102,
+   "status": "stable"
+  },
+  "rho_dest_fcst": {
+   "psi": 1.212323528818163,
+   "status": "drift"
+  },
+  "rho_hub_fcst": {
+   "psi": 0.915940649907701,
+   "status": "drift"
+  },
+  "weather_fcst_remaining": {
+   "psi": 0.2611222835177351,
+   "status": "drift"
+  },
+  "overdue_h": {
+   "psi": 0.0,
+   "status": "stable"
+  },
+  "ts_buffer_remaining_h": {
+   "psi": 0.04807178735177798,
+   "status": "stable"
+  },
+  "n_missing_past": {
+   "psi": 0.006607614215182922,
+   "status": "stable"
+  },
+  "hours_since_last_event": {
+   "psi": 0.03324452601459016,
+   "status": "stable"
+  }
+ },
+ "meta": {
+  "seed": 42,
+  "n_shipments": 300,
+  "version": "1.3.0",
+  "late_rate": 0.38333333333333336,
+  "n_rows": 3390,
+  "train_config": {
+   "target_mode": "residual",
+   "n_estimators": 300,
+   "learning_rate": 0.04,
+   "num_leaves": 15,
+   "max_depth": 5,
+   "min_data_in_leaf": 20,
+   "feature_fraction": 0.8,
+   "bagging_fraction": 0.8,
+   "lambda_l2": 1.0,
+   "monotone": true,
+   "stage_models": true,
+   "late_threshold_h": 24,
+   "alpha": 0.2,
+   "eta_floor_min_remaining_frac": 0.5,
+   "seed": 0,
+   "exclude_features": [],
+   "shrink_rule": "combined",
+   "band": "direct",
+   "late_model": "stack"
+  },
+  "runtime_s": 197.0,
+  "world_now_h": 7471.541501720844,
+  "environment": {
+   "platform": "Windows-11-10.0.26300-SP0",
+   "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+   "cpu_count": 28,
+   "python": "3.12.10",
+   "lightgbm": "4.7.0",
+   "latency_method": "in-process Engine.predict(explain=True), sequential, single thread, 200 repeats of one request after the evaluation warm-up; no HTTP"
+  }
+ }
+}

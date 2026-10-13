@@ -488,6 +488,23 @@ positive on average but not reliably large.</p>"""
 
     shrink_grid = ", ".join(str(k) for k in sel["shrink_mae"])
     blend_grid = ", ".join(str(k) for k in sel["late_blend_brier"])
+    if sel.get("late_stack"):
+        late_model_html = (
+            "P(late) stacks the empirical residual distribution around the rulebook with the "
+            "monotone classifier (logistic, fit out-of-fold)."
+        )
+        late_note_html = f"Out-of-fold Brier of the P(late) stack: {num(sel['late_brier_oof'], 3)}."
+    else:
+        late_model_html = (
+            "P(late) blends a monotone classifier + isotonic calibration with the quantile-implied "
+            f"probability (weight from {{{blend_grid}}}; selected {sel['late_blend']})."
+        )
+        late_note_html = (
+            "On temporal validation the blend of classifier and quantile-implied P(late) lowered "
+            f"Brier from {num(sel['late_blend_brier']['0.0'], 3)} (quantile-only) and "
+            f"{num(sel['late_blend_brier']['1.0'], 3)} (classifier-only) to "
+            f"{num(sel['late_blend_brier'][str(sel['late_blend'])], 3)}."
+        )
     drivers = ex["drivers"]
     top = drivers[0]
     narrative = ex["narrative"]
@@ -568,8 +585,8 @@ fail to report discharge. A report reaches the system after a carrier-dependent 
 <li><b>As-of checkpoints.</b> Each shipment expands into one row per milestone. Features use only milestone reports that had <i>arrived</i> by the as-of time (an event that happened but was reported later is invisible), and leakage is property-tested.</li>
 <li><b>Operator rulebook vs truth.</b> A physics-style projection of every <i>remaining</i> stage (cut-offs, headways, Kingman queue, customs calendars, rail timetables) from forecast congestion and weather, with coefficients <b>deliberately different from the simulator's</b>, so the model cannot "know the simulator".</li>
 <li><b>Propagation features.</b> These include projected hub buffer versus cut-off, congestion × current lateness, days to the next business slot, rail cut-off slack, and missingness flags that carry signal (EDI tier, gaps so far).</li>
-<li><b>Residual quantile GBM with temporal shrinkage.</b> LightGBM models P10/P50/P90 of the residual on top of the rulebook ({tc["n_estimators"]} trees, {tc["num_leaves"]} leaves). The learned median correction is blended in with weight λ ∈ {{{shrink_grid}}}, chosen on the latest training voyages. <b>λ = {sel["shrink"]} was selected</b>, so the median comes from the rulebook, and ML contributes uncertainty, P(late) and stage forecasts.</li>
-<li><b>Drift-aware CQR and P(late).</b> Conformalised quantile regression per checkpoint group (offset = max(out-of-fold, temporal-slice)) protects coverage under the seasonal shift. P(late) blends a monotone classifier + isotonic calibration with the quantile-implied probability (weight from {{{blend_grid}}}; selected {sel["late_blend"]}).</li>
+<li><b>Residual quantile GBM with temporal shrinkage.</b> LightGBM models P10/P50/P90 of the residual on top of the rulebook ({tc["n_estimators"]} trees, {tc["num_leaves"]} leaves). The learned median correction is blended in with weight λ ∈ {{{shrink_grid}}}, chosen on the latest training voyages{" and out-of-fold" if "shrink_mae_oof" in sel else ""}. <b>λ = {sel["shrink"]} was selected</b>, so the median comes from the rulebook, and ML contributes uncertainty, P(late) and stage forecasts{"; the band uses the learned quantiles directly" if "late_stack" in sel else ""}.</li>
+<li><b>Drift-aware CQR and P(late).</b> Conformalised quantile regression per checkpoint group (offset = max(out-of-fold, temporal-slice)) protects coverage under the seasonal shift. {late_model_html}</li>
 <li><b>Explanations.</b> Stage bar = rulebook projected increment + λ × exact TreeSHAP of the residual model (<code>pred_contrib</code>){"; at λ = 0 the bars, and the attribution score, are the <b>rulebook alone</b>" if sel["shrink"] == 0 else ""}. Realised delay + stage bars + a floor/ordering adjustment = P50; templates write ops/customer/analyst narratives. Future-stage attribution is inherently noisy, so we report top-2 and lift, not just top-1.</li>
 <li><b>Decision layer.</b> Promise ETA with hysteresis, alerts, cost-of-delay, an intervention advisor (model re-run under a fixed action menu), a scenario radar and a prediction ledger; FastAPI with a fallback chain (lane propagation prior → carry-forward) and a Streamlit control tower.</li>
 </ul>
@@ -594,8 +611,7 @@ fail to report discharge. A report reaches the system after a carrier-dependent 
 <tr><td>All snapshots (base rate {pct(cls24["overall"]["base_rate"])})</td><td class=n>{num(cls24["overall"]["brier"], 3)}</td><td class=n>{num(cls24["overall"]["pr_auc"])}</td><td class=n>{num(cls24["overall"]["roc_auc"])}</td></tr>
 <tr><td>After destination arrival</td><td class=n>{num(cls24["checkpoint_5"]["brier"], 3)}</td><td class=n>{num(cls24["checkpoint_5"]["pr_auc"])}</td><td class=n>{num(cls24["checkpoint_5"]["roc_auc"])}</td></tr>
 </table>
-<p class=small>Calibration ECE {num(a["reliability"]["ece"], 3)}. On temporal validation the blend of classifier and quantile-implied P(late) lowered Brier from
-{num(sel["late_blend_brier"]["0.0"], 3)} (quantile-only) and {num(sel["late_blend_brier"]["1.0"], 3)} (classifier-only) to {num(sel["late_blend_brier"][str(sel["late_blend"])], 3)}.</p>
+<p class=small>Calibration ECE {num(a["reliability"]["ece"], 3)}. {late_note_html}</p>
 </div>
 <div>
 <table><caption>Table 4 · Explanation fidelity vs simulator ground truth</caption>
