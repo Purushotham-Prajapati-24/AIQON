@@ -340,6 +340,9 @@ Outputs: `reports/metrics.json` (machine-readable, used by CI gates) + `reports/
 | GET | `/v1/alerts?status=open` | Alert inbox (§11.2) | < 20 ms |
 | GET | `/v1/monitoring/accuracy` | Rolling live accuracy, coverage, lane trust (§11.6) | < 50 ms |
 | GET | `/health`, `/ready` | Liveness / readiness (model loaded and warmed up) | < 5 ms |
+| POST | `/v1/auth/login`, `/v1/auth/demo-login` | Start a session: JWT in an httpOnly cookie, also returned for `Authorization: Bearer` | < 150 ms |
+| GET | `/v1/auth/me` · POST `/v1/auth/logout` | Current user and expiry · end the session | < 5 ms |
+| GET | `/v1/auth/config`, `/v1/auth/demo-users` | Auth mode (`optional` / `required`) and the demo accounts | < 5 ms |
 
 `/v1/predict` additionally returns `promise_eta`, `cost_usd {p10,p50,p90}` and `lane_trust`, and accepts `?audience=ops|customer|analyst`.
 
@@ -498,18 +501,18 @@ Copy rules: durations ≥ 48 h in days with 1 decimal; times in UTC with local t
 
 ### 10.5 React dashboard (`dashboard/`, as built)
 
-A second UI, built in React, sits next to the Streamlit control tower. It talks to the same public API (`/v1/*`) and changes no Python code. It is one scrolling page with an entry screen in front.
+A second UI, built in React, sits next to the Streamlit control tower. It talks to the same public API (`/v1/*`) and changes no Python code. It is one scrolling page with a sign-in screen in front.
 
-**Entry screen: "What do you need today?"** There is no login: auth is a non-goal for v1 (§6 of the PRD), and a fake sign-in would only slow a reviewer down. Instead the first screen asks what the visitor came to do, and each choice shows one live number from the model.
+**Sign-in.** Sessions are signed JWTs (HS256) that the API sets in an httpOnly, SameSite=Lax cookie; the dashboard reaches the API through a same-origin `/api` proxy, so the cookie is first-party and JavaScript never sees the token. Four demo accounts, the PRD personas, sign in with one click (or keys 1–4); a username and password form works too (demo password `cascade-demo`). The account decides where the page opens and how explanations are worded, and each one shows one live number from the model when the API allows anonymous reads.
 
-| Choice | Persona (PRD §4) | Opens on | "Why" wording | Live number shown |
+| Demo account | Persona (PRD §4) | Opens on | "Why" wording | Live number shown |
 |---|---|---|---|---|
-| Ops planner | Priya | 01 Fleet | planner | late shipments now ("23 late of 48") |
-| Customer support | Marco | 02 Shipment | customer | arrival date of SHP-000174 |
-| Network analyst | Lena | 05 Proof | planner | error reduction vs carry-forward |
-| First look | Aiqon reviewer | Hero | customer | the hero shipment's delay in days |
+| Priya Raman · Ops planner | Priya | 01 Fleet | planner | late shipments now ("23 late of 48") |
+| Marco Bianchi · Customer support | Marco | 02 Shipment | customer | arrival date of SHP-000174 |
+| Lena Fischer · Network analyst | Lena | 05 Proof | planner | error reduction vs carry-forward |
+| Aiqon Reviewer | Aiqon reviewer | Hero | customer | the hero shipment's delay in days |
 
-The choice is remembered in the browser (`localStorage`, key `cascade-role`) and can be changed from the top bar. Keys 1–4 pick a role. A deep link such as `/#alerts` skips the entry screen. Roles live in `dashboard/src/lib/roles.ts`.
+A reload keeps the session (the dashboard asks `/v1/auth/me`); the top-bar button signs out. Any 401 (expired session, or the API switched to `CASCADE_AUTH=required`) returns to sign-in with "Your session ended". If the API can't end the session, the sign-out button turns red and offers a retry instead of pretending. When the server has demo sign-in off, the screen shows only the username and password form. A deep link such as `/#alerts` opens that section after sign-in. When the API is unreachable (static preview of the recorded run) sign-in is simulated in the browser and the screen says so. Accounts live in `src/cascade/serving/auth.py`; the role mapping in `dashboard/src/lib/roles.ts`.
 
 **Page order** (same story as the demo script: problem → fleet → one shipment → act → prove):
 

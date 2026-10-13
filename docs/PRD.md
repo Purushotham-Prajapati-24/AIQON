@@ -83,7 +83,7 @@ The brief asks for *predict → quantify → explain*. Real control towers fail 
 | **Dev, Platform Engineer** | Integrates ETA into a TMS | Low-latency, versioned, documented API with stable contracts and fallbacks |
 | **Aiqon Reviewer** | Evaluates the submission | Clear problem framing, sound features, appropriate approach, explanations that can be checked, reproducibility |
 
-In the React dashboard these personas are the four choices on the entry screen (Ops planner, Customer support, Network analyst, First look). Each choice opens the page where that person's question is answered; see Design.md §10.5.
+In the React dashboard these personas are the four one-click demo accounts on the sign-in screen (Priya, Marco, Lena and the Aiqon reviewer). Each account opens the page where that person's question is answered; see Design.md §10.5.
 
 ---
 

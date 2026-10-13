@@ -52,6 +52,27 @@ docker compose -f docker/compose.yaml up --build
 # Ports already taken?  CASCADE_API_PORT=8200 CASCADE_UI_PORT=8701 docker compose -f docker/compose.yaml up --build
 ```
 
+## Sign in
+
+The dashboard opens on a sign-in screen. Click a demo account to go straight in (keys 1–4 work too), or sign in with a username and the demo password `cascade-demo`.
+
+| Demo account | Role | Opens on |
+|---|---|---|
+| `priya` · Priya Raman | Ops planner | the fleet, worst first |
+| `marco` · Marco Bianchi | Customer support | one shipment, explained in customer wording |
+| `lena` · Lena Fischer | Network analyst | the proof: accuracy, ranges, where delay grows |
+| `reviewer` · Aiqon Reviewer | Assessment reviewer | the story of one late shipment |
+
+Sessions are signed JWTs in an httpOnly cookie (8 hours), so browser JavaScript never sees the token. API clients ask for it with `"bearer": true` and send it as a Bearer token:
+
+```bash
+TOKEN=$(curl -s -X POST localhost:8000/v1/auth/demo-login -H "Content-Type: application/json" \
+  -d '{"user_id":"priya","bearer":true}' | python -c "import json,sys; print(json.load(sys.stdin)['token'])")
+curl -s localhost:8000/v1/auth/me -H "Authorization: Bearer $TOKEN"
+```
+
+By default data routes stay open (`CASCADE_AUTH=optional`), so the Streamlit UI and TMS integrations keep working. `CASCADE_AUTH=required` makes every `/v1` route need a session. In that mode, one-click demo sign-in is off, and the API refuses to start without `CASCADE_PASSWORD` (12+ characters), because the demo password is public. `CASCADE_DEMO_LOGIN=1` turns demo sign-in back on for an open demo. Set `CASCADE_JWT_SECRET` (32+ characters) in any shared deployment; without it, sessions end when the API restarts. Failed password sign-ins are limited to 10 a minute per client; behind a proxy the client address comes from `X-Forwarded-For` (trusted from `FORWARDED_ALLOW_IPS`, default `127.0.0.1`, which covers the Vite proxy).
+
 ## How ETA and delay are defined
 
 A shipment moves through a fixed **stage graph**: gate-in → origin departure → (hub arrival → hub departure) → destination arrival → discharge → customs release → gate-out → delivery. Direct lanes skip the hub. All quantities are in hours, and positive means late.

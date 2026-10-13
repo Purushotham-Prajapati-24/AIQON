@@ -142,3 +142,14 @@ class ScenarioRequest(BaseModel):
     delta: float | None = Field(default=None, ge=-0.5, le=0.8)
     duration_h: float = Field(default=120.0, gt=0, le=24 * 30)
     as_of: AwareDatetime | None = None
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=64, examples=["priya"])
+    password: str = Field(min_length=1, max_length=256)
+    bearer: bool = Field(False, description="Also return the token in the body, for API clients.")
+
+
+class DemoLoginRequest(BaseModel):
+    user_id: str = Field(min_length=1, max_length=64, examples=["priya"])
+    bearer: bool = Field(False, description="Also return the token in the body, for API clients.")

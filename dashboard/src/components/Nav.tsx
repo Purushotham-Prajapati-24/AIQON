@@ -1,5 +1,5 @@
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
-import { Moon, Repeat2, Sun } from "lucide-react";
+import { LogOut, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useStore } from "../lib/store";
 
@@ -21,10 +21,12 @@ export function Logo({ className = "" }: { className?: string }) {
 }
 
 export function Nav() {
-  const { mode, theme, toggleTheme, role, setRole } = useStore();
+  const { mode, theme, toggleTheme, auth, signOut } = useStore();
+  const user = auth.session?.user;
   const { scrollY, scrollYProgress } = useScroll();
   const [solid, setSolid] = useState(false);
   const [active, setActive] = useState<string | null>(null);
+  const [signOutFailed, setSignOutFailed] = useState(false);
   useMotionValueEvent(scrollY, "change", (v) => setSolid(v > 40));
 
   // Scroll-spy: the section whose top passed 40% of the viewport.
@@ -72,18 +74,22 @@ export function Nav() {
           </ul>
         </nav>
         <div className="ml-auto flex items-center gap-2 md:ml-4">
-          {role && (
+          {user && (
             <button
-              onClick={() => {
-                scrollTo({ top: 0 });
-                setRole(null);
+              onClick={async () => {
+                const ok = await signOut();
+                setSignOutFailed(!ok);
+                if (ok) scrollTo({ top: 0 });
               }}
-              className="flex items-center gap-2 rounded-[4px] border border-line px-2.5 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-fg-2 transition-colors hover:border-fg-2 hover:text-fg"
-              title="Change what you need"
+              className={`group flex items-center gap-2.5 rounded-[4px] border py-1 pl-1 pr-2.5 transition-colors hover:text-fg ${signOutFailed ? "border-late text-late" : "border-line text-fg-2 hover:border-fg-2"}`}
+              title={signOutFailed ? "Couldn't reach the server to end your session. Click to try again." : `Signed in as ${user.name} (${user.title}). Session ends ${new Date((auth.session?.expiresAt ?? 0) * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`}
             >
-              <Repeat2 size={13} aria-hidden />
-              <span className="hidden lg:inline">{role.name}</span>
-              <span className="sr-only lg:hidden">Change role, now {role.name}</span>
+              <span className="grid size-7 place-items-center rounded-full bg-bg-3 font-mono text-[0.7rem] text-fg" aria-hidden>
+                {user.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
+              </span>
+              <span className="hidden font-mono text-[0.7rem] uppercase tracking-[0.14em] lg:inline">{signOutFailed ? "Retry sign-out" : user.name.split(" ")[0]}</span>
+              <LogOut size={14} aria-hidden />
+              <span className="sr-only">Sign out {user.name}</span>
             </button>
           )}
           {mode && (

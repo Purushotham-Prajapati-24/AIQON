@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect } from "react";
 import { Footer } from "./components/Footer";
-import { Nav } from "./components/Nav";
+import { Logo, Nav } from "./components/Nav";
 import { useStore } from "./lib/store";
 import { Alerts } from "./sections/Alerts";
-import { Entry } from "./sections/Entry";
+import { Login } from "./sections/Login";
 import { Fix } from "./sections/Fix";
 import { Fleet } from "./sections/Fleet";
 import { Hero } from "./sections/Hero";
@@ -12,12 +12,19 @@ import { Proof } from "./sections/Proof";
 import { Shipment } from "./sections/Shipment";
 
 export function App() {
-  const { role } = useStore();
+  const { auth, role } = useStore();
+
+  if (auth.status === "checking")
+    return (
+      <div className="grid min-h-svh place-items-center" aria-busy="true" aria-label="Checking your session">
+        <Logo className="size-10 animate-pulse" />
+      </div>
+    );
 
   return (
     <AnimatePresence mode="wait">
-      {!role ? (
-        <Entry key="entry" />
+      {auth.status === "out" || !role ? (
+        <Login key="login" />
       ) : (
         <motion.div key={`app-${role.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
           <a href="#fleet" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:bg-fg focus:px-3 focus:py-2 focus:text-bg">

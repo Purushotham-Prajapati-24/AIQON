@@ -16,27 +16,27 @@ npm install
 npm run dev                         # http://localhost:5173
 ```
 
-The dashboard checks `http://127.0.0.1:8000/ready` at startup:
+The dashboard talks to the API through `/api`, which Vite proxies to `http://127.0.0.1:8000` (set `CASCADE_API_TARGET` to change it). Same origin means the session cookie is first-party. At startup it checks `/api/ready`:
 
 - **Live model:** if the API answers, every number comes from it.
 - **Recorded run:** if the API is down, it reads `public/snapshot/`. These are real API responses recorded from model v1.1.0, so it still runs as a static site.
 
-Override the API address with `VITE_API_URL=http://host:port`. Force a source with `?source=live` or `?source=snapshot`.
+To call another API origin directly, build with `VITE_API_URL=http://host:port` and add the dashboard's origin to the API's `CASCADE_CORS_ORIGINS`. Force a source with `?source=live` or `?source=snapshot`.
 
 To re-record the snapshot after retraining (with the API running): `npm run snapshot`.
 
-## Entry screen
+## Sign in
 
-There's no login. The first screen asks **"What do you need today?"** and offers four choices, each showing one live number from the model:
+The dashboard opens on a sign-in screen. Click a demo account (or press 1–4), or use the form with username `priya`, `marco`, `lena` or `reviewer` and password `cascade-demo`.
 
-| Choice | Opens on | "Why" wording |
+| Account | Opens on | "Why" wording |
 |---|---|---|
-| Ops planner | 01 Fleet | planner |
-| Customer support | 02 Shipment | customer |
-| Network analyst | 05 Proof | planner |
-| First look | Hero replay | customer |
+| Priya Raman · Ops planner | 01 Fleet | planner |
+| Marco Bianchi · Customer support | 02 Shipment | customer |
+| Lena Fischer · Network analyst | 05 Proof | planner |
+| Aiqon Reviewer | Hero replay | customer |
 
-Press 1–4 to choose. The choice is remembered in this browser; change it with the role button in the top bar. A deep link like `/#alerts` skips the entry screen. Roles are defined in `src/lib/roles.ts`.
+The API sets the session as a signed JWT in an httpOnly cookie, so a reload keeps you signed in and the top-right button signs out. If the session ends (it expired, or the API runs with `CASCADE_AUTH=required` and the cookie is gone), the dashboard returns to sign-in and says so. A deep link such as `/#alerts` opens that section after sign-in. When the API isn't running, sign-in is simulated in the browser and the screen says "Offline preview".
 
 ## What's on the page
 

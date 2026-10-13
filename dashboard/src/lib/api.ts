@@ -18,7 +18,10 @@ import type {
 
 export type Mode = "live" | "snapshot";
 
-const API = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://127.0.0.1:8000";
+// Same-origin by default: Vite (dev and preview) and the Docker nginx proxy /api to the CASCADE API,
+// so the session cookie is first-party. VITE_API_URL points elsewhere (that origin must then be
+// listed in the API's CASCADE_CORS_ORIGINS).
+export const API = (import.meta.env.VITE_API_URL as string | undefined) ?? `${import.meta.env.BASE_URL}api`.replace(/\/{2,}/g, "/");
 const SNAP = `${import.meta.env.BASE_URL}snapshot`;
 
 let mode: Promise<Mode> | null = null;
@@ -32,7 +35,7 @@ export function detectMode(): Promise<Mode> {
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 1500);
-      const r = await fetch(`${API}/ready`, { signal: ctrl.signal });
+      const r = await fetch(`${API}/ready`, { signal: ctrl.signal, credentials: "include" });
       clearTimeout(t);
       return r.ok ? "live" : "snapshot";
     } catch {
@@ -47,7 +50,12 @@ const cache = new Map<string, Promise<unknown>>();
 function json<T>(url: string, init?: RequestInit): Promise<T> {
   const key = `${init?.method ?? "GET"} ${url} ${init?.body ?? ""}`;
   if (!cache.has(key)) {
-    const p = fetch(url, init).then(async (r) => {
+    const p = fetch(url, { credentials: "include", ...init }).then(async (r) => {
+      if (r.status === 401) {
+        // The session ended (expired, signed out elsewhere, or the API now requires sign-in).
+        cache.clear();
+        dispatchEvent(new CustomEvent("cascade:signed-out", { detail: "expired" }));
+      }
       if (!r.ok) throw new Error(`${r.status} ${url}`);
       return r.json();
     });

@@ -82,7 +82,7 @@ flowchart TB
 | `decision/` | Promise ETA, alerts, cost-of-delay, intervention advisor, scenarios, prediction ledger | Pure functions over `Prediction` + `LedgerRepository` | C — Platform (+ B for advisor) |
 | `serving/` | FastAPI app, schemas, service, fallback, middleware | OpenAPI `v1` | C — Platform |
 | `app/` | Streamlit control tower | Consumes OpenAPI `v1` only | D — UX |
-| `dashboard/` | React dashboard: entry screen by role, hero replay, fleet, shipment, fix, alerts, proof | Consumes OpenAPI `v1` only; recorded snapshot when the API is down | D — UX |
+| `dashboard/` | React dashboard: JWT sign-in with demo accounts, hero replay, fleet, shipment, fix, alerts, proof | Consumes OpenAPI `v1` only; recorded snapshot when the API is down | D — UX |
 
 **Dependency rule (enforced by `import-linter` in CI):**
 `domain ← sim, data ← features ← models ← explain ← decision (incl. engine) ← eval | serving ← cli`; `app` and `dashboard` talk HTTP only.
@@ -317,5 +317,11 @@ flowchart LR
 
 ### ADR-010 — React dashboard alongside Streamlit
 - **Context:** The Streamlit pages prove the API, but give limited control over layout, motion and first impressions, which matter for the assessment demo.
-- **Decision:** Add `dashboard/` (React 19, Vite, Tailwind CSS 4, Motion, d3). It uses the same HTTP-only boundary as `app/`. When the API is unreachable it reads real responses recorded by `npm run snapshot`. It opens on an entry screen that asks what the visitor needs (ops planner, customer support, network analyst, first look) instead of a login, because auth is a v1 non-goal.
+- **Decision:** Add `dashboard/` (React 19, Vite, Tailwind CSS 4, Motion, d3). It uses the same HTTP-only boundary as `app/`. When the API is unreachable it reads real responses recorded by `npm run snapshot`. It opens on a sign-in screen (ADR-011).
 - **Consequences:** + full design control and a static build that runs without Python, + the ML code is untouched (the swap path ADR-007 kept open). − Two UIs to maintain; the snapshot must be re-recorded after retraining (`npm run snapshot`).
+
+### ADR-011 — JWT sessions, optional by default
+- **Context:** The dashboard needs real sign-in (named users, a session that survives a reload, sign-out), but the API is also an integration surface (Streamlit, TMS) that must keep working, and multi-tenant auth and RBAC are v1 non-goals.
+- **Decision:** `serving/auth.py` issues HS256 JWTs (PyJWT) with issuer, expiry and a per-token id, set in an httpOnly, SameSite=Lax cookie and also accepted as `Authorization: Bearer`. `CASCADE_AUTH=optional` (default) leaves data routes open; `required` gates every `/v1` route except `/v1/auth/*` through one FastAPI dependency, so 401s still pass through CORS and use the RFC 7807 format. Users are four demo accounts (the PRD personas) with one PBKDF2-hashed shared password, constant-time comparison and a per-client failed-sign-in throttle. The token is returned in the body only when an API client asks (`"bearer": true`), so browser JavaScript never holds it. In `required` mode one-click demo sign-in is off by default, and the API will not start on the public demo password: it needs `CASCADE_PASSWORD`, or an explicit `CASCADE_DEMO_LOGIN=1` for an open demo. CORS lists the dashboard origins with credentials instead of `*`; the dashboard calls the API through a same-origin `/api` proxy (Vite in development, nginx in Docker).
+- **Consequences:** + real, testable sessions with no impact on integrations; + `required` mode with `CASCADE_PASSWORD` locks the data routes down, and it fails fast rather than run on the public demo password. − Users are hard-coded demo accounts, the signing key is per-process unless `CASCADE_JWT_SECRET` is set, and there is no revocation list: a production deployment needs an identity provider (OIDC) and key rotation.
+
