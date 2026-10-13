@@ -2,6 +2,8 @@ import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransf
 import { AlertTriangle, CircleCheck, Clock3, RotateCw } from "lucide-react";
 import { Component, useEffect, useRef, type ErrorInfo, type ReactNode } from "react";
 import { TIER } from "../lib/format";
+import { GUIDE } from "../lib/guide";
+import { useStore } from "../lib/store";
 import type { Tier } from "../lib/types";
 
 export const EASE = [0.16, 1, 0.3, 1] as const;
@@ -111,7 +113,7 @@ export function TierBadge({ tier, size = "md" }: { tier: Tier; size?: "sm" | "md
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-[4px] font-mono uppercase tracking-wider ${
-        size === "sm" ? "px-1.5 py-0.5 text-[0.7rem]" : "px-2.5 py-1 text-[0.78rem]"
+        size === "sm" ? "px-1.5 py-0.5 text-[0.75rem]" : "px-2.5 py-1 text-[0.78rem]"
       }`}
       style={{ color: t.ink, background: t.wash }}
     >
@@ -185,13 +187,45 @@ export function SectionHead({
         <MaskLines lines={title} className="h-section" />
       </div>
       {aside && <div className="self-end text-lg text-fg-2 md:col-span-4">{aside}</div>}
+      <HowTo id={id} className="md:col-span-12" />
     </header>
+  );
+}
+
+/** "What you can do here": the section's steps from GUIDE, hidden when the user turns tips off. */
+export function HowTo({ id, className = "" }: { id: string; className?: string }) {
+  const { tips, toggleTips } = useStore();
+  const guide = GUIDE[id];
+  if (!tips || !guide) return null;
+  return (
+    <div className={`flex flex-col gap-3 rounded-[4px] border border-dashed border-line-2 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-6 ${className}`}>
+      <p className="eyebrow shrink-0 text-[0.75rem]" id={`${id}-howto`}>
+        How to use
+      </p>
+      <ol aria-labelledby={`${id}-howto`} className="flex flex-col gap-x-7 gap-y-1.5 text-[0.95rem] text-fg-2 md:flex-row md:flex-wrap">
+        {guide.steps.map((step, k) => (
+          <li key={step} className="flex gap-2.5">
+            <span className="font-mono text-[0.78rem] leading-[1.6rem] text-late" aria-hidden>
+              {k + 1}
+            </span>
+            {step}
+          </li>
+        ))}
+      </ol>
+      <button
+        onClick={toggleTips}
+        className="-mx-2 -my-3.5 shrink-0 self-start px-2 py-3.5 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3 underline-offset-4 hover:text-fg hover:underline sm:ml-auto"
+        title="Hide these tips everywhere. Turn them back on with the lightbulb in the sidebar."
+      >
+        Hide tips
+      </button>
+    </div>
   );
 }
 
 export function Skeleton({ className = "", label = "Loading" }: { className?: string; label?: string }) {
   return (
-    <div role="status" aria-label={label} className={`animate-pulse rounded-[4px] bg-bg-3 ${className}`}>
+    <div role="status" aria-label={label} className={`shimmer rounded-[4px] ${className}`}>
       <span className="sr-only">{label}…</span>
     </div>
   );
@@ -246,7 +280,7 @@ export class SectionBoundary extends Component<{ name: string; children: ReactNo
 /** Legend shared by every journey chart. */
 export function ChartLegend() {
   return (
-    <ul className="mt-10 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+    <ul className="mt-10 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
       <li className="flex items-center gap-2">
         <span className="h-3 w-5 rounded-[2px] bg-late/60" aria-hidden /> Happened
       </li>
@@ -277,7 +311,7 @@ export function Stat({
 }) {
   return (
     <div className={className}>
-      <div className="num text-[clamp(2.5rem,4.4vw,4rem)]" style={tone ? { color: tone } : undefined}>
+      <div className="num text-[clamp(2.5rem,calc(4.4*var(--cw)),4rem)]" style={tone ? { color: tone } : undefined}>
         {value}
       </div>
       <div className="mt-2 text-[0.95rem] text-fg-2">{label}</div>

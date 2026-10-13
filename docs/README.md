@@ -16,6 +16,7 @@
 | [WebAudit.md](WebAudit.md) | Senior web review of the front-ends: scorecard, fixes, remaining work | Reviewers, web engineers |
 | [ModelCard.md](ModelCard.md) | Auto-generated model card (intended use, performance, weaknesses) | Everyone |
 | [../dashboard/README.md](../dashboard/README.md) | React dashboard: sign-in with demo accounts, sections, run and snapshot commands | Reviewers, UX |
+| [VisualDesign.md](VisualDesign.md) | Dashboard visual system: reference-platform research, components, tokens (colour, type, elevation, motion), templates, interactions, accessibility, measured verification | Designers, front-end, reviewers |
 | [ImplementationPlan.md](ImplementationPlan.md) | Ticket-level plan: owners, estimates, dependencies, files, acceptance criteria, risks | Implementers |
 
 ## The idea in 30 seconds

@@ -27,6 +27,16 @@
   --late-wash: rgb(255 90 31 / 0.12);
   --sea-wash: rgb(108 180 224 / 0.12);
   --contour: rgb(108 180 224 / 0.07);
+
+  /* Elevation. Dark surfaces get lighter as they rise and carry a hairline top highlight; shadows only separate. */
+  --raised: #121a1f;
+  --overlay: #141d23;
+  --highlight: rgb(255 255 255 / 0.06);
+  --shadow-1: 0 1px 0 rgb(0 0 0 / 0.4), 0 6px 16px -10px rgb(0 0 0 / 0.7);
+  --shadow-2: 0 24px 60px -24px rgb(0 0 0 / 0.85), 0 0 0 1px var(--line);
+  --spot: rgb(196 216 224 / 0.07);
+  --grain-opacity: 0.05;
+  --scrim: rgb(5 8 10 / 0.72);
 }
 
 :root[data-theme="light"] {
@@ -49,6 +59,39 @@
   --late-wash: rgb(181 56 11 / 0.1);
   --sea-wash: rgb(29 106 158 / 0.1);
   --contour: rgb(29 106 158 / 0.09);
+
+  --raised: #fbfaf6;
+  --overlay: #fdfcf9;
+  --highlight: rgb(255 255 255 / 0.7);
+  --shadow-1: 0 1px 0 rgb(14 20 24 / 0.04), 0 6px 16px -10px rgb(14 20 24 / 0.25);
+  --shadow-2: 0 24px 60px -24px rgb(14 20 24 / 0.35), 0 0 0 1px var(--line);
+  --spot: rgb(29 106 158 / 0.07);
+  --grain-opacity: 0.06;
+  --scrim: rgb(40 44 46 / 0.35);
+}
+
+/* Motion. Short for feedback, base for state changes, slow for reveals; one expo-out curve everywhere. */
+:root {
+  --dur-fast: 140ms;
+  --dur-base: 260ms;
+  --dur-slow: 600ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Sidebar rail. --rail is its width; --rail-offset is how much room the page gives it (none below lg,
+   where it becomes a drawer). --cw is 1% of the content column, the sidebar-aware stand-in for 1vw. */
+:root {
+  --rail: 15rem;
+  --rail-offset: 0px;
+  --cw: calc((100vw - var(--rail-offset)) / 100);
+}
+:root[data-rail="collapsed"] {
+  --rail: 4.5rem;
+}
+@media (min-width: 64rem) {
+  :root[data-rail] {
+    --rail-offset: var(--rail);
+  }
 }
 
 @theme inline {
@@ -66,6 +109,13 @@
   --color-sea: var(--sea);
   --color-late-wash: var(--late-wash);
   --color-sea-wash: var(--sea-wash);
+  --color-raised: var(--raised);
+  --color-overlay: var(--overlay);
+  --color-scrim: var(--scrim);
+  /* Semantic tones (Sanity UI's naming), aliased onto the product's own colours. */
+  --color-critical: var(--late);
+  --color-caution: var(--risk);
+  --color-positive: var(--ok);
 
   --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
   --font-sans: "IBM Plex Sans", system-ui, sans-serif;
@@ -82,11 +132,26 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
-    -webkit-text-size-adjust: 100%;
+  }
+  @media (min-width: 64rem) {
+    html {
+      scroll-padding-top: 1rem;
+      -webkit-text-size-adjust: 100%;
+    }
   }
   body {
     @apply bg-bg text-fg font-sans text-base antialiased;
     transition: background-color 0.4s, color 0.4s;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p,
+  li,
+  blockquote {
+    text-wrap: pretty;
   }
   ::selection {
     background: var(--late);
@@ -103,6 +168,11 @@
   button:disabled {
     cursor: not-allowed;
   }
+  /* Headings that receive focus after a jump (sign-in, opening a shipment). Focus moves there so keyboard and
+     screen-reader users continue from the right place; the ring would only frame a whole heading. */
+  [data-focus-target]:focus {
+    outline: none;
+  }
 }
 
 @layer components {
@@ -114,7 +184,7 @@
     @apply font-mono text-[0.8rem] uppercase tracking-[0.18em] text-fg-3;
   }
   .h-section {
-    @apply font-display font-extrabold uppercase leading-[0.9] tracking-[-0.01em] text-[clamp(2.75rem,6vw,5.5rem)];
+    @apply font-display font-extrabold uppercase leading-[0.9] tracking-[-0.01em] text-[clamp(2.75rem,calc(6*var(--cw)),5.5rem)];
   }
   .num {
     @apply font-display font-bold tabular-nums leading-none;
@@ -140,6 +210,51 @@
   .chip[aria-checked="true"] .chip-count {
     color: color-mix(in oklab, var(--bg) 72%, var(--fg));
   }
+  /* Touch screens get 44px chips; mouse users keep the compact size. */
+  @media (pointer: coarse) {
+    .chip {
+      min-height: 44px;
+    }
+  }
+  /* Raised surface: popovers, palette, drawer. Lighter fill + inner top highlight + soft shadow. */
+  .surface-overlay {
+    background: var(--overlay);
+    box-shadow: inset 0 1px 0 var(--highlight), var(--shadow-2);
+  }
+  .kbd {
+    @apply inline-flex h-5 min-w-5 items-center justify-center rounded-[3px] border border-line-2 px-1 font-mono text-[0.75rem] leading-none text-fg-3;
+    box-shadow: inset 0 -1px 0 var(--line-2);
+  }
+  /* Keyboard-shortcut hints mean nothing on a touch screen. */
+  @media (pointer: coarse) {
+    .kbd-hint {
+      display: none;
+    }
+  }
+  /* Pointer spotlight on interactive rows and cards. The position is written to --mx/--my by one delegated
+     listener (no React re-renders); touch and keyboard users get the normal hover/focus states instead. */
+  @media (hover: hover) and (pointer: fine) {
+    [data-spotlight] {
+      background-image: radial-gradient(260px circle at var(--mx, -999px) var(--my, -999px), var(--spot), transparent 70%);
+    }
+  }
+  /* Loading placeholder: a slow sheen instead of a blink; static under reduced motion. */
+  .shimmer {
+    background: linear-gradient(100deg, var(--bg-3) 40%, color-mix(in oklab, var(--bg-3), var(--fg) 6%) 50%, var(--bg-3) 60%) var(--bg-3);
+    background-size: 220% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+  /* Film grain over the two cinematic surfaces (sign-in and hero) for depth; decoration only. */
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
   .hatch {
     background-image: repeating-linear-gradient(
       135deg,
@@ -156,6 +271,11 @@ input[type="range"].scrub {
   background: transparent;
   width: 100%;
   height: 28px;
+}
+@media (pointer: coarse) {
+  input[type="range"].scrub {
+    height: 44px;
+  }
 }
 input[type="range"].scrub::-webkit-slider-runnable-track {
   height: 2px;
@@ -184,6 +304,14 @@ input[type="range"].scrub::-moz-range-thumb {
   box-shadow: 0 0 0 1px var(--fg);
 }
 
+@keyframes shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
 @keyframes dash-flow {
   to {
     stroke-dashoffset: -24;

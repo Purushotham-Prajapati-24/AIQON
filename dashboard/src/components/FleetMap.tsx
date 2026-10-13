@@ -96,7 +96,7 @@ function Marker({ tier, r }: { tier: FleetRow["risk_tier"]; r: number }) {
   return <circle r={r} fill={fill} stroke="var(--bg)" strokeWidth={1.5} />;
 }
 
-export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selected: string; onSelect: (sid: string) => void }) {
+export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selected: string; onSelect: (sid: string, el: Element) => void }) {
   const [ref, { width }] = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<FleetRow | null>(null);
   const [land, setLand] = useState<Land | null>(null);
@@ -175,7 +175,7 @@ export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selec
   const hd = hover ? dots.find((d) => d.r.shipment_id === hover.shipment_id) : null;
 
   return (
-    <div ref={ref} className="relative w-full">
+    <div ref={ref} className="relative aspect-[2/1] w-full">
       <svg
         width={W}
         height={H}
@@ -229,7 +229,7 @@ export function FleetMap({ rows, selected, onSelect }: { rows: FleetRow[]; selec
               className="cursor-pointer"
               onPointerEnter={() => setHover(r)}
               onPointerLeave={() => setHover(null)}
-              onClick={() => onSelect(r.shipment_id)}
+              onClick={(e) => onSelect(r.shipment_id, e.currentTarget)}
             >
               <circle r={11} fill="transparent" />
               {sel && <circle r={10} fill="none" stroke="var(--fg)" strokeWidth={1.4} />}

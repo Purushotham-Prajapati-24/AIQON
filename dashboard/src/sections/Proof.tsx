@@ -43,7 +43,7 @@ function Body({ ins }: { ins: Insights }) {
         title="Smaller error"
         lead={
           <>
-            <span className="num text-[clamp(4rem,8vw,7.5rem)] text-sea">
+            <span className="num text-[clamp(4rem,calc(8*var(--cw)),7.5rem)] text-sea">
               −<Ticker value={h.mae_improvement_vs_B1 * 100} format={(x) => `${Math.round(x)}%`} />
             </span>
             <p className="mt-3 max-w-xs text-fg-2">average error versus assuming the delay stays as it is today</p>
@@ -78,7 +78,7 @@ function Body({ ins }: { ins: Insights }) {
         <div className="py-14 lg:pr-12">
           <Head n="C" title="Ranges you can trust" />
           <div className="mt-6 flex items-end gap-4">
-            <span className="num text-[clamp(3.5rem,6vw,5.5rem)]">
+            <span className="num text-[clamp(3.5rem,calc(6*var(--cw)),5.5rem)]">
               <Ticker value={ins.accuracy.coverage_p10_p90.overall * 100} format={(x) => `${Math.round(x)}%`} />
             </span>
             <span className="mb-2 max-w-[14rem] text-fg-2">of actual delays landed inside the likely range (aim: 80%)</span>
@@ -100,7 +100,7 @@ function Body({ ins }: { ins: Insights }) {
         <div className="border-line py-14 lg:border-l lg:pl-12">
           <Head n="D" title="Blames the right stage" />
           <div className="mt-6 flex items-end gap-4">
-            <span className="num text-[clamp(3.5rem,6vw,5.5rem)]">
+            <span className="num text-[clamp(3.5rem,calc(6*var(--cw)),5.5rem)]">
               <Ticker value={ins.attribution.accuracy.shap_top2 * 100} format={(x) => `${Math.round(x)}%`} />
             </span>
             <span className="mb-2 max-w-[14rem] text-fg-2">true cause is in its top two, checked against the simulator’s record</span>
@@ -217,7 +217,7 @@ function Bars({
         ))}
       </ul>
       {(caption || target !== undefined) && (
-        <figcaption className="mt-4 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+        <figcaption className="mt-4 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
           {caption ?? `Dashed line: ${target}% aim`}
         </figcaption>
       )}
@@ -259,7 +259,7 @@ function Convergence({ ins }: { ins: Insights }) {
 
   return (
     <div ref={ref} className="relative">
-      <ul className="mb-4 flex gap-6 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+      <ul className="mb-4 flex gap-6 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
         {series.map((s) => (
           <li key={s.key} className="flex items-center gap-2">
             <span className="w-6 border-t-2" style={{ borderColor: s.color, borderStyle: s.dash ? "dashed" : "solid" }} />
@@ -284,13 +284,13 @@ function Convergence({ ins }: { ins: Insights }) {
           {ticks.map((t) => (
             <g key={t}>
               <line x1={M.l} x2={W - M.r} y1={y(t)} y2={y(t)} stroke="var(--line)" />
-              <text x={M.l - 10} y={y(t) + 4} textAnchor="end" className="fill-fg-3 font-mono text-[11px]">
+              <text x={M.l - 10} y={y(t) + 4} textAnchor="end" className="fill-fg-3 font-mono text-[12px]">
                 {t}h
               </text>
             </g>
           ))}
           {CP.map((c, i) => (
-            <text key={c} x={x(i)} y={H - M.b + 26} textAnchor="middle" className={`font-mono text-[10.5px] uppercase ${hover === i ? "fill-fg" : "fill-fg-3"}`}>
+            <text key={c} x={x(i)} y={H - M.b + 26} textAnchor="middle" className={`font-mono text-[12px] uppercase ${hover === i ? "fill-fg" : "fill-fg-3"}`}>
               {labels[i]}
             </text>
           ))}
@@ -309,7 +309,7 @@ function Convergence({ ins }: { ins: Insights }) {
                 transition={{ duration: 1.6, ease: EASE }}
               />
               {width >= 640 && (
-                <text x={x(CP.length - 1) + 12} y={y(s.pts[s.pts.length - 1]) + 4} className="font-mono text-[11px]" style={{ fill: s.color }}>
+                <text x={x(CP.length - 1) + 12} y={y(s.pts[s.pts.length - 1]) + 4} className="font-mono text-[12px]" style={{ fill: s.color }}>
                   {s.label}
                 </text>
               )}
@@ -357,7 +357,7 @@ function Multipliers({ ins }: { ins: Insights }) {
   const pos = (v: number) => `${(Math.min(Math.max(v, 0), max) / max) * 100}%`;
   return (
     <figure>
-      <ul className="mb-6 flex flex-wrap gap-6 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+      <ul className="mb-6 flex flex-wrap gap-6 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
         <li className="flex items-center gap-2">
           <span className="size-3 rounded-full bg-sea" /> CASCADE estimate
         </li>
@@ -398,7 +398,7 @@ function Multipliers({ ins }: { ins: Insights }) {
           );
         })}
       </ul>
-      <div className="mt-3 grid grid-cols-[9.5rem_minmax(0,1fr)_4rem] gap-4 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-fg-3 sm:grid-cols-[11rem_minmax(0,1fr)_5rem]">
+      <div className="mt-3 grid grid-cols-[9.5rem_minmax(0,1fr)_4rem] gap-4 font-mono text-[0.75rem] uppercase tracking-[0.12em] text-fg-3 sm:grid-cols-[11rem_minmax(0,1fr)_5rem]">
         <span />
         <span className="relative h-4">
           <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: pos(1) }}>
