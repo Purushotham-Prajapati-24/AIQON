@@ -22,6 +22,8 @@ export function Login() {
 
   const accounts = useAsync(() => session.demoUsers(), []);
   const users = accounts.data?.users ?? [];
+  /** The server turned one-click demo sign-in off (CASCADE_DEMO_LOGIN=0, or required mode). */
+  const noDemo = !!accounts.data && users.length === 0;
   const offline = accounts.data?.offline ?? mode === "snapshot";
 
   // Live figures for each account, only when the API lets anonymous reads through.
@@ -115,9 +117,13 @@ export function Login() {
               </span>
             ))}
           </h1>
-          <p className="mt-5 max-w-lg text-[1.1rem] text-fg-2">Pick a demo account to go straight in. Each one opens where that person starts their day.</p>
+          <p className="mt-5 max-w-lg text-[1.1rem] text-fg-2">
+            {noDemo
+              ? "Use the account your administrator gave you. Each account opens where that person starts their day."
+              : "Pick a demo account to go straight in. Each one opens where that person starts their day."}
+          </p>
 
-          <ol className="mt-9 border-t border-line" aria-label="Demo accounts">
+          <ol className={`mt-9 border-t border-line ${noDemo ? "hidden" : ""}`} aria-label="Demo accounts">
             {accounts.loading && !users.length && [0, 1, 2, 3].map((k) => <li key={k} className="h-[5.25rem] animate-pulse border-b border-line bg-bg-2/40" />)}
             {accounts.error && <li className="py-6 text-late">Can't load demo accounts: {accounts.error.message}</li>}
             {users.map((u, k) => {
@@ -182,7 +188,7 @@ export function Login() {
               );
             })}
           </ol>
-          <p className="mt-5 hidden font-mono text-[0.7rem] uppercase tracking-[0.16em] text-fg-3 sm:block">Press 1–4 to sign in as that account</p>
+          {!noDemo && <p className="mt-5 hidden font-mono text-[0.7rem] uppercase tracking-[0.16em] text-fg-3 sm:block">Press 1–4 to sign in as that account</p>}
         </section>
 
         {/* Credentials */}

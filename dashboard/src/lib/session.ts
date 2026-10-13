@@ -117,12 +117,14 @@ export const session = {
     );
   },
 
+  /** Ends the session. Throws if the API could not clear the cookie, so the caller keeps the
+   *  user signed in (a reload would restore the session) and can offer a retry. */
   async signOut(): Promise<void> {
     try {
       sessionStorage.removeItem(OFFLINE_KEY);
     } catch {
       /* storage blocked */
     }
-    if ((await detectMode()) === "live") await call<void>("/v1/auth/logout", { method: "POST" }).catch(() => undefined);
+    if ((await detectMode()) === "live") await call<void>("/v1/auth/logout", { method: "POST" });
   },
 };

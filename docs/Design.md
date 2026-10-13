@@ -512,7 +512,7 @@ A second UI, built in React, sits next to the Streamlit control tower. It talks 
 | Lena Fischer · Network analyst | Lena | 05 Proof | planner | error reduction vs carry-forward |
 | Aiqon Reviewer | Aiqon reviewer | Hero | customer | the hero shipment's delay in days |
 
-A reload keeps the session (the dashboard asks `/v1/auth/me`); the top-bar button signs out. Any 401 (expired session, or the API switched to `CASCADE_AUTH=required`) returns to sign-in with "Your session ended". A deep link such as `/#alerts` opens that section after sign-in. When the API is unreachable (static preview of the recorded run) sign-in is simulated in the browser and the screen says so. Accounts live in `src/cascade/serving/auth.py`; the role mapping in `dashboard/src/lib/roles.ts`.
+A reload keeps the session (the dashboard asks `/v1/auth/me`); the top-bar button signs out. Any 401 (expired session, or the API switched to `CASCADE_AUTH=required`) returns to sign-in with "Your session ended". If the API can't end the session, the sign-out button turns red and offers a retry instead of pretending. When the server has demo sign-in off, the screen shows only the username and password form. A deep link such as `/#alerts` opens that section after sign-in. When the API is unreachable (static preview of the recorded run) sign-in is simulated in the browser and the screen says so. Accounts live in `src/cascade/serving/auth.py`; the role mapping in `dashboard/src/lib/roles.ts`.
 
 **Page order** (same story as the demo script: problem → fleet → one shipment → act → prove):
 

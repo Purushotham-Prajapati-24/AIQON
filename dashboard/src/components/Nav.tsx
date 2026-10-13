@@ -26,6 +26,7 @@ export function Nav() {
   const { scrollY, scrollYProgress } = useScroll();
   const [solid, setSolid] = useState(false);
   const [active, setActive] = useState<string | null>(null);
+  const [signOutFailed, setSignOutFailed] = useState(false);
   useMotionValueEvent(scrollY, "change", (v) => setSolid(v > 40));
 
   // Scroll-spy: the section whose top passed 40% of the viewport.
@@ -75,17 +76,18 @@ export function Nav() {
         <div className="ml-auto flex items-center gap-2 md:ml-4">
           {user && (
             <button
-              onClick={() => {
-                scrollTo({ top: 0 });
-                signOut();
+              onClick={async () => {
+                const ok = await signOut();
+                setSignOutFailed(!ok);
+                if (ok) scrollTo({ top: 0 });
               }}
-              className="group flex items-center gap-2.5 rounded-[4px] border border-line py-1 pl-1 pr-2.5 text-fg-2 transition-colors hover:border-fg-2 hover:text-fg"
-              title={`Signed in as ${user.name} (${user.title}). Session ends ${new Date((auth.session?.expiresAt ?? 0) * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`}
+              className={`group flex items-center gap-2.5 rounded-[4px] border py-1 pl-1 pr-2.5 transition-colors hover:text-fg ${signOutFailed ? "border-late text-late" : "border-line text-fg-2 hover:border-fg-2"}`}
+              title={signOutFailed ? "Couldn't reach the server to end your session. Click to try again." : `Signed in as ${user.name} (${user.title}). Session ends ${new Date((auth.session?.expiresAt ?? 0) * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`}
             >
               <span className="grid size-7 place-items-center rounded-full bg-bg-3 font-mono text-[0.7rem] text-fg" aria-hidden>
                 {user.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
               </span>
-              <span className="hidden font-mono text-[0.7rem] uppercase tracking-[0.14em] lg:inline">{user.name.split(" ")[0]}</span>
+              <span className="hidden font-mono text-[0.7rem] uppercase tracking-[0.14em] lg:inline">{signOutFailed ? "Retry sign-out" : user.name.split(" ")[0]}</span>
               <LogOut size={14} aria-hidden />
               <span className="sr-only">Sign out {user.name}</span>
             </button>

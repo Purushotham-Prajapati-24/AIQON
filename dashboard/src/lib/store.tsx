@@ -20,7 +20,8 @@ interface Store {
   /** The signed-in user's role: where the page opens and how explanations are worded. */
   role: Role | null;
   signedIn: (s: Session) => void;
-  signOut: (notice?: string) => Promise<void>;
+  /** False when the API could not end the session; the user stays signed in. */
+  signOut: (notice?: string) => Promise<boolean>;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -73,8 +74,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
   const signedIn = useCallback((s: Session) => setAuth({ status: "in", session: s, notice: null }), []);
   const signOut = useCallback(async (notice?: string) => {
-    await auth.signOut();
+    try {
+      await auth.signOut();
+    } catch {
+      return false;
+    }
     setAuth({ status: "out", session: null, notice: notice ?? null });
+    return true;
   }, []);
   const role = useMemo(() => roleById(authState.session?.user.role ?? null), [authState.session]);
   const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);

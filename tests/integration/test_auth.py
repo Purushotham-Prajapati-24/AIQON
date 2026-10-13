@@ -54,6 +54,7 @@ def test_password_login_sets_httponly_cookie(client):
     r = client.post("/v1/auth/login", json={"username": "Priya", "password": auth.DEMO_PASSWORD})
     assert r.status_code == 200, r.text
     assert r.json()["user"]["role"] == "planner"
+    assert "token" not in r.json()  # browsers get the cookie only; JavaScript never sees the JWT
     cookie = r.headers["set-cookie"].lower()
     assert "httponly" in cookie and "samesite=lax" in cookie
     me = client.get("/v1/auth/me").json()
@@ -65,7 +66,9 @@ def test_password_login_sets_httponly_cookie(client):
 
 
 def test_bearer_token_and_tampering(client):
-    token = client.post("/v1/auth/demo-login", json={"user_id": "lena"}).json()["token"]
+    token = client.post("/v1/auth/demo-login", json={"user_id": "lena", "bearer": True}).json()[
+        "token"
+    ]
     client.cookies.clear()
     ok = client.get("/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert ok.json()["user"]["id"] == "lena"
@@ -99,7 +102,8 @@ def test_optional_mode_keeps_api_open(client):
 
 
 def test_required_mode_gates_data_routes(bundle_dir):
-    with make_client(bundle_dir, CASCADE_AUTH="required") as c:
+    # An open demo that still exercises sessions: demo sign-in must be switched on explicitly.
+    with make_client(bundle_dir, CASCADE_AUTH="required", CASCADE_DEMO_LOGIN="1") as c:
         assert c.get("/health").status_code == 200
         assert c.get("/v1/auth/config").json()["mode"] == "required"
         r = c.get("/v1/world")
@@ -107,6 +111,24 @@ def test_required_mode_gates_data_routes(bundle_dir):
         c.post("/v1/auth/demo-login", json={"user_id": "reviewer"})
         assert c.get("/v1/world").status_code == 200
         assert c.get("/v1/fleet").status_code == 200
+
+
+def test_required_mode_needs_a_real_password(bundle_dir, monkeypatch):
+    monkeypatch.setenv("CASCADE_AUTH", "required")
+    monkeypatch.delenv("CASCADE_DEMO_LOGIN", raising=False)
+    monkeypatch.delenv("CASCADE_PASSWORD", raising=False)
+    with pytest.raises(ValueError, match="CASCADE_PASSWORD"):
+        auth.Settings()  # the demo password is public, so it can't guard required mode
+    password = "correct-horse-battery"
+    with make_client(bundle_dir, CASCADE_AUTH="required", CASCADE_PASSWORD=password) as c:
+        assert c.get("/v1/auth/config").json()["demo_login"] is False
+        assert c.get("/v1/auth/demo-users").json() == {"users": [], "password_hint": None}
+        assert c.post("/v1/auth/demo-login", json={"user_id": "priya"}).status_code == 403
+        demo = {"username": "priya", "password": auth.DEMO_PASSWORD}
+        assert c.post("/v1/auth/login", json=demo).status_code == 401
+        ok = c.post("/v1/auth/login", json={"username": "priya", "password": password})
+        assert ok.status_code == 200
+        assert c.get("/v1/world").status_code == 200
 
 
 def test_demo_login_can_be_turned_off(bundle_dir):
@@ -134,3 +156,16 @@ def test_bad_settings_fail_fast(monkeypatch):
     monkeypatch.setenv("CASCADE_JWT_SECRET", "short")
     with pytest.raises(ValueError):
         auth.Settings()
+    monkeypatch.setenv("CASCADE_JWT_SECRET", SECRET)
+    monkeypatch.setenv("CASCADE_PASSWORD", "too-short")
+    with pytest.raises(ValueError):
+        auth.Settings()
+
+
+def test_throttle_forgets_expired_clients():
+    t = auth.Throttle(limit=2, window_s=0.05)
+    t.fail("a")
+    t.fail("a")
+    assert t.blocked("a")
+    time.sleep(0.06)
+    assert not t.blocked("a") and "a" not in t._fails

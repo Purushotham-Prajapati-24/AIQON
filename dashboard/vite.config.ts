@@ -6,7 +6,8 @@ import tailwindcss from "@tailwindcss/vite";
 // session cookie, no CORS). Point CASCADE_API_TARGET elsewhere if the API runs on another port.
 const target = process.env.CASCADE_API_TARGET ?? "http://127.0.0.1:8000";
 const proxy = {
-  "/api": { target, changeOrigin: true, rewrite: (p: string) => p.replace(/^\/api/, "") },
+  // xfwd: the API sees the browser's address (X-Forwarded-For), so the sign-in throttle is per client.
+  "/api": { target, changeOrigin: true, xfwd: true, rewrite: (p: string) => p.replace(/^\/api/, "") },
 };
 
 export default defineConfig({

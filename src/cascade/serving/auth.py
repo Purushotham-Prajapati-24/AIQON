@@ -10,7 +10,11 @@ Configuration (environment):
 - ``CASCADE_JWT_SECRET``: signing key. Without it a random key is made per process, so sessions
   end when the API restarts. Set it in any shared deployment.
 - ``CASCADE_SESSION_HOURS``: session lifetime (default 8).
-- ``CASCADE_DEMO_LOGIN``: ``1`` (default) allows one-click demo sign-in; ``0`` turns it off.
+- ``CASCADE_DEMO_LOGIN``: ``1`` allows one-click demo sign-in, ``0`` turns it off. Default: on in
+  ``optional`` mode, off in ``required`` mode.
+- ``CASCADE_PASSWORD``: the accounts' password (12+ characters). Without it the public demo
+  password applies, so ``required`` mode refuses to start without it unless demo sign-in is
+  switched on explicitly (an open demo that still exercises sessions).
 - ``CASCADE_COOKIE_SECURE``: ``1`` marks the cookie Secure (set it behind HTTPS).
 """
 
@@ -61,11 +65,6 @@ def _hash(password: str) -> bytes:
     return hashlib.pbkdf2_hmac("sha256", password.encode(), _SALT, 120_000)
 
 
-# Demo accounts share one password; only its hash is kept in memory.
-_DEMO_HASH = _hash(DEMO_PASSWORD)
-_PASSWORD_HASH = dict.fromkeys(USERS, _DEMO_HASH)
-
-
 class AuthError(Exception):
     """Raised for a missing, invalid or expired session."""
 
@@ -85,14 +84,26 @@ class Settings:
             raise ValueError("CASCADE_JWT_SECRET must be at least 32 characters")
         self.secret = secret
         self.ttl_s = int(float(os.environ.get("CASCADE_SESSION_HOURS", "8")) * 3600)
-        self.demo_login = os.environ.get("CASCADE_DEMO_LOGIN", "1") != "0"
+        demo = os.environ.get("CASCADE_DEMO_LOGIN") or ("0" if self.mode == "required" else "1")
+        self.demo_login = demo != "0"
         self.cookie_secure = os.environ.get("CASCADE_COOKIE_SECURE", "0") == "1"
+        password = os.environ.get("CASCADE_PASSWORD", "")
+        if password and len(password) < 12:
+            raise ValueError("CASCADE_PASSWORD must be at least 12 characters")
+        if not password and self.mode == "required" and not self.demo_login:
+            raise ValueError(
+                "CASCADE_AUTH=required needs CASCADE_PASSWORD (the demo password is public); "
+                "set CASCADE_DEMO_LOGIN=1 instead for an open demo"
+            )
+        self.demo_password = not password
+        # The accounts share one password; only its hash is kept in memory.
+        self.password_hash = _hash(password or DEMO_PASSWORD)
 
 
-def authenticate(username: str, password: str) -> User | None:
+def authenticate(username: str, password: str, settings: Settings) -> User | None:
     """Check a username and password in constant time; None on any mismatch."""
     uid = username.strip().lower()
-    expected = _PASSWORD_HASH.get(uid, _hash(secrets.token_hex(8)))
+    expected = settings.password_hash if uid in USERS else _hash(secrets.token_hex(8))
     ok = hmac.compare_digest(expected, _hash(password))
     return USERS[uid] if ok and uid in USERS else None
 
@@ -147,7 +158,10 @@ class Throttle:
     def blocked(self, key: str) -> bool:
         now = time.monotonic()
         recent = [t for t in self._fails.get(key, []) if now - t < self.window_s]
-        self._fails[key] = recent
+        if recent:
+            self._fails[key] = recent
+        else:
+            self._fails.pop(key, None)
         return len(recent) >= self.limit
 
     def fail(self, key: str) -> None:

@@ -280,7 +280,9 @@ def _settings() -> auth.Settings:
     return S.auth
 
 
-def _start_session(response: Response, user: auth.User) -> dict:
+def _start_session(response: Response, user: auth.User, bearer: bool) -> dict:
+    """Set the session cookie. The token goes in the body only when an API client asks for it,
+    so browser JavaScript never sees it."""
     settings = _settings()
     token, exp = auth.issue(user, settings)
     response.set_cookie(
@@ -292,7 +294,8 @@ def _start_session(response: Response, user: auth.User) -> dict:
         secure=settings.cookie_secure,
         path="/",
     )
-    return {"user": auth.public(user), "expires_at": exp, "token": token, "mode": settings.mode}
+    out = {"user": auth.public(user), "expires_at": exp, "mode": settings.mode}
+    return {**out, "token": token} if bearer else out
 
 
 @app.get("/v1/auth/config", tags=["auth"])
@@ -304,25 +307,28 @@ def auth_config():
 @app.get("/v1/auth/demo-users", tags=["auth"])
 def demo_users():
     """Demo accounts for one-click sign-in (empty when CASCADE_DEMO_LOGIN=0)."""
-    if not _settings().demo_login:
+    st = _settings()
+    if not st.demo_login:
         return {"users": [], "password_hint": None}
     return {
         "users": [auth.public(u) for u in auth.USERS.values()],
-        "password_hint": auth.DEMO_PASSWORD,
+        "password_hint": auth.DEMO_PASSWORD if st.demo_password else None,
     }
 
 
 @app.post("/v1/auth/login", tags=["auth"])
 def login(req: LoginRequest, request: Request, response: Response):
+    # The client address; behind a proxy, uvicorn takes it from X-Forwarded-For when the proxy is
+    # trusted (FORWARDED_ALLOW_IPS, default 127.0.0.1, which covers the Vite dev proxy).
     key = request.client.host if request.client else "unknown"
     if S.throttle.blocked(key):
         raise HTTPException(429, "too many failed sign-ins; wait a minute and try again")
-    user = auth.authenticate(req.username, req.password)
+    user = auth.authenticate(req.username, req.password, _settings())
     if user is None:
         S.throttle.fail(key)
         raise HTTPException(401, "wrong username or password")
     S.throttle.clear(key)
-    return _start_session(response, user)
+    return _start_session(response, user, req.bearer)
 
 
 @app.post("/v1/auth/demo-login", tags=["auth"])
@@ -332,7 +338,7 @@ def demo_login(req: DemoLoginRequest, response: Response):
     user = auth.USERS.get(req.user_id)
     if user is None:
         raise HTTPException(404, f"unknown demo user {req.user_id}")
-    return _start_session(response, user)
+    return _start_session(response, user, req.bearer)
 
 
 @app.get("/v1/auth/me", tags=["auth"])
