@@ -2,7 +2,8 @@ import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } fro
 import { useEffect, useMemo } from "react";
 
 /** Depth contours from a nautical chart: the hero's texture. Drifts gently with the pointer. */
-export function Contours() {
+/** `className` positions the layer; pin it to a fixed height where the parent's height settles late (e.g. as fonts load). */
+export function Contours({ className = "inset-0" }: { className?: string }) {
   const reduce = useReducedMotion();
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -26,7 +27,7 @@ export function Contours() {
   const [near, far] = useMemo(() => [lines(14, 1.7, 0), lines(10, 2.6, 2)], []);
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div aria-hidden className={`pointer-events-none absolute overflow-hidden ${className}`}>
       <motion.svg style={{ x: x2, y: y2 }} className="absolute -inset-[6%] h-[112%] w-[112%]" viewBox="0 0 1600 1000" preserveAspectRatio="none">
         {far.map((d, i) => (
           <path key={i} d={d} fill="none" stroke="var(--contour)" strokeWidth={1} />

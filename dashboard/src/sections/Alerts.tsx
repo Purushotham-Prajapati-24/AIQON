@@ -104,7 +104,7 @@ export function Alerts() {
       ) : !ready ? (
         <Skeleton className="mt-6 h-96 w-full" label="Loading alerts" />
       ) : !view.length ? (
-        <p className="py-16 text-center text-fg-2">All quiet.</p>
+        <p className="py-16 text-center text-fg-2">All quiet{sev === "all" ? "" : ` at this level. ${alerts.length} alert${alerts.length === 1 ? "" : "s"} in total`}.</p>
       ) : (
         <ol className="mt-6 grid gap-x-10 md:grid-cols-2">
           <AnimatePresence initial={false}>
@@ -122,7 +122,8 @@ export function Alerts() {
                   transition={{ duration: 0.5, ease: EASE, delay: (k % 6) * 0.04 }}
                 >
                   <button
-                    onClick={() => select(a.shipment_id, true)}
+                    data-spotlight
+                    onClick={(ev) => select(a.shipment_id, true, { label: "Alerts", section: "alerts", el: ev.currentTarget })}
                     className="group grid w-full grid-cols-[2.25rem_minmax(0,1fr)_auto] items-start gap-4 border-b border-line py-5 text-left transition-colors hover:bg-bg-2"
                   >
                     <span className="mt-0.5 grid size-9 place-items-center rounded-full" style={{ color: SEV[a.severity].color, background: `color-mix(in oklab, ${SEV[a.severity].color} 14%, transparent)` }}>
@@ -141,10 +142,14 @@ export function Alerts() {
                         </span>
                       )}
                     </span>
-                    <span className="flex items-center gap-2 font-mono text-[0.78rem] text-fg-3">
-                      <span className="sr-only">{SEV[a.severity].label},</span>
+                    <span className="flex flex-col items-end gap-1.5 font-mono text-[0.78rem] text-fg-3">
+                      <span className="uppercase tracking-[0.14em]" style={{ color: a.severity === "info" ? undefined : `var(--${a.severity === "critical" ? "late" : "risk"}-ink)` }}>
+                        {SEV[a.severity].label}
+                      </span>
+                      <span className="flex items-center gap-2">
                       {ago(a.age_h)}
-                      <ArrowUpRight size={15} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-late" />
+                      <ArrowUpRight size={15} aria-hidden className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-late" />
+                      </span>
                     </span>
                   </button>
                 </motion.li>
@@ -155,12 +160,12 @@ export function Alerts() {
       )}
       {view.length > 12 && (
         <button
-          onClick={() => setAll((x) => !x)}
+          onClick={() => setAll((v) => !v)}
           aria-expanded={all}
-          className="mx-auto mt-8 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-fg-2 hover:text-fg"
+          className="mx-auto mt-5 flex items-center gap-2 px-4 py-3.5 font-mono text-xs uppercase tracking-[0.18em] text-fg-2 hover:text-fg"
         >
           {all ? "Show the latest 12" : `Show all ${view.length}`}
-          <ChevronDown size={14} className={`transition-transform ${all ? "rotate-180" : ""}`} aria-hidden />
+          <ChevronDown size={14} aria-hidden className={`transition-transform ${all ? "rotate-180" : ""}`} />
         </button>
       )}
     </section>

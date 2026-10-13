@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Check, Copy, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Copy, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CascadeChart } from "../components/CascadeChart";
 import { Gauge } from "../components/Gauge";
@@ -12,7 +12,7 @@ import { useStore } from "../lib/store";
 import type { Moment, Recommendation } from "../lib/types";
 
 export function Shipment() {
-  const { world, selected, select } = useStore();
+  const { world, selected, select, origin, goBack } = useStore();
   const list = useAsync(() => (world ? api.fleet(0, world.now) : null), [world?.now]);
   const data = useAsync(async () => {
     if (!world) return null;
@@ -68,6 +68,15 @@ export function Shipment() {
         }
       />
 
+      {origin && (
+        <button
+          onClick={goBack}
+          className="-mt-4 mb-6 inline-flex items-center gap-2 rounded-[4px] border border-line-2 px-3.5 py-2.5 font-mono text-[0.78rem] uppercase tracking-[0.14em] text-fg-2 transition-colors hover:border-fg hover:text-fg"
+        >
+          <ArrowLeft size={14} aria-hidden />
+          Back to {origin.label}
+        </button>
+      )}
       {data.error && <ErrorNote error={data.error} onRetry={data.retry} className="mb-6" />}
       {!d || !m ? (
         data.error ? null : <Skeleton className="h-[640px] w-full" label="Loading shipment" />
@@ -139,7 +148,7 @@ function Detail({
         <span className="ml-auto flex flex-wrap items-center gap-3">
           <TierBadge tier={v.risk_tier} />
           {v.flags.missing_events.length > 0 && (
-            <span className="font-mono text-[0.72rem] uppercase tracking-[0.14em] text-fg-3">
+            <span className="font-mono text-[0.75rem] uppercase tracking-[0.14em] text-fg-3">
               {v.flags.missing_events.length} milestone{v.flags.missing_events.length > 1 ? "s" : ""} not reported
             </span>
           )}
@@ -155,7 +164,7 @@ function Detail({
       <div className="grid grid-cols-2 border-b border-line lg:grid-cols-4">
         <Figure label={delivered ? "Final delay" : "Expected delay"}>
           <div className="flex items-baseline gap-2" style={{ color: v.delay_hours.p50 > 24 ? "var(--late)" : undefined }}>
-            <span className="num text-[clamp(3.2rem,5vw,4.75rem)]">
+            <span className="num text-[clamp(3.2rem,calc(5*var(--cw)),4.75rem)]">
               {parts.sign}
               <Ticker value={+parts.v} format={(x) => (parts.u === "days" ? x.toFixed(1) : x.toFixed(0))} duration={0.8} />
             </span>
@@ -184,7 +193,7 @@ function Detail({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.35, ease: EASE }}
-              className="num text-[clamp(3.2rem,5vw,4.75rem)] uppercase"
+              className="num text-[clamp(3.2rem,calc(5*var(--cw)),4.75rem)] uppercase"
             >
               {day(v.eta.p50)}
             </motion.div>
@@ -201,7 +210,7 @@ function Detail({
           </p>
         </Figure>
         <Figure label="Delay cost" className="border-l border-line max-lg:border-t">
-          <div className="num text-[clamp(3.2rem,5vw,4.75rem)]">
+          <div className="num text-[clamp(3.2rem,calc(5*var(--cw)),4.75rem)]">
             <Ticker value={v.cost_usd.p50 ?? 0} format={(x) => usd(x)} duration={0.8} />
           </div>
           <CostSplit v={v.cost_usd} />
@@ -308,7 +317,9 @@ function CostSplit({ v }: { v: Moment["ops"]["cost_usd"] }) {
 function Narrative({ m }: { m: Moment }) {
   const { role } = useStore();
   const [who, setWho] = useState<"ops" | "customer">(role?.audience ?? "customer");
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"ok" | "failed" | null>(null);
+  const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copyTimer.current), []);
   const v = m.ops;
   const main = v.drivers[0];
   const action = v.narrative.match(/Suggested action: ([^.]+\.)/)?.[1];
@@ -319,11 +330,12 @@ function Narrative({ m }: { m: Moment }) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
+      setCopied("ok");
     } catch {
-      /* clipboard blocked */
+      setCopied("failed");
     }
+    clearTimeout(copyTimer.current); // a second copy restarts the timer instead of being cut short
+    copyTimer.current = setTimeout(() => setCopied(null), 2400);
   };
   return (
     <div className="mt-6">
@@ -335,10 +347,14 @@ function Narrative({ m }: { m: Moment }) {
           For the planner
         </button>
         <button onClick={copy} className="chip ml-auto">
-          {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-          <span aria-live="polite">{copied ? "Copied" : "Copy text"}</span>
+          {copied === "ok" ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+          {copied === "ok" ? "Copied" : "Copy"}
+          <span className="sr-only"> explanation</span>
         </button>
       </div>
+      <p className="mt-2 min-h-5 text-right font-mono text-[0.78rem] text-fg-3" aria-live="polite">
+        {copied === "failed" ? "Couldn't reach the clipboard. Select the text below to copy it." : copied === "ok" ? <span className="sr-only">Explanation copied</span> : null}
+      </p>
       <AnimatePresence mode="wait">
         <motion.blockquote
           key={who + v.as_of}
@@ -380,7 +396,7 @@ function Actions({ recs, pLate }: { recs: Recommendation[]; pLate: number }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 {top && (
-                  <p className="mb-2 flex items-center gap-1.5 font-mono text-[0.72rem] uppercase tracking-[0.16em] text-ok">
+                  <p className="mb-2 flex items-center gap-1.5 font-mono text-[0.75rem] uppercase tracking-[0.16em] text-ok">
                     <Sparkles size={13} /> Best move
                   </p>
                 )}

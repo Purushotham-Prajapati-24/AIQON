@@ -3,7 +3,7 @@ import { ArrowDown, Pause, Play } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CascadeChart } from "../components/CascadeChart";
 import { Contours } from "../components/Contours";
-import { ChartLegend, EASE, ErrorNote, Skeleton, Ticker } from "../components/ui";
+import { ChartLegend, EASE, ErrorNote, HowTo, Skeleton, Ticker } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { api } from "../lib/api";
 import { GROUP, checkpointLabel, day, dayLong, port, signed } from "../lib/format";
@@ -17,7 +17,7 @@ export function Hero() {
   const data = useAsync(() => (world ? api.replay(HERO_SHIPMENT, world.now) : null), [world?.now]);
 
   return (
-    <section id="top" className="relative isolate min-h-[100svh] overflow-hidden pt-28 md:pt-32">
+    <section id="top" className="grain relative isolate min-h-[100svh] overflow-hidden pt-28 md:pt-32 lg:pt-20">
       <Contours />
       <div className="shell relative">
         {data.data ? (
@@ -78,7 +78,7 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
             <span className="h-px w-6 bg-line-2" aria-hidden />
             <span className="min-w-0">{[v.shipment.origin, v.shipment.hub, v.shipment.dest].filter(Boolean).map(port).join(" → ")}</span>
           </motion.p>
-          <h1 className="font-display text-[clamp(2.9rem,7.1vw,6.75rem)] md:whitespace-nowrap font-extrabold uppercase leading-[0.86] tracking-[-0.015em]">
+          <h1 className="font-display text-[clamp(2.9rem,calc(7.1*var(--cw)),6.75rem)] md:whitespace-nowrap font-extrabold uppercase leading-[0.86] tracking-[-0.015em]">
             {[
               <>
                 {Math.round(hubHours)} hours late <span className="text-fg-3">at the hub.</span>
@@ -119,6 +119,7 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
         transition={{ duration: 1.2, ease: EASE, delay: 0.55 }}
         className="mt-12 border-t border-line pt-8 md:mt-14"
       >
+        <HowTo id="top" className="mb-8" />
         <Readout m={moments[i]} />
 
         <ChartLegend />
@@ -167,7 +168,7 @@ function Story({ moments, labels }: { moments: Moment[]; labels: string[] }) {
                 onClick={() => go(k)}
                 className={`group pt-4 text-left transition-colors ${k === i ? "text-fg" : k < i ? "text-fg-2" : "text-fg-3 hover:text-fg-2"}`}
               >
-                <span className="block font-mono text-[0.72rem] uppercase tracking-[0.16em]">
+                <span className="block font-mono text-[0.75rem] uppercase tracking-[0.16em]">
                   {k === last ? "Today" : day(m.ops.as_of)}
                 </span>
                 <span className="mt-1 block font-display text-[1.35rem] font-bold uppercase leading-none md:text-[1.6rem]">
@@ -200,7 +201,7 @@ function Readout({ m }: { m: Moment }) {
       <div className="lg:col-span-3">
         <p className="eyebrow">Expected delay</p>
         <div className="mt-3 flex items-baseline gap-2 text-late">
-          <span className="num text-[clamp(3.5rem,6vw,5.5rem)]">
+          <span className="num text-[clamp(3.5rem,calc(6*var(--cw)),5.5rem)]">
             <Ticker value={v.delay_hours.p50 / 24} format={(x) => signed(x, 1)} duration={0.9} />
           </span>
           <span className="font-display text-2xl font-bold uppercase">days</span>
@@ -208,7 +209,7 @@ function Readout({ m }: { m: Moment }) {
       </div>
       <div className="lg:col-span-2">
         <p className="eyebrow">Chance late</p>
-        <div className="num mt-3 text-[clamp(3.5rem,6vw,5.5rem)]">
+        <div className="num mt-3 text-[clamp(3.5rem,calc(6*var(--cw)),5.5rem)]">
           <Ticker value={v.p_late * 100} format={(x) => `${Math.min(99, Math.round(x))}%`} duration={0.9} />
         </div>
       </div>
@@ -221,7 +222,7 @@ function Readout({ m }: { m: Moment }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.4, ease: EASE }}
-            className="num mt-3 text-[clamp(3.5rem,6vw,5.5rem)] uppercase"
+            className="num mt-3 text-[clamp(3.5rem,calc(6*var(--cw)),5.5rem)] uppercase"
           >
             {day(v.eta.p50)}
           </motion.div>
@@ -271,13 +272,21 @@ function Proof() {
           transition={{ duration: 0.9, ease: EASE, delay: k * 0.08 }}
           className={`py-8 pr-4 ${k > 0 ? "md:border-l md:border-line md:pl-6" : ""} ${k % 2 === 1 ? "border-l border-line pl-4 md:pl-6" : ""}`}
         >
-          <div className="num text-[clamp(2.6rem,4.6vw,4.2rem)]">
+          <div className="num text-[clamp(2.6rem,calc(4.6*var(--cw)),4.2rem)]">
             <Ticker value={it.v} format={it.f} />
           </div>
           <p className="mt-2 max-w-[16rem] text-[0.98rem] text-fg-2">{it.l}</p>
         </motion.div>
       ))}
-      {!m && !data.error && <Skeleton className="col-span-4 h-28" />}
+      {/* Same cells as the loaded state, so the row doesn't grow (and push the page) when the numbers arrive. */}
+      {!m &&
+        !data.error &&
+        [0, 1, 2, 3].map((k) => (
+          <div key={k} className={`py-8 pr-4 ${k > 0 ? "md:border-l md:border-line md:pl-6" : ""} ${k % 2 === 1 ? "border-l border-line pl-4 md:pl-6" : ""}`} aria-hidden>
+            <Skeleton className="h-[clamp(2.6rem,calc(4.6*var(--cw)),4.2rem)] w-24" />
+            <Skeleton className="mt-2 h-[3.1rem] w-full max-w-[16rem]" />
+          </div>
+        ))}
     </div>
   );
 }

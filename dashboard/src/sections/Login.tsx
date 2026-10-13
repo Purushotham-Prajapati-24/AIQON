@@ -77,10 +77,10 @@ export function Login() {
   return (
     <motion.main
       key="login"
-      className="relative isolate flex min-h-svh flex-col overflow-hidden"
+      className="grain relative isolate flex min-h-svh flex-col overflow-hidden"
       exit={{ opacity: 0, y: -24, transition: { duration: 0.5, ease: EASE } }}
     >
-      <Contours />
+      <Contours className="inset-x-0 top-0 h-svh" />
 
       <header className="shell relative flex h-16 items-center gap-3 md:h-[4.5rem]">
         <Logo className="size-7" />
@@ -170,7 +170,7 @@ export function Login() {
                       {fig ? (
                         <>
                           <span className="num block whitespace-nowrap text-[1.9rem] uppercase">{fig.v}</span>
-                          <span className="mt-0.5 block whitespace-nowrap font-mono text-[0.66rem] uppercase tracking-[0.12em] text-fg-3">{fig.l}</span>
+                          <span className="mt-0.5 block whitespace-nowrap font-mono text-[0.75rem] uppercase tracking-[0.12em] text-fg-3">{fig.l}</span>
                         </>
                       ) : figures.loading ? (
                         <span className="inline-block h-9 w-24 animate-pulse rounded-[4px] bg-bg-3" />
@@ -188,7 +188,7 @@ export function Login() {
               );
             })}
           </ol>
-          {!noDemo && <p className="mt-5 hidden font-mono text-[0.7rem] uppercase tracking-[0.16em] text-fg-3 sm:block">Press 1–4 to sign in as that account</p>}
+          {!noDemo && <p className="mt-5 hidden font-mono text-[0.75rem] uppercase tracking-[0.16em] text-fg-3 sm:block">Press 1–4 to sign in as that account</p>}
         </section>
 
         {/* Credentials */}
@@ -342,7 +342,7 @@ function CredentialsForm({
         </div>
       )}
 
-      <p className="mt-5 font-mono text-[0.7rem] uppercase leading-relaxed tracking-[0.14em] text-fg-3">
+      <p className="mt-5 font-mono text-[0.75rem] uppercase leading-relaxed tracking-[0.14em] text-fg-3">
         {offline ? "Offline preview · the API isn't running, so sign-in is simulated in this browser" : "Signed JWT session · httpOnly cookie · ends after 8 hours"}
       </p>
     </form>

@@ -76,7 +76,7 @@ function WhatIf() {
           <Toggle on={p.docs} set={(docs) => setP({ ...p, docs })} label="Customs papers filed early" disabled={!active || customsDone} note={customsDone ? "already cleared" : undefined} />
         </div>
         {changed && (
-          <button onClick={() => setP(BASE)} className="mt-6 font-mono text-xs uppercase tracking-[0.16em] text-fg-3 underline-offset-4 hover:text-fg hover:underline">
+          <button onClick={() => setP(BASE)} className="-mx-2 mt-3 px-2 py-3 font-mono text-xs uppercase tracking-[0.16em] text-fg-3 underline-offset-4 hover:text-fg hover:underline">
             Reset
           </button>
         )}
@@ -124,7 +124,7 @@ function WhatIf() {
             </div>
             <div className="mt-6 flex items-center gap-3">
               <TierBadge tier={r.tier} />
-              <span className="text-fg-2">
+              <span className="text-fg-2" aria-live="polite">
                 {changed
                   ? r.dd < -0.5
                     ? `Arrives ${delay(-r.dd, { sign: false })} sooner.`
@@ -143,7 +143,7 @@ function Side({ label, delayH, eta, accent }: { label: string; delayH: number; e
   return (
     <div>
       <p className="eyebrow">{label}</p>
-      <div className={`num mt-3 text-[clamp(3rem,5.5vw,5.25rem)] ${accent ? "text-fg" : "text-fg-2"}`}>
+      <div className={`num mt-3 text-[clamp(3rem,calc(5.5*var(--cw)),5.25rem)] ${accent ? "text-fg" : "text-fg-2"}`}>
         <Ticker value={delayH / 24} format={(x) => signed(x, 1)} duration={0.7} />
         <span className="ml-1 text-[0.4em] uppercase">days</span>
       </div>
@@ -170,7 +170,7 @@ function Delta({
   return (
     <div className={`py-6 ${border ? "border-l border-line pl-4 md:pl-6" : "pr-4"}`}>
       <p className="eyebrow">{label}</p>
-      <div className={`num mt-3 text-[clamp(2rem,3.4vw,3rem)] ${good ? "text-ok" : ""}`}>
+      <div className={`num mt-3 text-[clamp(2rem,calc(3.4*var(--cw)),3rem)] ${good ? "text-ok" : ""}`}>
         <Ticker value={value} format={format} duration={0.7} />
       </div>
       {note && <p className="mt-1 font-mono text-[0.78rem] text-fg-3">{note}</p>}
@@ -240,6 +240,7 @@ function Disruption() {
             return (
               <li key={p.scenario_id}>
                 <button
+                  data-spotlight
                   onClick={() => setId(p.scenario_id)}
                   aria-pressed={on}
                   className={`flex w-full items-center gap-4 rounded-[4px] border px-4 py-4 text-left transition-colors ${
@@ -256,7 +257,10 @@ function Disruption() {
             );
           })}
         </ul>
-        <div className="lg:col-span-7" aria-live="polite">
+        <div className="lg:col-span-7">
+          <p className="sr-only" aria-live="polite">
+            {x ? `${x.scenario.label}: ${x.n_affected} of ${x.n_shipments} shipments hit, ${x.delta_late_count} more late.` : ""}
+          </p>
           {!x ? (
             all.loading ? <Skeleton className="h-72 w-full" label="Running the disruption presets" /> : null
           ) : (
@@ -272,7 +276,8 @@ function Disruption() {
                     {x.affected.slice(0, 6).map((a) => (
                       <li key={a.shipment_id}>
                         <button
-                          onClick={() => select(a.shipment_id, true)}
+                          data-spotlight
+                          onClick={(ev) => select(a.shipment_id, true, { label: "If this happens", section: "fix", el: ev.currentTarget })}
                           className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-line py-4 text-left transition-colors hover:bg-bg-2 sm:grid-cols-[8rem_minmax(0,1fr)_auto_auto]"
                         >
                           <span className="font-mono">{a.shipment_id}</span>
@@ -302,7 +307,7 @@ function Disruption() {
 function Big({ v, l, tone, prefix = "", money, border }: { v: number; l: string; tone?: string; prefix?: string; money?: boolean; border?: boolean }) {
   return (
     <Reveal className={border ? "border-l border-line pl-4 md:pl-6" : ""} y={10}>
-      <div className="num text-[clamp(2.6rem,5vw,4.5rem)]" style={tone ? { color: tone } : undefined}>
+      <div className="num text-[clamp(2.6rem,calc(5*var(--cw)),4.5rem)]" style={tone ? { color: tone } : undefined}>
         <Ticker value={v} format={(x) => (money ? usd(x, true) : `${prefix}${Math.round(x)}`)} duration={0.8} />
       </div>
       <p className="mt-2 text-[0.95rem] text-fg-2">{l}</p>

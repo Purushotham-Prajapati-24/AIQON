@@ -1,8 +1,10 @@
 import { AnimatePresence, motion } from "motion/react";
-import { lazy, Suspense, useEffect, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { CommandPalette } from "./components/CommandPalette";
 import { Footer } from "./components/Footer";
 import { Logo, Nav } from "./components/Nav";
 import { ErrorNote, SectionBoundary, Skeleton } from "./components/ui";
+import { focusSection } from "./lib/focus";
 import { useStore } from "./lib/store";
 import { Login } from "./sections/Login";
 import { Hero } from "./sections/Hero";
@@ -55,43 +57,69 @@ export function App() {
           >
             Skip to fleet
           </a>
-          <OpenAt target={location.hash.slice(1) || role.opens} />
+          <OpenAt fallback={role.opens} />
           <Nav />
-          <main>
-            {worldError && (
-              <div className="shell pt-28">
-                <ErrorNote error={worldError} onRetry={retryWorld} />
-              </div>
-            )}
-            <SectionBoundary name="Overview">
-              <Hero />
-            </SectionBoundary>
-            <Lazy id="fleet" name="Fleet">
-              <Fleet />
-            </Lazy>
-            <Lazy id="shipment" name="Shipment">
-              <Shipment />
-            </Lazy>
-            <Lazy id="fix" name="Fix">
-              <Fix />
-            </Lazy>
-            <Lazy id="alerts" name="Alerts">
-              <Alerts />
-            </Lazy>
-            <Lazy id="proof" name="Proof">
-              <Proof />
-            </Lazy>
-          </main>
-          <Footer />
+          <CommandPalette />
+          <Spotlight />
+          <div className="transition-[padding] duration-300 ease-out-expo lg:pl-[var(--rail-offset)]">
+            <main>
+              {worldError && (
+                <div className="shell pt-28">
+                  <ErrorNote error={worldError} onRetry={retryWorld} />
+                </div>
+              )}
+              <SectionBoundary name="Overview">
+                <Hero />
+              </SectionBoundary>
+              <Lazy id="fleet" name="Fleet">
+                <Fleet />
+              </Lazy>
+              <Lazy id="shipment" name="Shipment">
+                <Shipment />
+              </Lazy>
+              <Lazy id="fix" name="Fix">
+                <Fix />
+              </Lazy>
+              <Lazy id="alerts" name="Alerts">
+                <Alerts />
+              </Lazy>
+              <Lazy id="proof" name="Proof">
+                <Proof />
+              </Lazy>
+            </main>
+            <Footer />
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
   );
 }
 
+/** One delegated listener feeds the pointer position to whichever `[data-spotlight]` element is under it. */
+function Spotlight() {
+  useEffect(() => {
+    if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    let el: HTMLElement | null = null;
+    const on = (e: PointerEvent) => {
+      const t = (e.target as Element | null)?.closest?.<HTMLElement>("[data-spotlight]") ?? null;
+      if (el && el !== t) el.style.removeProperty("--mx");
+      el = t;
+      if (!t) return;
+      const r = t.getBoundingClientRect();
+      t.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      t.style.setProperty("--my", `${e.clientY - r.top}px`);
+    };
+    addEventListener("pointermove", on, { passive: true });
+    return () => removeEventListener("pointermove", on);
+  }, []);
+  return null;
+}
+
 /** Opens the page on the chosen section. Sections above it load data (and lazy chunks) and grow,
  *  so re-anchor a few times while the page settles, and stop as soon as the user scrolls themselves. */
-function OpenAt({ target }: { target: string }) {
+function OpenAt({ fallback }: { fallback: string }) {
+  // Read once per sign-in: later in-page links change the hash, and must not re-run the jump.
+  const [target] = useState(() => location.hash.slice(1) || fallback);
   useEffect(() => {
     let stop = false;
     const quit = () => (stop = true);
@@ -101,6 +129,14 @@ function OpenAt({ target }: { target: string }) {
       else document.getElementById(target)?.scrollIntoView();
     };
     const timers = [0, 300, 800, 1500, 2500].map((ms) => setTimeout(go, ms));
+    // Keyboard and screen-reader users continue from the section the page opened on, not wherever the
+    // sign-in button used to be. Sections below the hero are lazy: if focus landed on a loading placeholder
+    // that has since been replaced, try again once the real section has mounted.
+    const focus = () => {
+      const a = document.activeElement;
+      if (!stop && (!a || a === document.body || !a.isConnected)) focusSection(target);
+    };
+    timers.push(...[50, 800, 1500].map((ms) => setTimeout(focus, ms)));
     const evs = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
     evs.forEach((e) => addEventListener(e, quit, { passive: true }));
     return () => {

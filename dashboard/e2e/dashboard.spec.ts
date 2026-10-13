@@ -148,7 +148,7 @@ test("an expired session (401) returns to sign-in with a notice", async ({ page 
   await expect(page.getByText(/session ended/i)).toBeVisible();
 });
 
-test("@mobile has no horizontal overflow and a working section menu", async ({ page }) => {
+test("@mobile has no horizontal overflow and a working navigation drawer", async ({ page }) => {
   await page.goto("/?source=snapshot");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await visitAllSections(page);
@@ -156,13 +156,57 @@ test("@mobile has no horizontal overflow and a working section menu", async ({ p
   expect(overflow).toBeLessThanOrEqual(0);
 
   await page.evaluate(() => scrollTo(0, 0));
-  const menuButton = page.getByRole("button", { name: /open sections menu/i });
+  const menuButton = page.getByRole("button", { name: /open navigation/i });
   await menuButton.click();
-  const menu = page.locator("#mobile-menu");
-  await expect(menu.getByRole("link")).toHaveCount(5);
+  const drawer = page.getByRole("dialog", { name: "Navigation" });
+  await expect(drawer.getByRole("navigation", { name: "Sections" }).getByRole("link")).toHaveCount(6);
+  await expect(drawer.getByRole("status").filter({ hasText: "Recorded run" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(menu).toBeHidden();
-  await expect(page.getByRole("button", { name: /open sections menu/i })).toBeFocused();
+  await expect(drawer).toBeHidden();
+  await expect(menuButton).toBeFocused();
+  expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
+
+  // Choosing a section closes the drawer and keyboard focus continues from that section.
+  await menuButton.click();
+  await drawer.getByRole("link", { name: /^alerts/i }).click();
+  await expect(drawer).toBeHidden();
+  await expect(page.locator("#alerts")).toBeInViewport({ ratio: 0.05 });
+  await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest("#alerts"))).toBe(true);
+
+  // Drawer, then palette on top, then one Escape: the page must not stay scroll-locked.
+  await menuButton.click();
+  await page.keyboard.press("Control+k");
+  await expect(page.getByRole("combobox", { name: /search sections/i })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
+});
+
+test("command palette finds a shipment by ID and opens it", async ({ page }) => {
+  await page.goto("/?source=snapshot");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.keyboard.press("Control+k");
+  const box = page.getByRole("combobox", { name: /search sections/i });
+  await expect(box).toBeFocused();
+  await expect(page.getByRole("listbox").getByRole("option").first()).toBeVisible();
+  // Group labels sit inside groups and the empty state outside the listbox (valid combobox structure).
+  const { violations } = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+  expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
+
+  await box.fill("SHP-000174");
+  const option = page.getByRole("listbox", { name: "Results" }).getByRole("option", { name: /SHP-000174/ });
+  await expect(option).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator("#shipment")).toBeInViewport({ ratio: 0.05 });
+  await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest("#shipment"))).toBe(true);
+  expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
+
+  await page.keyboard.press("Control+k");
+  await box.fill("zzzz-no-such-thing");
+  await expect(page.getByText(/nothing matches/i)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 for (const theme of ["dark", "light"] as const) {

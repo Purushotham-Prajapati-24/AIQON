@@ -129,7 +129,7 @@ export function CascadeChart({
   const h = hover !== null ? nodes[hover] : null;
 
   return (
-    <div ref={ref} className="relative w-full overflow-x-auto overflow-y-hidden [scrollbar-width:thin]">
+    <div ref={ref} className="relative w-full overflow-x-auto overflow-y-hidden [scrollbar-width:thin]" style={{ minHeight: height }}>
       {width > 0 && (
         <svg
           width={W}
@@ -162,7 +162,7 @@ export function CascadeChart({
           {dayTicks.map((t) => (
             <g key={t}>
               <line x1={M.l} x2={W - M.r} y1={y(t)} y2={y(t)} stroke="var(--line)" strokeDasharray={t === 0 ? undefined : "1 5"} />
-              <text x={M.l - 12} y={y(t) + 4} textAnchor="end" className="fill-fg-3 font-mono text-[11px]">
+              <text x={M.l - 12} y={y(t) + 4} textAnchor="end" className="fill-fg-3 font-mono text-[12px]">
                 {t === 0 ? "plan" : `+${t / 24}d`}
               </text>
             </g>
@@ -186,7 +186,7 @@ export function CascadeChart({
                   transition={{ duration: 1, ease: EASE }}
                   y={M.t - 12}
                   textAnchor="middle"
-                  className="fill-late font-mono text-[11px] uppercase tracking-[0.14em]"
+                  className="fill-late font-mono text-[12px] uppercase tracking-[0.14em]"
                 >
                   Main cause · {GROUP[view.root_cause_group as Group]}
                 </motion.text>
@@ -228,12 +228,12 @@ export function CascadeChart({
                 y={height - M.b + (narrow ? 24 : 32)}
                 textAnchor={narrow ? "end" : "middle"}
                 transform={narrow ? `rotate(-40 ${x(i)} ${height - M.b + 24})` : undefined}
-                className={`font-mono text-[11px] uppercase tracking-wider ${hover === i ? "fill-fg" : "fill-fg-2"}`}
+                className={`font-mono text-[12px] uppercase tracking-wider ${hover === i ? "fill-fg" : "fill-fg-2"}`}
               >
                 {EVENT[n.event]?.short ?? n.event}
               </text>
               {!narrow && portUnder[n.event] && (
-                <text x={x(i)} y={height - M.b + 50} textAnchor="middle" className="fill-fg-3 text-[11px]">
+                <text x={x(i)} y={height - M.b + 50} textAnchor="middle" className="fill-fg-3 text-[12px]">
                   {portUnder[n.event]}
                 </text>
               )}
@@ -256,10 +256,10 @@ export function CascadeChart({
               <motion.text initial={false} animate={{ y: y(p50) + 4 }} transition={{ duration: 1, ease: EASE }} x={narrow ? 24 : 36} className="fill-fg font-mono text-[12px]">
                 {delay(p50, { short: true })}
               </motion.text>
-              <motion.text initial={false} animate={{ y: y(p90) + 4 }} transition={{ duration: 1, ease: EASE }} x={narrow ? 24 : 36} className="fill-fg-3 font-mono text-[11px]">
+              <motion.text initial={false} animate={{ y: y(p90) + 4 }} transition={{ duration: 1, ease: EASE }} x={narrow ? 24 : 36} className="fill-fg-3 font-mono text-[12px]">
                 {delay(p90, { short: true })}
               </motion.text>
-              <motion.text initial={false} animate={{ y: y(p10) + 4 }} transition={{ duration: 1, ease: EASE }} x={narrow ? 24 : 36} className="fill-fg-3 font-mono text-[11px]">
+              <motion.text initial={false} animate={{ y: y(p10) + 4 }} transition={{ duration: 1, ease: EASE }} x={narrow ? 24 : 36} className="fill-fg-3 font-mono text-[12px]">
                 {delay(p10, { short: true })}
               </motion.text>
             </motion.g>
