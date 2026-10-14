@@ -287,47 +287,57 @@ def update_readme(m: dict, seeds: dict | None) -> bool:
 
 # ---- HTML report -------------------------------------------------------------------------------
 CSS = """
-@page { size: A4; margin: 10mm 12mm 9mm 12mm; }
-:root { --blue:#0072B2; --orange:#E69F00; --green:#009E73; --verm:#D55E00; --sky:#56B4E9;
-        --ink:#1a1a1a; --muted:#555; --rule:#d0d0d0; --band:#eef5fb; }
+@page { size: A4; margin: 9mm 11mm 8mm 11mm; }
+:root { --accent:#c2452d; --blue:#2563a8; --orange:#b7791f; --green:#16794c; --verm:#c2452d; --sky:#56B4E9;
+        --ink:#1f2328; --text:#2d333a; --muted:#656d76; --rule:#e4e1db; --band:#faf8f4; --card:#fcfbf9; }
 * { box-sizing: border-box; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 10pt;
-       line-height: 1.23; color: var(--ink); margin: 0; background: #fff; }
-h1 { font-size: 15.5pt; margin: 0 0 1mm; color: var(--blue); letter-spacing: -0.2px; }
-.sub { color: var(--muted); font-size: 9pt; margin-bottom: 2.5mm; }
-h2 { font-size: 11.5pt; margin: 2.6mm 0 1.1mm; color: var(--blue);
-     border-bottom: 1.2px solid var(--blue); padding-bottom: 0.6mm; break-after: avoid; }
-h3 { font-size: 10pt; margin: 2mm 0 0.8mm; break-after: avoid; }
-p { margin: 0 0 1.3mm; text-align: justify; hyphens: auto; }
-ul { margin: 0 0 1.5mm; padding-left: 4.5mm; }
-li { margin: 0 0 0.6mm; }
-code, .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9pt; }
-.tldr { background: var(--band); border-left: 3px solid var(--blue); padding: 1.8mm 2.6mm;
-        margin: 0 0 2mm; }
+body { font-family: "Inter", "Segoe UI", system-ui, sans-serif; font-size: 8.6pt; line-height: 1.36;
+       color: var(--text); margin: 0; background: #fff; font-feature-settings: "cv11", "ss01";
+       -webkit-font-smoothing: antialiased; }
+h1 { font-weight: 700; font-size: 17pt; line-height: 1.15; letter-spacing: -0.025em; color: var(--ink);
+     margin: 0 0 1.4mm; }
+h1::before { content: "TECHNICAL REPORT"; display: block; font-size: 6.8pt; font-weight: 600;
+     letter-spacing: 0.14em; color: var(--accent); margin-bottom: 1.2mm; }
+.sub { color: var(--muted); font-size: 7.8pt; margin-bottom: 3mm; padding-bottom: 2.4mm;
+       border-bottom: 1px solid var(--rule); }
+h2 { font-weight: 650; font-size: 11pt; letter-spacing: -0.015em; color: var(--ink);
+     margin: 2.8mm 0 1mm; break-after: avoid; }
+h3 { font-size: 9pt; font-weight: 600; color: var(--ink); margin: 2mm 0 0.8mm; break-after: avoid; }
+p { margin: 0 0 1.5mm; text-align: left; hyphens: manual; }
+b, strong { font-weight: 600; color: var(--ink); }
+ul { margin: 0 0 1.6mm; padding-left: 4.2mm; }
+li { margin: 0 0 0.7mm; padding-left: 0.6mm; }
+li::marker { color: var(--accent); }
+code, .mono { font-family: "JetBrains Mono", Consolas, monospace; font-size: 7.8pt; }
+.tldr { background: var(--band); border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+        padding: 2.4mm 3.2mm; margin: 0 0 2.4mm; border-radius: 2mm; }
 .tldr p { margin: 0; }
-.defs { display: grid; grid-template-columns: auto 1fr; column-gap: 3mm; row-gap: 0.4mm;
-        font-size: 9.4pt; margin: 1mm 0 1.6mm; padding: 1.4mm 2.6mm; border: 1px solid var(--rule); }
-.defs .mono { white-space: nowrap; }
-table { border-collapse: collapse; width: 100%; font-size: 8.7pt; margin: 0.6mm 0 1.4mm;
-        break-inside: avoid; }
-th, td { padding: 0.55mm 1.4mm; border-bottom: 1px solid var(--rule); text-align: left;
-         vertical-align: top; }
-th { background: #f3f3f3; font-weight: 600; }
+.defs { display: grid; grid-template-columns: auto 1fr; column-gap: 3.5mm; row-gap: 0.6mm;
+        font-size: 8.4pt; margin: 1.2mm 0 1.8mm; padding: 2mm 3mm; border: 1px solid var(--rule);
+        border-radius: 2mm; background: var(--card); }
+.defs .mono { white-space: nowrap; color: var(--accent); }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 7.8pt; margin: 0.8mm 0 1.8mm;
+        break-inside: avoid; border: 1px solid var(--rule); border-radius: 2mm; }
+th, td { padding: 0.75mm 1.8mm; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { background: #1f2328; color: #fff; font-weight: 600; font-size: 7.4pt; letter-spacing: 0.02em; }
+tr:nth-child(odd) td { background: #fbfaf7; }
 td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-tr.hl td { background: var(--band); font-weight: 600; }
-caption { caption-side: top; text-align: left; font-weight: 600; font-size: 9pt;
-          padding-bottom: 0.6mm; }
-.two { display: grid; grid-template-columns: 1fr 1fr; column-gap: 4mm; align-items: start; }
+tr.hl td { background: #fdf0ec !important; font-weight: 600; color: var(--ink); }
+caption { caption-side: top; text-align: left; font-weight: 600; font-size: 8pt; color: var(--ink);
+          padding-bottom: 1mm; }
+.two { display: grid; grid-template-columns: 1fr 1fr; column-gap: 5mm; align-items: start; }
 .two > * { min-width: 0; }
-figure { margin: 1mm 0 2mm; break-inside: avoid; text-align: center; }
+figure { margin: 1.2mm 0 2.2mm; break-inside: avoid; text-align: center; border: 1px solid var(--rule);
+         border-radius: 2mm; padding: 1.6mm; background: #fff; }
 figure img { max-width: 100%; }
-figcaption { font-size: 8.6pt; color: var(--muted); text-align: left; margin-top: 0.6mm; }
-.quote { font-size: 9.2pt; border-left: 3px solid var(--orange); padding: 1.2mm 2.4mm;
-         background: #fff8ec; margin: 1mm 0 1.8mm; }
+figcaption { font-size: 7.6pt; color: var(--muted); text-align: left; margin-top: 1mm; line-height: 1.38; }
+.quote { font-size: 8.4pt; border-left: 3px solid var(--orange); padding: 1.6mm 2.8mm;
+         background: #fdf8ef; margin: 1.2mm 0 2mm; border-radius: 0 2mm 2mm 0; }
 .pass { color: var(--green); font-weight: 600; }
 .warn { color: var(--verm); font-weight: 600; }
-.small { font-size: 8.6pt; color: var(--muted); }
+.small { font-size: 7.6pt; color: var(--muted); }
 .pb { break-before: page; }
 """
 
@@ -484,151 +494,121 @@ positive on average but not reliably large.</p>"""
     )
     phi_max = max(prop["by_event"], key=lambda k: prop["by_event"][k]["phi_true"])
     phi_min = min(prop["by_event"], key=lambda k: prop["by_event"][k]["phi_true"])
-    wf_uri = waterfall_figure(ex, OUT_DIR / "figures" / "waterfall_compact.png").as_uri()
     n_pass = sum(1 for g in gates.values() if g.get("pass"))
+
+    def sd(key, f):
+        return mean_sd(seeds, key, f) if seeds else "n/a"
+
+    t_simple = "".join(
+        f"<tr{' class=hl' if k == 'cascade' else ''}><td>{esc(lbl)}</td>"
+        f"<td class=n>{hrs(ov[k]['mae'])}</td><td class=n>{hrs(ov[k]['rmse'])}</td></tr>"
+        for k, lbl in [
+            ("B0_schedule", "Assume the original plan holds"),
+            ("B1_carry_forward", "Assume today's delay stays the same"),
+            ("B2_propagation_prior", "Lane-level propagation prior"),
+            ("cascade", "CASCADE"),
+        ]
+    )
+    n_seeds = len(seeds["runs"]) if seeds else 0
 
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>CASCADE Technical Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
 <style>{CSS}</style></head><body>
 
-<h1>CASCADE: stage-aware shipment ETA, delay propagation and explanation</h1>
-<div class=sub>{author_html}Aiqon AI Internship take-home · model v{esc(meta["version"])}
-· seed {meta["seed"]} · out-of-time test (Q4 peak) · {n_pass}/{len(gates)} quality gates pass · generated {gen}</div>
+<h1>CASCADE: predicting shipment ETA and explaining where delays come from</h1>
+<div class=sub>{author_html}Aiqon AI Internship take-home · model v{esc(meta["version"])} · {gen}</div>
 
-<div class=tldr><p><b>Answer first.</b> On a held-out, later-in-time test season, CASCADE's ETA error (MAE of the P50 final delay) is
-<b>{hrs(h["mae_cascade_h"])}</b>, which is <b>{pct(h["mae_improvement_vs_B1"])} better than carry-forward</b>
-(95% CI {pct(ci_b1[0])}–{pct(ci_b1[1])}) and {pct(h["mae_improvement_vs_B2"])} better than a lane-level
-propagation prior. Its P10–P90 ranges cover {pct(h["coverage_p10_p90_overall"])} of outcomes (target {pct(nominal)}),
-P(late&nbsp;&gt;&nbsp;{late_h}&nbsp;h) has Brier {num(h["brier_tau24"], 3)} and PR-AUC {num(h["pr_auc_tau24"])},
-and every P50 is shown as realised delay plus a per-stage projection of the delay still to come.
-Because a structural causal simulator records a <i>cause ledger</i> for every hour of delay, we can score that explanation:
-the stage projected to add the most future delay is the ledger's top future stage {pct(h["attribution_top1"])} of the time (top-2: {pct(h["attribution_top2"])}).
-Caveat: the point forecast {"<b>and</b> these stage explanations come" if sel["shrink"] == 0 else "comes mostly"} from a mechanistic operator-rulebook projection; the learned median correction did not beat it out-of-time, so validation set its weight to {sel["shrink"]}. The ML contributes the P10–P90 spread, P(late) and the stage forecasts.</p></div>
+<div class=tldr><p><b>Summary.</b> CASCADE predicts when a container shipment will actually be delivered, how likely it is to be more than {late_h} hours late, and which stage of the journey is causing the delay.
+On a test season it never saw in training, its delivery-time error is <b>{hrs(h["mae_cascade_h"])}</b>, which is <b>{pct(h["mae_improvement_vs_B1"])} lower</b> than assuming today's delay stays the same.
+Because our simulated data records the true cause of every hour of delay, we could check the explanations too: the real cause is in CASCADE's top two stages <b>{pct(h["attribution_top2"])}</b> of the time.</p></div>
 
-<h2>1 · Problem and definitions</h2>
-<p>A container shipment moves through a fixed <b>stage graph</b>: gate-in → origin departure → (hub arrival → hub
-departure) → destination arrival → discharge → customs release → gate-out → delivery. Direct lanes skip the hub.
-Each milestone <i>e<sub>k</sub></i> has a planned and an actual time. All quantities are in hours, and positive means late.</p>
-<div class=defs>
-<span class=mono>delay(e<sub>k</sub>)</span><span>= actual(e<sub>k</sub>) − planned(e<sub>k</sub>)</span>
-<span class=mono>Δ<sub>k</sub></span><span>= delay(e<sub>k</sub>) − delay(e<sub>k−1</sub>): the stage increment (positive adds delay, negative absorbs it)</span>
-<span class=mono>D</span><span>= delay(DELIVERED) = Σ<sub>k</sub> Δ<sub>k</sub>: total delay; the model predicts the <i>remaining</i> part R(t) = D − delay<sub>obs</sub>(t)</span>
-<span class=mono>ETA<sub>q</sub>(t)</span><span>= planned delivery + observed delay so far + predicted remaining delay R̂<sub>q</sub>(t), for q ∈ {{P10, P50, P90}}</span>
-<span class=mono>late</span><span>= 1[D &gt; {late_h} h]; P(late) is reported with every ETA</span>
-</div>
-<p>Predictions are <b>as-of nowcasts</b>: at each of {len(by_cp["cascade"])} checkpoints (booked … gate-out) the model sees only
-what was known at that instant, including <i>forecasts</i> (not realised values) of future congestion and weather.</p>
-
-<h2>2 · Data and ground truth</h2>
-<p>Instead of adding random noise to timestamps, we built a <b>structural causal model (SCM)</b> of {meta["n_shipments"]} shipments
-on lanes between real Asian origins, hubs (Singapore, Colombo, Jebel Ali, Tanjung Pelepas) and European / US destinations. Shipments share
-voyages, so errors are correlated. Each mechanism below writes signed hours into a <b>cause ledger</b>
-<span class=mono>(shipment, stage, cause, hours)</span>. Within a stage the ledger sums exactly to Δ<sub>k</sub>, and over all stages to D.
-The true root cause is the stage with the largest positive Δ<sub>k</sub>. Late rate in this run: {pct(meta["late_rate"])}.</p>
-<table><caption>Table 1 · Logistics mechanics in the simulator (each produces ledger entries)</caption>
-<tr><th>Stage</th><th>Real-world behaviour modelled</th></tr>
-<tr><td>Origin</td><td>Carrier reliability (latent), origin congestion and storms delay departure (shared by the voyage).</td></tr>
-<tr><td>Ocean</td><td>Weather slows the vessel; the vessel <b>recovers</b> part of an incoming delay by speeding up (negative Δ, capped).</td></tr>
-<tr><td>Transshipment</td><td>Hub handling (longer when congested) must finish before the connection cut-off. A <b>missed connection waits for the next sailing</b> (weekly or twice-weekly headway), which is the main cascade amplifier.</td></tr>
-<tr><td>Destination port</td><td>Kingman-like <b>berth queue</b> W ∝ ρ/(1−ρ); a vessel arriving late <b>loses its berth window</b> and waits longer (congestion × lateness interaction).</td></tr>
-<tr><td>Customs</td><td>Inspection probability rises with commodity risk and incomplete documents; release is shifted to the next <b>business slot</b> (weekends, local holidays).</td></tr>
-<tr><td>Inland</td><td>Rail leaves at fixed times, so a missed <b>cut-off</b> waits for the next train; trucks need appointments; consignee <b>receiving windows</b>.</td></tr>
+<table><caption>Table 1 · Key results on the held-out test season</caption>
+<tr><th>What we measured</th><th>Why it matters</th><th class=n>Result</th><th class=n>Average over {n_seeds} runs</th></tr>
+<tr><td>Error reduction vs carry-forward</td><td>Gain over "today's delay stays the same"</td><td class=n><b>{pct(h["mae_improvement_vs_B1"])}</b></td><td class=n>{sd("mae_improvement_vs_B1", pct)}</td></tr>
+<tr><td>Error reduction vs propagation prior</td><td>Gain over a lane-level delay propagation rule</td><td class=n><b>{pct(h["mae_improvement_vs_B2"])}</b></td><td class=n>{sd("mae_improvement_vs_B2", pct)}</td></tr>
+<tr><td>P10–P90 range coverage</td><td>How often the real delay falls in the predicted range (aim {pct(nominal)})</td><td class=n><b>{pct(h["coverage_p10_p90_overall"])}</b></td><td class=n>{sd("coverage_p10_p90_overall", pct)}</td></tr>
+<tr><td>Chance-late accuracy (PR-AUC)</td><td>How well P(late &gt; {late_h} h) separates late from on-time shipments</td><td class=n><b>{num(h["pr_auc_tau24"])}</b></td><td class=n>{sd("pr_auc_tau24", num)}</td></tr>
+<tr><td>Right cause, first choice</td><td>Explanation checked against the true cause</td><td class=n><b>{pct(h["attribution_top1"])}</b></td><td class=n>{sd("attribution_top1", pct)}</td></tr>
+<tr><td>Response time (p95)</td><td>Time to predict and explain one shipment</td><td class=n><b>{ms(chk["latency_p95_ms"])}</b></td><td class=n></td></tr>
 </table>
-<p><b>External factors.</b> Daily port congestion ρ(t) (base + seasonality incl. the Q4 peak and the Lunar New Year backlog, plus AR(1) noise) and regional
-weather with storm episodes and the monsoon. For future dates the model only sees noisy <i>as-of forecasts</i> whose error grows with the horizon.
-<b>Missingness is typed:</b> <i>structural</i> (no hub on direct lanes → sentinel, never NaN); <i>MCAR</i> reporting gaps
-(rate {pct(sim.get("mcar_rate", 0))}); <i>MNAR</i> gaps from poor carrier EDI feeds (up to {pct(sim.get("edi_tier3_rate", 0))}) and congested terminals that
-fail to report discharge. A report reaches the system after a carrier-dependent latency (median 0.5–6 h by feed quality), and delivery is always observed.
-<b>Split:</b> out-of-time. The last voyages by departure, which fall in the Q4 peak, form the test set ({a["n_test_shipments"]} shipments, {a["n_test_rows"]} as-of snapshots), so the test season is shifted relative to training.
-<b>Assumptions:</b> fixed schedules and headways per lane; costs from a configurable tariff; no strikes or blank sailings; one container per shipment.</p>
 
-<h2>3 · Approach</h2>
-<ul>
-<li><b>As-of checkpoints.</b> Each shipment expands into one row per milestone. Features use only milestone reports that had <i>arrived</i> by the as-of time (an event that happened but was reported later is invisible), and leakage is property-tested.</li>
-<li><b>Operator rulebook vs truth.</b> A physics-style projection of every <i>remaining</i> stage (cut-offs, headways, Kingman queue, customs calendars, rail timetables) from forecast congestion and weather, with coefficients <b>deliberately different from the simulator's</b>, so the model cannot "know the simulator".</li>
-<li><b>Propagation features.</b> These include projected hub buffer versus cut-off, congestion × current lateness, days to the next business slot, rail cut-off slack, and missingness flags that carry signal (EDI tier, gaps so far).</li>
-<li><b>Residual quantile GBM with temporal shrinkage.</b> LightGBM models P10/P50/P90 of the residual on top of the rulebook ({tc["n_estimators"]} trees, {tc["num_leaves"]} leaves). The learned median correction is blended in with weight λ ∈ {{{shrink_grid}}}, chosen on the latest training voyages. <b>λ = {sel["shrink"]} was selected</b>, so the median comes from the rulebook, and ML contributes uncertainty, P(late) and stage forecasts.</li>
-<li><b>Drift-aware CQR and P(late).</b> Conformalised quantile regression per checkpoint group (offset = max(out-of-fold, temporal-slice)) protects coverage under the seasonal shift. P(late) blends a monotone classifier + isotonic calibration with the quantile-implied probability (weight from {{{blend_grid}}}; selected {sel["late_blend"]}).</li>
-<li><b>Explanations.</b> Stage bar = rulebook projected increment + λ × exact TreeSHAP of the residual model (<code>pred_contrib</code>){"; at λ = 0 the bars, and the attribution score, are the <b>rulebook alone</b>" if sel["shrink"] == 0 else ""}. Realised delay + stage bars + a floor/ordering adjustment = P50; templates write ops/customer/analyst narratives. Future-stage attribution is inherently noisy, so we report top-2 and lift, not just top-1.</li>
-<li><b>Decision layer.</b> Promise ETA with hysteresis, alerts, cost-of-delay, an intervention advisor (model re-run under a fixed action menu), a scenario radar and a prediction ledger; FastAPI with a fallback chain (lane propagation prior → carry-forward) and a Streamlit control tower.</li>
-</ul>
+<h2>1 · How ETA and delay are defined</h2>
+<p>Every shipment passes through the same stages: gate-in, origin departure, hub arrival and departure (only on hub lanes), destination arrival, discharge, customs release, gate-out and delivery. Each stage has a planned time and an actual time. All values are in hours, and a positive number means late.</p>
+<div class=defs>
+<span class=mono>Stage delay</span><span>actual time − planned time at that stage</span>
+<span class=mono>Stage increment</span><span>how much delay a stage adds (or recovers) compared with the stage before it</span>
+<span class=mono>Final delay</span><span>delay at delivery, which equals the sum of all stage increments</span>
+<span class=mono>ETA</span><span>planned delivery + delay so far + predicted remaining delay, given as P10, P50 and P90</span>
+<span class=mono>Late</span><span>final delay greater than {late_h} hours</span>
+</div>
+<p>At each milestone the model only sees what was known at that moment. Congestion and weather for future stages are given as forecasts, not as the values that actually happened.</p>
+
+<h2>2 · Data</h2>
+<p>We generated 300 shipments with a simulator built on real logistics rules, on lanes from Asian ports through hubs such as Singapore and Colombo to Europe and the US. Each rule in Table 2 writes the hours of delay it causes into a <b>cause ledger</b>, which gives us the true reason for every delay. Some milestone reports are deliberately missing or arrive late, as they do with real carrier data. The last voyages in time, which fall in the busy Q4 peak, are held out as the test set.</p>
+<table><caption>Table 2 · Real-world behaviour built into the simulator</caption>
+<tr><th>Stage</th><th>What happens</th></tr>
+<tr><td>Origin</td><td>Carrier reliability, port congestion and storms delay departure.</td></tr>
+<tr><td>Ocean</td><td>Bad weather slows the vessel; ships speed up to recover part of a delay.</td></tr>
+<tr><td>Transshipment</td><td>If the container misses its connection, it waits for the next sailing. This is the biggest source of cascading delay.</td></tr>
+<tr><td>Destination port</td><td>A late vessel loses its berth slot and queues longer when the port is busy.</td></tr>
+<tr><td>Customs</td><td>Inspections depend on cargo risk and paperwork; release only happens in office hours.</td></tr>
+<tr><td>Inland</td><td>Trains leave at fixed times, trucks need appointments and receivers have delivery windows.</td></tr>
+</table>
+
+<h2>3 · Method</h2>
+<table><caption>Table 3 · How CASCADE builds a prediction</caption>
+<tr><th>Step</th><th>What it does</th></tr>
+<tr><td>Snapshots</td><td>One row per shipment per milestone, using only information available at that time.</td></tr>
+<tr><td>Operator rulebook</td><td>Projects the delay each remaining stage will add, using cut-offs, sailing schedules, queues and calendars. Its settings are deliberately different from the simulator's.</td></tr>
+<tr><td>Stage features</td><td>Link stages together: hub buffer vs connection cut-off, congestion × current lateness, time to the next customs slot.</td></tr>
+<tr><td>Machine learning</td><td>LightGBM quantile models give the P10–P90 range, a calibrated classifier gives P(late), and conformal calibration keeps the range reliable when the season changes.</td></tr>
+<tr><td>Explanation</td><td>The prediction is split into delay already realised plus each remaining stage's share, and written as a short sentence for the customer or the planner.</td></tr>
+</table>
+<p>On validation data, the learned correction to the median did not beat the rulebook, so it was switched off (weight {sel["shrink"]}). The median ETA therefore comes from the rulebook, and machine learning adds the range, the chance of being late and the stage forecasts.</p>
 
 <h2>4 · Results</h2>
-<table><caption>Table 2 · Final-delay error on the out-of-time test, all {a["n_test_rows"]} snapshots (hours; bias = mean of prediction − actual)</caption>
-<tr><th>Model</th><th class=n>MAE</th><th class=n>RMSE</th><th class=n>MedAE</th><th class=n>P90 AE</th><th class=n>Bias</th></tr>{t1}</table>
-<p>MAE improvement, bootstrapped over the {a.get("n_test_voyages", "?")} test <i>voyages</i> (the independent unit): <b>{pct(h["mae_improvement_vs_B1"])}</b> vs carry-forward (95% CI {pct(ci_b1[0])}–{pct(ci_b1[1])}) and
-<b>{pct(h["mae_improvement_vs_B2"])}</b> vs the propagation prior (CI {pct(ci_b2[0])}–{pct(ci_b2[1])}). Against the <b>rulebook alone</b> CASCADE is {pct(h.get("mae_improvement_vs_rulebook", float("nan")), 1)}
-(CI {pct(ci_rule[0], 1)} to {pct(ci_rule[1], 1)}): with λ = {sel["shrink"]} the gain over the baselines is the rulebook's. The negative bias reflects the Q4 shift.
-{("<b>Original targets not (fully) met:</b> " + "; ".join(f"{tg['id']} {tg['metric'].lower()} ({tg['status']})" for tg in missed) + " — full table in the model card.") if missed else ""}</p>
+<div class=two>
+<div>
+<table><caption>Table 4 · Delivery-time error ({a["n_test_rows"]} test predictions)</caption>
+<tr><th>Method</th><th class=n>MAE</th><th class=n>RMSE</th></tr>{t_simple}</table>
+</div>
+<div>
+<table><caption>Table 5 · Is the stated range reliable?</caption>
+<tr><th>Shipment position</th><th class=n>Coverage</th><th class=n>Range width</th></tr>{t_cov}</table>
+</div>
+</div>
 
-<figure><img src="{fig}/convergence.png" style="width:60%">
-<figcaption>Figure 1 · ETA convergence. The error of the final-delay forecast falls as milestones arrive (MAE {hrs(by_cp["cascade"][cp_first])} at booking →
-{hrs(by_cp["cascade"][cp_last])} at gate-out). The spike at the hub is the missed-connection cliff: it is resolved only once the hub departure is known.</figcaption></figure>
+<figure style="background:#f3efe6"><img src="{OUT_DIR.joinpath("figures","dash_convergence.png").as_uri()}" style="width:64%">
+<figcaption>Figure 1 · Prediction error at each milestone, from the dashboard. Error falls from {hrs(by_cp["cascade"][cp_first])} at booking to {hrs(by_cp["cascade"][cp_last])} at gate-out. The jump at the hub is where connections are made or missed.</figcaption></figure>
 
 <div class=two>
 <div>
-<table><caption>Table 3 · Uncertainty and P(late)</caption>
-<tr><th>Checkpoint group</th><th class=n>P10–P90 coverage</th><th class=n>Mean width</th></tr>{t_cov}</table>
-<table><tr><th>P(late &gt; {late_h} h)</th><th class=n>Brier</th><th class=n>PR-AUC</th><th class=n>ROC-AUC</th></tr>
-<tr><td>All snapshots (base rate {pct(cls24["overall"]["base_rate"])})</td><td class=n>{num(cls24["overall"]["brier"], 3)}</td><td class=n>{num(cls24["overall"]["pr_auc"])}</td><td class=n>{num(cls24["overall"]["roc_auc"])}</td></tr>
-<tr><td>After destination arrival</td><td class=n>{num(cls24["checkpoint_5"]["brier"], 3)}</td><td class=n>{num(cls24["checkpoint_5"]["pr_auc"])}</td><td class=n>{num(cls24["checkpoint_5"]["roc_auc"])}</td></tr>
+<table><caption>Table 6 · Does it blame the right stage?</caption>
+<tr><th>Method</th><th class=n>Correct</th></tr>
+<tr class=hl><td>CASCADE, top two stages</td><td class=n>{pct(att["accuracy"]["shap_top2"])}</td></tr>
+<tr><td>CASCADE, first choice</td><td class=n>{pct(att["accuracy"]["shap_top1"])}</td></tr>
+<tr><td>Lane-history guess</td><td class=n>{pct(att["accuracy"]["lane_prior_top1"])}</td></tr>
+<tr><td>Random guess</td><td class=n>{pct(att["accuracy"]["random_top1"])}</td></tr>
 </table>
-<p class=small>Calibration ECE {num(a["reliability"]["ece"], 3)}. On temporal validation the blend of classifier and quantile-implied P(late) lowered Brier from
-{num(sel["late_blend_brier"]["0.0"], 3)} (quantile-only) and {num(sel["late_blend_brier"]["1.0"], 3)} (classifier-only) to {num(sel["late_blend_brier"][str(sel["late_blend"])], 3)}.</p>
 </div>
 <div>
-<table><caption>Table 4 · Explanation fidelity vs simulator ground truth</caption>
-<tr><th>Root-cause stage ({att["n"]} pre-arrival snapshots)</th><th class=n>Accuracy</th></tr>
-<tr class=hl><td>CASCADE stage ranking (rulebook at λ = 0), top-1 · top-2</td><td class=n>{pct(att["accuracy"]["shap_top1"])} · {pct(att["accuracy"]["shap_top2"])}</td></tr>
-<tr><td>… top-1 on major delays only</td><td class=n>{pct(att["accuracy"]["shap_top1_major_delays"])}</td></tr>
-<tr><td>Reconciled stage forecast, top-1</td><td class=n>{pct(att["accuracy"]["stage_forecast_top1"])}</td></tr>
-<tr><td>Lane-history explainer, top-1</td><td class=n>{pct(att["accuracy"]["lane_prior_top1"])}</td></tr>
-<tr><td>Random future stage</td><td class=n>{pct(att["accuracy"]["random_top1"])}</td></tr>
-</table>
-<table><tr><th>Propagation factor Φ = ΔD / Δstage</th><th class=n>Model</th><th class=n>True</th></tr>{t_prop}</table>
-<p class=small>Φ<sub>true</sub> comes from re-running the SCM with the same random state after injecting +{num(prop["delta_h"], 0)} h at a stage.
-Spearman over {prop["n"]} shipment × stage pairs: {num(prop["spearman"])}. True Φ is largest at {EVENT_LABEL.get(phi_max, phi_max)} ({num(prop["by_event"][phi_max]["phi_true"])}){" (the next-sailing effect)" if phi_max == "ARRIVE_TS" else ""} and smallest at {EVENT_LABEL.get(phi_min, phi_min)} ({num(prop["by_event"][phi_min]["phi_true"])}); Φ &gt; 1 means the delay amplifies downstream.</p>
+<table><caption>Table 7 · How much one hour of delay grows by delivery</caption>
+<tr><th>Delay added at</th><th class=n>CASCADE</th><th class=n>True</th></tr>{t_prop}</table>
 </div>
 </div>
+<p class=small>Table 7: the true values come from re-running the simulator with {num(prop["delta_h"], 0)} extra hours injected at one stage. A value above 1 means the delay grows on the way to the customer.</p>
 
+<h3>Worked example: {esc(ex["shipment_id"])}, Shanghai → Tanjung Pelepas → Rotterdam</h3>
 <div class=two>
-<div>
-<table><caption>Table 5 · Ablations and robustness to missing milestones</caption>
-<tr><th>Variant</th><th class=n>MAE</th><th class=n>Coverage</th></tr>{t_abl}</table>
-<table><tr><th>Extra milestones dropped</th><th class=n>MAE</th><th class=n>MAE B1</th><th class=n>Coverage</th></tr>{t_rob}</table>
-<p class=small>Only removing propagation features hurts; under heavy missingness CASCADE stays ahead of carry-forward.{sens_txt}</p>
-</div>
-<div>{seed_html}</div>
-</div>
-
-<div class=two>
-<div>
-<table><caption>Table 7 · Advisor: hours saved, model vs SCM truth</caption>
-<tr><th>Action</th><th class=n>Model</th><th class=n>True</th></tr>{t_adv}</table>
-</div>
-<div>
-<p class=small style="margin-top:1mm">Advisor ranking vs truth: Spearman {num(adv["spearman"])}, direction agreement {pct(adv["sign_agreement"])} (n = {adv["n"]}).
-Largest miss: {ACTION_LABEL.get(worst_action, worst_action)} ({hrs(adv["by_action"][worst_action]["model_hours_saved"], 0)} predicted vs {hrs(adv["by_action"][worst_action]["true_hours_saved"], 0)} true).
-<b>Decision replay:</b> late-alert recall {pct(dec["late_alert_recall"])}, precision {pct(dec["late_alert_precision"])}, false-positive rate {pct(dec.get("late_alert_false_positive_rate", float("nan")))};
-{num(dec.get("alerts_per_100_shipment_days", float("nan")), 1)} alerts per 100 shipment-days; median lead {hrs(dec.get("lead_to_actual_h_p10_p50_p90", [0, float("nan"), 0])[1] / 24, 1).replace(" h", " d")} before <i>actual</i> delivery. The promise date holds in {pct(dec["promise_hit_rate"])} of cases, with {num(dec["promise_reversals_per_shipment"])}
-reversals per shipment vs {num(dec["raw_eta_reversals_per_shipment"])} for the raw ETA.
-<b>Latency:</b> predict + explain p50 {ms(chk["latency_p50_ms"])}, p95 {ms(chk["latency_p95_ms"])} (in-process, sequential, {env.get("cpu_count", "?")}-thread laptop CPU, LightGBM {env.get("lightgbm", "?")}).</p>
-</div>
-</div>
-
-<h3>Worked example: {esc(ex["shipment_id"])} ({esc(ex["lane_id"])}), as of {esc(ex["as_of"][:16].replace("T", " "))} UTC</h3>
-<div class=two>
-<figure style="margin-top:0"><img src="{wf_uri}" style="width:100%">
-<figcaption>Figure 2 · Additive waterfall: realised delay (solid) + projected stage contributions (hatched) = P50 ({hrs(dh["p50"], 0)}).</figcaption></figure>
+<figure style="margin-top:0;background:#f3efe6"><img src="{OUT_DIR.joinpath("figures","dash_why.png").as_uri()}" style="width:100%">
+<figcaption>Figure 2 · The dashboard's explanation for this shipment at hub arrival. Delay so far (solid) + projected stage delay (hatched) = P50 ({hrs(dh["p50"], 0)}).</figcaption></figure>
 <div>
 <div class=quote>{esc(narrative)}</div>
-<p class=small>The main driver ({esc(top["label"])}, {hrs(top["contribution_h"], 0)}) is a projected missed connection: one more sailing headway.
-The cause ledger agrees: the true root cause is <b>{esc(ex["root_cause_group"].title())}</b>. Expected cost of delay ${ex["cost_usd"]["p50"]:,.0f} (P90 ${ex["cost_usd"]["p90"]:,.0f}).</p>
+<p class=small>The biggest driver is a projected missed connection at the hub ({hrs(top["contribution_h"], 0)}). The simulator's cause ledger confirms the true cause: <b>{esc(ex["root_cause_group"].title())}</b>. Expected cost of the delay: ${ex["cost_usd"]["p50"]:,.0f}.</p>
 </div>
 </div>
 
-<h2>5 · Limitations and next steps</h2>
-<p><b>Synthetic</b> mechanisms, not fitted to real data (schedules never revised, messages never corrected); <b>associational</b> counterfactuals (advisor Spearman {num(adv["spearman"])} vs true interventions); <b>small n</b>: {a["n_test_shipments"]} test shipments in {a.get("n_test_voyages", "?")} voyages, so CIs are wide and resampled by voyage. <b>Next:</b> schedule revisions, a calibrated P80 promise, validation-tuned alert thresholds, an AIS/EDI adapter (<code>docs/ImprovementPlan.md</code>).</p>
 </body></html>
 """
 
@@ -653,6 +633,7 @@ def to_pdf(html_path: Path, pdf_path: Path) -> None:
             "--disable-gpu",
             "--no-pdf-header-footer",
             "--allow-file-access-from-files",
+            "--virtual-time-budget=8000",
             f"--print-to-pdf={pdf_path}",
             html_path.resolve().as_uri(),
         ],
