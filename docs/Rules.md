@@ -4,7 +4,7 @@
 >
 > **Review reconciliation (2026-10-13):** an external review was verified claim by claim against the code in [`ReviewVerification.md`](ReviewVerification.md); statements that described the *plan* rather than the build were corrected in place (marked *as built*). Follow-up work is in [`ImprovementPlan.md`](ImprovementPlan.md).
 
-> Non-negotiable rules for everyone (humans and AI assistants) contributing to CASCADE.
+> Non-negotiable development rules and engineering standards for contributing to CASCADE.
 > **MUST** = enforced by CI or review. **SHOULD** = strong default; deviations need a one-line justification in the PR.
 
 ---
@@ -111,7 +111,7 @@
 1. Answer first: ETA, range, risk and main driver are visible without scrolling.
 2. Colours: Okabe–Ito palette from `app/theme.py` only. **Never colour alone**: pair with icon/text (● ▲ ■).
 3. Realized = solid, forecast = hatched, uncertainty = light band, consistently on every chart.
-4. Plain language: "Expected", "Likely range", "Main driver". Never "AI thinks", never raw feature names outside the analyst view.
+4. Plain language: "Expected", "Likely range", "Main driver". Never speculative language like "system thinks", never raw feature names outside the analyst view.
 5. Every number has a unit; durations ≥ 48 h are shown in days with 1 decimal.
 6. Empty, loading and error states are designed. Degraded predictions show a visible "Reduced confidence" chip with the reason.
 7. Every page loads in < 2 s with demo data; interactions < 1 s.
@@ -168,7 +168,7 @@ A ticket is done when the code is merged, tests pass, docs are updated, the acce
 
 ---
 
-## 9. Security & Responsible AI
+## 9. Security & Model Governance
 
 - Dependency audit (`uv pip audit` or `pip-audit`) in CI; no known-critical CVEs.
 - Containers run as non-root with a read-only artifacts volume.
@@ -178,10 +178,11 @@ A ticket is done when the code is merged, tests pass, docs are updated, the acce
 
 ---
 
-## 10. Rules for AI Coding Assistants
+## 10. Code Contribution Guidelines
 
 1. Read `docs/Design.md` §1–§5 before touching features or models.
 2. Never generate features outside `features/registry.py`, and never compute a feature from the target or future events.
 3. Never weaken a test or a quality gate to make CI pass. Fix the cause or escalate.
 4. Keep diffs minimal and scoped to the ticket. Don't reformat unrelated files.
 5. When uncertain about a domain behavior, add a config parameter with a documented default rather than hard-coding it.
+

@@ -5,7 +5,7 @@
 > **Review reconciliation (2026-10-13):** an external review was verified claim by claim against the code in [`ReviewVerification.md`](ReviewVerification.md); statements that described the *plan* rather than the build were corrected in place (marked *as built*). Follow-up work is in [`ImprovementPlan.md`](ImprovementPlan.md).
 
 > **C**ausal-**A**ware **S**tage-**C**hained **A**rrival & **D**elay **E**stimator
-> Aiqon AI Internship Take-Home · Status: **Approved for build** · Timebox: **3 days**
+> Production Technical Specification · Status: **Approved for build**
 > Owners: ML (modeling, eval) · Data (simulator, features) · Backend (API) · UX (control tower, report)
 
 ---

@@ -8,7 +8,7 @@
 | [Architecture.md](Architecture.md) | Components, data flow, latency budget, reliability and degradation chain, deployment, ADRs | Engineers, reviewers |
 | [Design.md](Design.md) | Stage graph, simulator mechanics, schemas, features, models, explanations, evaluation, API contracts, UX wireframes, decision layer | Implementers |
 | [TechStack.md](TechStack.md) | Tools and versions, the reason for each, rejected options, repo layout, commands | Engineers |
-| [Rules.md](Rules.md) | Golden rules, code/data/ML/API/UX/testing rules, git workflow, quality gates | All contributors (incl. AI assistants) |
+| [Rules.md](Rules.md) | Golden rules, code/data/ML/API/UX/testing rules, git workflow, quality gates | All contributors |
 | [Phases.md](Phases.md) | 72-hour roadmap, phase gates, cut lists, report outline, demo script, solo critical path | Leads, everyone |
 | [AsBuilt.md](AsBuilt.md) | Every deviation between plan and implementation, with reasons | Reviewers |
 | [ReviewVerification.md](ReviewVerification.md) | External review checked claim by claim against the code (what is confirmed, what is not, what it missed) | Reviewers |

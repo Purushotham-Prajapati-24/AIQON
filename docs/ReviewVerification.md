@@ -1,6 +1,6 @@
 # External Review — Claim-by-Claim Verification
 
-> **What this is.** An external reviewer (ChatGPT) read the ten documentation files, **not the code**, and produced a design/ML review. Every technical claim was checked against the code (`src/`, `app/`, `tests/`) and the results files (`reports/metrics.json`, `reports/seeds.json`, model v1.0.0, seed 42) on 2026-10-13. Line references are `src/cascade/…` unless stated.
+> **What this is.** An external architectural review of the project documentation was evaluated against the codebase. Every technical claim was checked against the code (`src/`, `app/`, `tests/`) and the results files (`reports/metrics.json`, `reports/seeds.json`, model v1.0.0, seed 42) on 2026-10-13. Line references are `src/cascade/…` unless stated.
 > **Verdicts:** ✅ **Confirmed** (the code has the problem) · 🟡 **Partly** (real, but narrower or different than stated) · ❌ **Not confirmed** (the code already handles it, or the claim rests on a stale or wrong doc) · ➕ **New** (found during verification; the reviewer could not see it).
 > The resulting work is planned in [`ImprovementPlan.md`](ImprovementPlan.md).
 

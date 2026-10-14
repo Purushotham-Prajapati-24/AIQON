@@ -16,6 +16,7 @@ __pycache__/
 .eggs/
 build/
 dist/
+uv.lock
 
 # Node & frontend build artifacts
 node_modules/
@@ -72,15 +73,17 @@ desktop.ini
 ~$*
 *.tmp
 
-# Internal coordination & prompts
+# Local drafts & internal notes
 .claude/
-CLAUDE2_PROMPT.md
+*.prompt.md
+CLAUDE*.md
+claude*.md
 TRACKER.md
-Aiqon_Take_Home_Assignment_4.pdf
+*.docx
+*.pdf
+!report/CASCADE_Technical_Report.pdf
 docs/Submission.md
-claude1.md
 reports/sensitivity/
-CASCADE_Deep_Product_and_Technical_Review.docx
 
 # Scratch & temporary report screencaps
 report/figures/dash_*.png

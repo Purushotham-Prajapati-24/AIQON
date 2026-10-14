@@ -495,7 +495,7 @@ Control Tower
 | Forecast | 45° hatch + 60% opacity | Future stages |
 | Uncertainty | Light band `#56B4E9` @ 25% | P10–P90 |
 
-Copy rules: durations ≥ 48 h in days with 1 decimal; times in UTC with local time on hover; never "the AI thinks". Instead: "Expected", "Likely range", "Main driver".
+Copy rules: durations ≥ 48 h in days with 1 decimal; times in UTC with local time on hover; never speculative phrasing like "the model thinks". Instead: "Expected", "Likely range", "Main driver".
 
 ---
 

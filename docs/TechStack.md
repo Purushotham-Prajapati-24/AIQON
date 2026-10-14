@@ -69,7 +69,7 @@
 
 ### 2.5 No LLM in the core path
 - Deterministic templates are faster (< 1 ms), testable and can't hallucinate numbers (ADR-005).
-- **Optional P2:** an LLM "rephrase" step (Claude Sonnet via the Anthropic API) behind a feature flag, constrained to rewrite *given* facts, with a post-check that every number in the output appears in the input facts.
+- **Optional P2:** an optional rephrase step behind a feature flag, constrained to rewrite *given* facts, with a post-check that every number in the output appears in the input facts.
 
 ---
 

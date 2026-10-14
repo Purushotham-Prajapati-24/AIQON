@@ -2,8 +2,7 @@
 
 > **Source:** the external review, verified against the code in [`ReviewVerification.md`](ReviewVerification.md) (claim numbers like `§4.3` refer to that page).
 > **Goal of v1.1:** no new features. Make every number, explanation and claim **true, labelled and testable**: what was known at prediction time, how much of the ETA comes from observed facts vs the operator rulebook vs learned corrections, how uncertainty was measured, and whether an action is feasible.
-> **Owners:** **C1** = core code (`src/`, `app/`, `tests/`, `configs/`, `eval/model_card.py`) · **C2** = docs, report, README, screenshots, demo · **YOU** = decisions and recording.
-> The C1 work is packaged as a ready-to-paste prompt in `claude1.md` (repo root, gitignored).
+> **Workstreams:** **Core Engine** = code (`src/`, `app/`, `tests/`, `configs/`, `eval/model_card.py`) · **Documentation & Evaluation** = technical report, architecture documentation, validation benchmarks.
 
 ## Status — v1.2.0 published (2026-10-13)
 
