@@ -215,6 +215,4 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint and tests 
 | [docs/PRD.md](docs/PRD.md) | Problem, goals, requirements, success metrics |
 | [docs/Architecture.md](docs/Architecture.md) | Components, data flow, latency budget, degradation chain, ADRs |
 | [docs/Design.md](docs/Design.md) | Simulator mechanics, features, models, explanations, API contracts |
-| [docs/AsBuilt.md](docs/AsBuilt.md) | Every deviation from the plan, and why |
-| [docs/ModelCard.md](docs/ModelCard.md) | Auto-generated model card |
-| [docs/DemoScript.md](docs/DemoScript.md) | 5-minute demo walkthrough |
+
