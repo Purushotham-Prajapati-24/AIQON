@@ -1,28 +1,76 @@
-# environments
+# Python environments & caches
 .venv/
+env/
+venv/
+ENV/
 __pycache__/
 *.py[cod]
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.hypothesis/
+*$py.class
+*.so
+.pytest_cache*/
+.ruff_cache*/
+.mypy_cache*/
+.hypothesis*/
+.import_linter_cache*/
 *.egg-info/
+.eggs/
+build/
+dist/
 
-# generated data (reproducible with `cascade all`)
+# Node & frontend build artifacts
+node_modules/
+dashboard/node_modules/
+dashboard/dist/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Testing & E2E artifacts
+test-results/
+playwright-report/
+blob-report/
+dashboard/test-results/
+dashboard/playwright-report/
+dashboard/.playwright/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Logs & ML experiment caches
+*.log
+experiments/**/cache*/
+experiments/**/cache/
+
+# Generated data (reproducible with `cascade all`)
 /data/
 reports/seed*/
 *.sqlite
 *.db
-.import_linter_cache/
 
-# published model bundle IS committed so reviewers can run the API without training
+# Published model bundle IS committed so reviewers can run the API without training
 !artifacts/
 
-# OS / editors
+# OS / Editors
 .DS_Store
 Thumbs.db
+ehthumbs.db
+desktop.ini
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
+
+# Secrets & local environment
+.env
+.env.*.local
+*.local
+
+# Office temp / lock files
+~$*
+*.tmp
 
 # Internal coordination & prompts
 .claude/
@@ -33,3 +81,8 @@ docs/Submission.md
 claude1.md
 reports/sensitivity/
 CASCADE_Deep_Product_and_Technical_Review.docx
+
+# Scratch & temporary report screencaps
+report/figures/dash_*.png
+scratch/
+
