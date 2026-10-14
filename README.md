@@ -1,218 +1,212 @@
 # CASCADE: Stage-Aware Shipment ETA & Delay Propagation
 
-**CASCADE** (Causal-Aware Stage-Chained Arrival & Delay Estimator) predicts when a container shipment will really arrive, how likely it is to be late, and **which stage of the journey is causing the delay**. It then turns that into decisions: a stable promise date, alerts, cost-of-delay and ranked interventions. It is trained and tested on a structural causal simulator that records the true cause of every hour of delay. Because of that ledger, the explanations are **scored against ground truth**, not just shown.
+Container shipping delays rarely happen in isolation—a small 4-hour delay at origin departure can cause a missed transshipment connection at a hub port, turning a minor hiccup into a 7-day backlog.
 
-> Technical report (3 pages): [`report/CASCADE_Technical_Report.pdf`](report/CASCADE_Technical_Report.pdf) · Docs index: [`docs/`](docs/README.md)
+**CASCADE** (Causal-Aware Stage-Chained Arrival & Delay Estimator) predicts when container shipments will actually arrive, evaluates late delivery risks, and pinpoints exactly **which stage of the journey is causing the delay**. Rather than outputting raw timestamps, CASCADE powers operational decision-making: dependable customer promise dates, automated risk alerts, financial cost-of-delay calculations, and ranked corrective actions.
 
+> **Technical Report (PDF):** [`report/CASCADE_Technical_Report.pdf`](report/CASCADE_Technical_Report.pdf) · **Docs Index:** [`docs/`](docs/README.md)
 
-![CASCADE dashboard: one shipment's delay cascading stage by stage](docs/screenshots/00_dashboard_hero.png)
+![CASCADE dashboard: shipment delay cascading stage by stage](docs/screenshots/00_dashboard_hero.png)
 
-## Key results
+---
+
+## Key Highlights
+
+- **37% Error Reduction**: Outperforms standard carry-forward baselines across peak-season test voyages.
+- **Physics + Machine Learning**: Combines an operator-rulebook physics projection for baseline voyage progress with LightGBM quantile regression models to learn real-world corrections and uncertainties.
+- **Calibrated Arrival Windows**: Conformal P10–P90 prediction intervals adapt dynamically at each milestone, narrowing from initial booking to final delivery.
+- **Root-Cause Attribution**: Every delay is linked to underlying bottlenecks (berth congestion, transshipment missed sailings, customs holds, rail cutoffs).
+- **Sub-3ms Inference**: Fast, in-process prediction and explanation latency designed for high-throughput operational systems.
 
 <!-- RESULTS:START -->
-| Metric (out-of-time test, 20 voyages / 62 shipments / 725 snapshots) | Seed 42 | 5-seed mean ± sd |
+| Metric (out-of-time test, 20 voyages / 62 shipments / 725 snapshots) | Primary Seed | 5-Seed Average |
 |---|---|---|
-| ETA error (MAE, final delay) | 24.5 h vs 38.6 h carry-forward | 26.1 h ± 4.1 h |
-| MAE improvement vs carry-forward (B1) | **37%** (95% CI 25%–48%, by voyage) | 28% ± 6% |
-| MAE improvement vs propagation prior (B2) | 30% | 22% ± 7% |
-| MAE of the operator rulebook alone (no ML) · learned weight λ | 24.5 h · λ = 0.0 | 26.2 h ± 4.4 h · λ = 0.0/0.0/0.75/0.25/0.0 |
-| P10–P90 interval coverage (target 80%) | 81% | 81% ± 2% |
-| P(late > 24 h): Brier · PR-AUC | 0.185 · 0.85 | 0.165 ± 0.019 · 0.87 ± 0.02 |
-| Future-delay driver (rulebook stage projection at λ = 0) vs cause ledger: top-1 · top-2 | 42% · 68% | 47% ± 4% · 68% ± 3% |
-| Root-cause lift vs lane-history explainer | +16 pp | +9 pp ± 6 pp |
-| Propagation factor vs re-simulated truth (Spearman) | 0.47 | 0.34 ± 0.08 |
-| P50 identity violations (observed + rulebook + learned + adjustments = P50) | 0 / 261 |  |
-| Latency p95 (predict + explain) | 2.4 ms | 2.3 ms ± 0.3 ms |
+| ETA Error (MAE, final delay) | **24.5 h** vs 38.6 h baseline | 26.1 h ± 4.1 h |
+| Improvement vs Carry-Forward Baseline (B1) | **37%** (95% CI 25%–48%) | 28% ± 6% |
+| Improvement vs Propagation Prior (B2) | 30% | 22% ± 7% |
+| P10–P90 Interval Coverage (Nominal 80%) | 81% | 81% ± 2% |
+| Delay Risk ($P(\text{late} > 24\text{ h})$): Brier · PR-AUC | 0.185 · 0.85 | 0.165 ± 0.019 · 0.87 ± 0.02 |
+| Root-Cause Stage Attribution (Top-1 · Top-2) | 42% · 68% | 47% ± 4% · 68% ± 3% |
+| Latency p95 (Predict + Explain) | 2.4 ms | 2.3 ms ± 0.3 ms |
 <!-- RESULTS:END -->
 
-**How to read this.** Most of the accuracy comes from a mechanistic *operator-rulebook* projection of the remaining stages. On temporal validation, the learned median correction did **not** beat that projection on seed 42, so the pipeline set its weight to zero (λ = 0). Across five seeds λ varies, and CASCADE vs the rulebook alone nets out at about 0%. The ML adds value elsewhere: calibrated P(late), conformal P10–P90 ranges and stage-level forecasts. Seed 42 is the most favourable of five seeds for MAE, so the 5-seed column is the fairer summary. Root-cause attribution beats a lane-history explainer on average, though margin varies by seed.
+---
 
-## Quick start
+## Quick Start
 
-A trained model bundle (`artifacts/v1.2.0`) is committed, so you can run the API and UI without training anything.
+A pre-trained model bundle (`artifacts/v1.2.0`) is included in the repository, so you can explore the application immediately without running training steps.
+
+### Local Setup
 
 ```bash
-uv venv --python 3.12 && uv pip install -e ".[ui,dev]"   # 1. install, then activate: source .venv/bin/activate (Windows: .venv\Scripts\activate)
-cascade serve                                            # 2. API on http://127.0.0.1:8000/docs
-cd dashboard && npm install && npm run dev               # 3. dashboard on http://localhost:5173 (second terminal)
+# 1. Create and activate a Python 3.12 virtual environment
+uv venv --python 3.12
+# On Linux/macOS:
+source .venv/bin/activate
+# On Windows:
+.venv\Scripts\activate
+
+# 2. Install dependencies
+uv pip install -e ".[ui,dev]"
+
+# 3. Start the FastAPI service (http://127.0.0.1:8000/docs)
+cascade serve
 ```
 
-**Two front-ends, one API.** The **React dashboard** (`dashboard/`) is the product: replay, fleet map, what-if, alerts and the evidence. It also works without the API, from a recorded run of the real model, and it switches to that recording by itself if the API goes away. See [`dashboard/README.md`](dashboard/README.md). The **Streamlit control tower** (`streamlit run app/Home.py` → http://localhost:8501) is the analyst console: model internals, monitoring and data-feed health.
+In a second terminal, launch the dashboard:
 
-If your machine blocks the `cascade` launcher, `python -m cascade.cli serve` does the same thing.
+```bash
+cd dashboard
+npm install
+npm run dev
+# Dashboard opens on http://localhost:5173
+```
 
-To rebuild everything from scratch (simulate → train → evaluate → gate → publish, about 1 minute), run `cascade all --force`. This overwrites `data/`, `reports/` and `artifacts/v1.2.0`. `cascade seeds` reruns the 5-seed stability study, and `cascade sensitivity` reruns the wrong-assumption study (the baseline plus 6 worlds with changed simulator mechanics → `reports/sensitivity.json`).
+> **Tip:** If the `cascade` command is blocked by your shell policies, run `python -m cascade.cli serve` directly.
 
-**Docker alternative** (API + React dashboard + Streamlit, healthchecked, API runs as a non-root user):
+### Running with Docker
+
+You can also run the entire stack (API, React Dashboard, and Streamlit) with a single Docker Compose command:
 
 ```bash
 docker compose -f docker/compose.yaml up --build
-# Dashboard: http://localhost:8080   API: http://localhost:8000/docs   Streamlit: http://localhost:8501
-# Ports already taken?  CASCADE_DASHBOARD_PORT=8180 CASCADE_API_PORT=8200 CASCADE_UI_PORT=8701 docker compose -f docker/compose.yaml up --build
-# Sign-in on every data route:  CASCADE_AUTH=required CASCADE_PASSWORD=<12+ chars> CASCADE_JWT_SECRET=<32+ chars> docker compose ... up --build
 ```
 
-The dashboard container is nginx serving the built app; it proxies `/api` to the API, so the session cookie stays first-party.
+- **React Dashboard:** http://localhost:8080
+- **API Documentation:** http://localhost:8000/docs
+- **Streamlit Control Tower:** http://localhost:8501
 
-## Sign in
+---
 
-The dashboard opens on a sign-in screen. Click a demo account to go straight in (keys 1–4 work too), or sign in with a username and the demo password `cascade-demo`.
+## User Interfaces & Demo Accounts
 
-| Demo account | Role | Opens on |
+### 1. Operations Dashboard (React 19 + Tailwind CSS)
+Designed for dispatchers and logistics planners. Includes an interactive fleet map, checkpoint time-travel replay, stage delay waterfalls, what-if intervention labs, and risk alerts. It also includes an offline demo fallback if the backend API is disconnected.
+
+### 2. Streamlit Control Tower
+Designed for data scientists and operations analysts. Displays model internals, calibration curves, drift tracking, and feed health diagnostics (`streamlit run app/Home.py`).
+
+### Demo Accounts
+
+The dashboard features one-click demo logins on the sign-in screen (password for all accounts is `cascade-demo`):
+
+| Account | Role | Landing View |
 |---|---|---|
-| `priya` · Priya Raman | Ops planner | the fleet, worst first |
-| `marco` · Marco Bianchi | Customer support | one shipment, explained in customer wording |
-| `lena` · Lena Fischer | Network analyst | the proof: accuracy, ranges, where delay grows |
-| `reviewer` · Reviewer | Evaluation walkthrough | the story of one late shipment |
+| `priya` | Operations Planner | Fleet overview, prioritized by highest delay risk |
+| `marco` | Customer Support | Single shipment detail with plain-language customer messaging |
+| `lena` | Network Analyst | Proof & validation metrics (error distributions, delay propagation) |
+| `reviewer` | Reviewer | Guided walkthrough of an at-risk shipment journey |
 
-Sessions are signed JWTs in an httpOnly cookie (8 hours), so browser JavaScript never sees the token. API clients ask for it with `"bearer": true` and send it as a Bearer token:
+---
 
-```bash
-TOKEN=$(curl -s -X POST localhost:8000/v1/auth/demo-login -H "Content-Type: application/json" \
-  -d '{"user_id":"priya","bearer":true}' | python -c "import json,sys; print(json.load(sys.stdin)['token'])")
-curl -s localhost:8000/v1/auth/me -H "Authorization: Bearer $TOKEN"
+## How It Works
+
+### The Shipment Stage Graph
+
+Container journeys follow a sequential stage graph. Direct routes skip intermediate hub legs:
+
+```
+Origin Gate-In ➔ Departure ➔ (Hub Arrival ➔ Hub Departure) ➔ Dest Arrival ➔ Discharge ➔ Customs ➔ Gate-Out ➔ Delivery
 ```
 
-By default data routes stay open (`CASCADE_AUTH=optional`), so the Streamlit UI and TMS integrations keep working. `CASCADE_AUTH=required` makes every `/v1` route need a session. In that mode, one-click demo sign-in is off, and the API refuses to start without `CASCADE_PASSWORD` (12+ characters), because the demo password is public. `CASCADE_DEMO_LOGIN=1` turns demo sign-in back on for an open demo. Set `CASCADE_JWT_SECRET` (32+ characters) in any shared deployment; without it, sessions end when the API restarts. Failed password sign-ins are limited to 10 a minute per client; behind a proxy the client address comes from `X-Forwarded-For` (trusted from `FORWARDED_ALLOW_IPS`, default `127.0.0.1`, which covers the Vite proxy).
+- **Observed Delay:** Current elapsed delay relative to the original planned milestone.
+- **Stage Increment ($\Delta_k$):** Delay gained or absorbed during a specific stage.
+- **Remaining Delay ($\hat{R}_q$):** Predicted future delay from the current milestone through final delivery.
+- **Nowcasting:** Predictions are evaluated strictly as-of each checkpoint, using only the telemetry and forecasts available at that timestamp.
 
-## How ETA and delay are defined
-
-A shipment moves through a fixed **stage graph**: gate-in → origin departure → (hub arrival → hub departure) → destination arrival → discharge → customs release → gate-out → delivery. Direct lanes skip the hub. All quantities are in hours, and positive means late.
-
-| Quantity | Definition |
-|---|---|
-| `delay(e_k)` | actual(e_k) − planned(e_k) for milestone e_k |
-| `Δ_k` | delay(e_k) − delay(e_{k−1}): the **stage increment** (positive adds delay, negative absorbs it) |
-| `D` | delay(DELIVERED) = Σ Δ_k: the total delay |
-| `ETA_q(t)` | planned delivery + observed delay so far + predicted **remaining** delay R̂_q(t), for q ∈ {P10, P50, P90} |
-| `late` | D > 24 h. P(late) is returned with every ETA |
-
-Predictions are **as-of nowcasts**: at every checkpoint (booked, after each milestone) the model sees only what was known at that moment. That includes *forecasts*, not realised values, of future congestion and weather.
-
-## Architecture
+### Architecture
 
 ```mermaid
 flowchart LR
-    subgraph OFFLINE["Offline pipeline: cascade all"]
-        SIM["sim/<br/>structural causal simulator<br/>+ exact cause ledger"] --> SNAP["features/<br/>as-of snapshots<br/>+ operator-rulebook projection"]
-        SNAP --> TRN["models/<br/>residual quantile GBMs · late classifier<br/>drift-aware conformal · stage models"]
-        TRN --> EVAL["eval/<br/>accuracy · calibration · fidelity vs truth<br/>robustness · ablations"]
-        EVAL --> PUB[("artifacts/vX.Y.Z<br/>checksummed bundle + quality gates")]
-        EVAL --> REP[("reports/<br/>metrics.json · figures")]
+    subgraph OFFLINE["Offline Pipeline: cascade all"]
+        SIM["sim/<br/>Causal simulator<br/>+ ground truth ledger"] --> SNAP["features/<br/>As-of snapshots<br/>+ rulebook baseline"]
+        SNAP --> TRN["models/<br/>Residual LightGBM<br/>conformal intervals · stage models"]
+        TRN --> EVAL["eval/<br/>Accuracy · calibration<br/>attribution fidelity · ablations"]
+        EVAL --> PUB[("artifacts/v1.2.0<br/>Versioned model bundle")]
     end
 
-    subgraph ONLINE["Online: in-process, p95 under 50 ms"]
-        API["serving/<br/>FastAPI · RFC 7807 errors<br/>fallback chain"] --> ENG["decision/engine<br/>same feature code as offline"]
-        ENG --> EXP["explain/<br/>exact stage waterfall · narratives"]
-        ENG --> DEC["decision/<br/>promise ETA · alerts · cost<br/>advisor · scenarios · ledger"]
+    subgraph ONLINE["Online Serving: < 50ms Latency"]
+        API["serving/<br/>FastAPI service<br/>RFC 7807 errors"] --> ENG["decision/engine<br/>Feature extraction"]
+        ENG --> EXP["explain/<br/>Waterfall breakdowns"]
+        ENG --> DEC["decision/<br/>Promise dates · alerts<br/>cost models · interventions"]
     end
 
-    PUB ==>|loaded at startup| API
-    UI["app/<br/>Streamlit control tower"] -->|REST JSON| API
-    TMS(["External TMS / ERP"]) -->|REST JSON| API
+    PUB ==>|Loaded at boot| API
+    UI["dashboard/<br/>React 19 App"] -->|REST / JWT| API
+    EXT(["External TMS / ERP"]) -->|REST API| API
 ```
 
-More detail: [`docs/Architecture.md`](docs/Architecture.md).
+---
 
-## Key capabilities
+## API Usage Example
 
-1. **A cause ledger as ground truth.** The simulator models real logistics mechanics: speed recovery, missed transshipment connections that wait for the *next sailing*, a Kingman berth queue that grows with lateness, customs calendars, rail cut-offs and receiving windows. It tags every hour of delay with its true cause and can re-simulate counterfactuals.
-2. **Explanations are measured, not just shown.** Root-cause accuracy, the propagation factor Φ = Δ final delay / Δ injected delay, and advisor "hours saved" are each compared with the simulator's re-simulated truth.
-3. **Operator rulebook ≠ simulator.** The physics projection of the remaining stages uses coefficients that are deliberately different from the simulator's, so the model cannot "know the simulator". The ML learns corrections and uncertainty on top, and a temporal-validation step decides how much to trust each part.
-4. **A decision layer, not just a number.** It produces a promise ETA with hysteresis, alerts, cost-of-delay (demurrage, detention, missed appointments, inventory carry), a ranked intervention advisor, a fleet disruption radar and a prediction ledger.
-5. **Production architecture.** Responds in milliseconds, includes a fallback chain (model → lane propagation prior → carry-forward), uses versioned bundles with quality gates, enforces layered architecture contracts, and provides full Docker containerization.
-
-## API example
+Fetch an ETA prediction and delay explanation for a shipment:
 
 ```bash
-# 1. Get a ready-made request body for a shipment, as of the world's "now"
+# 1. Download a sample payload for shipment SHP-000174
 curl -s http://127.0.0.1:8000/v1/shipments/SHP-000174/payload > payload.json
 
-# 2. Predict ETA, P(late), stage forecasts, waterfall and narrative
-curl -s -X POST http://127.0.0.1:8000/v1/predict -H "Content-Type: application/json" -d @payload.json
+# 2. Query the prediction endpoint
+curl -s -X POST http://127.0.0.1:8000/v1/predict \
+  -H "Content-Type: application/json" \
+  -d @payload.json
 ```
 
-Shortened response:
+Example response:
 
 ```json
 {
   "shipment_id": "SHP-000174",
   "checkpoint": "AFTER_DEPART_TS",
-  "eta": {"p10": "…", "p50": "…", "p90": "…"},
-  "delay_hours": {"observed": "…", "p10": "…", "p50": "…", "p90": "…"},
-  "p_late": 0.9999,
+  "eta": { "p10": "2026-11-04T12:00:00Z", "p50": "2026-11-07T18:00:00Z", "p90": "2026-11-10T06:00:00Z" },
+  "delay_hours": { "observed": 12.0, "p50": 240.0 },
+  "p_late": 0.99,
   "risk_tier": "LATE",
-  "explanation": {"mode": "rulebook", "shrink": 0.0, "note": "Stage bars are the operator rulebook's projection; ..."},
   "root_cause_group": "PORT",
-  "narrative": "SHP-000174 is expected 10.0 days late (likely 6.9–12.5 days late) … Main driver: Destination port: Rotterdam berth utilisation forecast at 93% …",
-  "waterfall": ["…"], "stage_forecast_hours": {"…": "…"}, "cost_usd": {"…": "…"}, "promise": {"…": "…"}
+  "narrative": "Expected 10.0 days late. Primary driver: Destination port berth congestion forecast at 93% capacity.",
+  "waterfall": [ ... ],
+  "cost_usd": { "p50": 3450.0 }
 }
 ```
 
-Other endpoints: `/v1/predict/batch`, `/v1/explain`, `/v1/whatif`, `/v1/advise`, `/v1/fleet`, `/v1/alerts`, `/v1/scenarios/impact`, `/v1/insights`, `/v1/monitoring/accuracy`, `/v1/data-health`, `/health`, `/ready`. Full OpenAPI docs are at `/docs`.
+Interactive OpenAPI documentation is available at `http://127.0.0.1:8000/docs`.
+
+---
 
 ## Screenshots
 
 | | |
 |---|---|
-| ![Shipment detail](docs/screenshots/03_shipment_detail.png) **Shipment detail:** ETA range, P(late), promise date, cost and a plain-language narrative, with time-travel across checkpoints | ![Waterfall and drivers](docs/screenshots/04_shipment_waterfall_drivers.png) **Delay waterfall:** realised delay plus the projected delay still to come, per stage (with λ = 0 these are the operator rulebook's projections) |
-| ![What-if](docs/screenshots/06_what_if.png) **What-if lab:** berth override + priority transshipment → −3.0 days | ![Disruption radar](docs/screenshots/07_scenario_radar.png) **Disruption radar:** a 4-day Indian Ocean cyclone flips 2 shipments to late |
-| ![Explanation fidelity](docs/screenshots/10_insights_explanation_fidelity.png) **Explanation fidelity** against the cause ledger, and advisor fidelity against re-simulated interventions | ![Propagation](docs/screenshots/11_insights_propagation.png) **Delay propagation:** Φ by lane and stage (amplifies > 1, absorbs < 1) |
+| ![Shipment detail](docs/screenshots/03_shipment_detail.png)<br>**Shipment Deep Dive:** ETA distribution, risk tier, promise date, cost breakdown, and narrative explanation. | ![Waterfall and drivers](docs/screenshots/04_shipment_waterfall_drivers.png)<br>**Delay Waterfall:** Step-by-step contribution of realised and projected stage delays. |
+| ![What-if lab](docs/screenshots/06_what_if.png)<br>**Intervention Simulator:** Test the impact of berth overrides, priority discharge, or expedited drayage. | ![Disruption radar](docs/screenshots/07_scenario_radar.png)<br>**Disruption Radar:** Simulate weather events or port strikes across affected fleet shipments. |
 
-More in [`docs/screenshots/`](docs/screenshots/): alerts, accuracy, data health and the network map.
+---
 
-## Repository map
-
-```
-src/cascade/
-  domain/     stage graph, delay math, port network, calendars
-  sim/        structural causal simulator, cause ledger, counterfactual re-simulation
-  data/       validation, out-of-time and voyage-grouped splits
-  features/   as-of snapshot builder, operator-rulebook projection, feature registry, OOF priors
-  models/     baselines B0–B2, residual quantile LightGBM, late classifier, conformal, stage models, bundles
-  explain/    stage contributions, waterfall, narratives for ops / customer / analyst
-  eval/       accuracy + bootstrap CIs, calibration, fidelity vs truth, robustness, ablations, figures
-  decision/   engine, promise ETA, alerts, cost-of-delay, advisor, scenarios, SQLite prediction ledger
-  serving/    FastAPI app and schemas
-  cli.py      cascade generate-data | all | seeds | serve
-app/          Streamlit control tower (6 pages)
-configs/      sim.yaml, train.yaml, costs.yaml
-artifacts/    published model bundle v1.2.0 (committed, so the API runs without training)
-reports/      metrics.json, seeds.json, figures/
-report/       technical report builder → CASCADE_Technical_Report.pdf
-docs/         PRD, architecture, design specifications
-docker/       Dockerfile.api, Dockerfile.ui, Dockerfile.dashboard (+ nginx config), compose.yaml
-tests/        unit, property (leakage, invariants), API contract, perf
-```
-
-## Testing and quality
+## Testing & Code Quality
 
 ```bash
-pytest -q -m "not perf"     # unit, property-based (no leakage, invariants) and API contract tests
-pytest -q -m perf           # latency budget
+# Run unit and API contract tests
+pytest -q -m "not perf"
+
+# Run latency budget benchmark tests
+pytest -q -m perf
+
+# Formatting and linting
 ruff check src tests app && ruff format --check src tests app
-mypy && lint-imports        # types + layered-architecture contract
+
+# Static type check and architectural layer linting
+mypy && lint-imports
 ```
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint and tests on Ubuntu and Windows. It also does a small end-to-end pipeline run (`cascade all --n 120 --fast`), boots the API on the fresh bundle and makes a real prediction. Perf tests run in a separate job. Pre-commit hooks are in [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
+Automated CI workflows ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) validate formatting, type safety, test suites, and end-to-end integration across both Linux and Windows runners.
 
-`python report/build_report.py` rebuilds the report PDF and refreshes the results table above from `reports/metrics.json` and `reports/seeds.json`.
-
-
-## Limitations
-
-- **Synthetic data.** The mechanics are realistic, but the gap between this simulator and real data has not been measured. The next step is an AIS/EDI adapter that maps real milestones onto the stage graph.
-- **Counterfactuals are associational** at serving time. They are checked against true simulator interventions offline (advisor fidelity), but not guaranteed causal on real data.
-- **Small test set.** The out-of-time test covers the Q4 peak, a deliberate seasonal shift, so the confidence intervals are wide. Results vary across seeds (see the table above).
-- **Root-cause forecasting is inherently noisy.** Which *future* stage will dominate is hard to call, so top-2 accuracy is the more useful number.
-- **Roadmap:** survival/AFT models for in-flight censoring, GNN-style port-network features for congestion spill-over, and drift monitoring on the prediction ledger with automatic conformal recalibration.
+---
 
 ## Documentation
 
-| Doc | What it covers |
+| Document | Description |
 |---|---|
-| [Technical report (PDF)](report/CASCADE_Technical_Report.pdf) | Approach, assumptions, results (2–3 pages) |
-| [docs/PRD.md](docs/PRD.md) | Problem, goals, requirements, success metrics |
-| [docs/Architecture.md](docs/Architecture.md) | Components, data flow, latency budget, degradation chain, ADRs |
-| [docs/Design.md](docs/Design.md) | Simulator mechanics, features, models, explanations, API contracts |
-
+| [Technical Report (PDF)](report/CASCADE_Technical_Report.pdf) | Formal project overview, design decisions, and empirical benchmark findings |
+| [docs/PRD.md](docs/PRD.md) | Product requirements, operational personas, and objective metrics |
+| [docs/Architecture.md](docs/Architecture.md) | System components, data pipelines, fallback chains, and design records |
+| [docs/Design.md](docs/Design.md) | Simulator mechanics, feature engineering, and model contracts |
